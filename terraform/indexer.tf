@@ -61,7 +61,8 @@ variable "AWS_DB_ALLOCATED_STORAGE" {
 # Resources
 
 resource "aws_s3_bucket" "kadindexer" {
-  bucket = "kadena-indexer-data-001"
+  bucket        = "kadena-indexer-data-001"
+  force_destroy = true
 
   tags = {
     Name        = "KadIndexer S3 Bucket"
@@ -221,5 +222,190 @@ resource "aws_security_group" "postgres_sg" {
 
   tags = {
     Name = "postgres-traffic-only"
+  }
+}
+
+# Kadena Indexer
+
+resource "aws_ecs_cluster" "kadindexer" {
+  name = "kadindexer-cluster"
+}
+
+resource "aws_ecr_repository" "kadindexer" {
+  name                 = "kadindexer-ecr"
+  image_tag_mutability = "MUTABLE"
+  force_delete         = true
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Environment = "Development"
+  }
+}
+
+resource "aws_ecs_task_definition" "kadindexer" {
+  family                   = "my-task"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "512"
+  memory                   = "2048"
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
+  container_definitions = jsonencode([
+    {
+      name      = "kadena-indexer"
+      image     = "${aws_ecr_repository.kadindexer.repository_url}:latest"
+      cpu       = 512
+      memory    = 2048
+      essential = true
+      portMappings = [
+        {
+          containerPort = 3000
+          hostPort      = 3000
+        }
+      ]
+      logConfiguration = {
+        logDriver = "awslogs"
+        options = {
+          awslogs-group         = "/ecs/kadena-indexer"
+          awslogs-region        = "us-east-1"
+          awslogs-stream-prefix = "ecs"
+        }
+      }
+    }
+  ])
+}
+
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "ecsTaskExecutionRole"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Effect = "Allow"
+        Sid    = ""
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+resource "aws_security_group" "kadindexer_sg" {
+  name        = "kadindexer-traffic-only"
+  description = "Allow only PostgreSQL traffic in both directions"
+  vpc_id      = aws_vpc.kadindexer.id
+
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Replace with the actual CIDR blocks
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "kadindexer-traffic-only"
+  }
+}
+
+resource "aws_ecs_service" "kadindexer" {
+  name            = "kadindexer-service"
+  cluster         = aws_ecs_cluster.kadindexer.id
+  task_definition = aws_ecs_task_definition.kadindexer.arn
+  desired_count   = 3
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = [aws_subnet.kadindexer.id, aws_subnet.kadindexer-b.id]
+    security_groups  = [aws_security_group.kadindexer_sg.id]
+    assign_public_ip = true
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.kadindexer_tg.arn
+    container_name   = "kadena-indexer"
+    container_port   = 3000
+  }
+
+  depends_on = [
+    aws_lb_listener.kadindexer_listener
+  ]
+}
+
+resource "aws_cloudwatch_log_group" "kadena_indexer_log_group" {
+  name              = "/ecs/kadena-indexer"
+  retention_in_days = 30
+
+  tags = {
+    Name        = "KadenaIndexerLogGroup"
+    Environment = "Development"
+  }
+}
+
+resource "aws_eip" "nlb_eip" {
+  domain = "vpc"
+}
+
+resource "aws_lb" "kadindexer_nlb" {
+  name               = "kadindexer-nlb"
+  load_balancer_type = "network"
+
+  enable_deletion_protection = false
+
+  subnet_mapping {
+    subnet_id     = aws_subnet.kadindexer.id
+    allocation_id = aws_eip.nlb_eip.id
+  }
+
+  tags = {
+    Name = "kadindexerNLB"
+  }
+}
+
+resource "aws_lb_target_group" "kadindexer_tg" {
+  name        = "kadindexer-tg"
+  port        = 3000
+  protocol    = "TCP"
+  vpc_id      = aws_vpc.kadindexer.id
+  target_type = "ip"
+
+  health_check {
+    protocol            = "TCP"
+    port                = "traffic-port"
+    interval            = 30
+    timeout             = 10
+    healthy_threshold   = 3
+    unhealthy_threshold = 3
+  }
+
+  tags = {
+    Name = "kadindexerTG"
+  }
+}
+
+resource "aws_lb_listener" "kadindexer_listener" {
+  load_balancer_arn = aws_lb.kadindexer_nlb.arn
+  protocol          = "TCP"
+  port              = 3000
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.kadindexer_tg.arn
   }
 }
