@@ -8,7 +8,7 @@ defineProps<{
   createdAt: string,
   requestkey: string,
   continuation: string;
-  transfers: any
+  transfers: any;
 }>()
 
 const {
@@ -24,7 +24,7 @@ const {
     >
       <div
         class="grid gap-2"
-        v-for="{ transfer, contract } in transfers"
+        v-for="transfer in transfers"
         :key="'transfer:' + transfer.id"
       >
         <LabelValue
@@ -42,8 +42,8 @@ const {
         />
 
         <TransactionNFT
-          v-if="contract"
-          :contract="contract"
+          v-if="transfer.contractByContractId"
+          :contract="transfer.contractByContractId"
         />
 
         <TransactionToken

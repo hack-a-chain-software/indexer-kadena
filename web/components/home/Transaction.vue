@@ -2,6 +2,7 @@
 import { format } from 'date-fns'
 
 const props = defineProps<{
+  id?:string | number,
   gas: string,
   nodeId: string,
   sender: string,
@@ -31,7 +32,7 @@ const status = useTransactionStatus(props.result)
       <Value
         isLink
         label="Request Key"
-        :to="`/transactions/${props.requestkey}`"
+        :to="`/transactions/${props.id}`"
         :value="shortenString(props.requestkey)"
       />
 

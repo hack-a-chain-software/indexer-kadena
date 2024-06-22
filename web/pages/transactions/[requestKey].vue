@@ -32,89 +32,93 @@ const data = reactive({
 })
 
 const query = gql`
-  query GetTransactionById($requestKey: String!) {
-    transactionByRequestKey(
-      requestkey: $requestKey
-      transferLimit: 20
-      eventLimit: 20
-    ) {
-      transfers {
-        contract {
-          chainId
-          createdAt
-          id
-          metadata
-          network
-          module
-          precision
-          tokenId
+  query GetTransactionById($id: Int!) {
+    transactionById(id: $id) {
+      chainId
+      continuation
+      code
+      createdAt
+      creationtime
+      gas
+      data
+      gasprice
+      gaslimit
+      updatedAt
+      txid
+      step
+      rollback
+      ttl
+      sender
+      sigs
+      result
+      proof
+      requestkey
+      payloadHash
+      pactid
+      numEvents
+      nodeId
+      nonce
+      logs
+      metadata
+      id
+      blockId
+      blockByBlockId {
+        adjacents
+        createdAt
+        chainwebVersion
+        epochStart
+        creationTime
+        featureFlags
+        hash
+        height
+        id
+        nodeId
+        nonce
+        target
+        parent
+        payloadHash
+        updatedAt
+        weight
+      }
+      eventsByTransactionId {
+        nodes {
           updatedAt
-          type
-        }
-        transfer {
-          amount
-          chainId
-          contractId
-          createdAt
-          fromAcct
-          hasTokenId
-          modulehash
-          id
-          modulename
+          transactionId
           requestkey
+          qualname
+          paramtext
+          params
+          payloadHash
+          nodeId
+          modulehash
+          module
+          name
+          createdAt
+          id
+        }
+      }
+      transfersByTransactionId {
+        nodes {
+          updatedAt
+          transactionId
           tokenId
+          requestkey
           toAcct
           payloadHash
-          network
-          updatedAt
-          type
-          transactionId
+          nodeId
+          modulename
+          modulehash
+          id
+          createdAt
+          amount
+          fromAcct
+          contractByContractId {
+            nodeId
+            metadata
+            module
+            tokenId
+          }
         }
-      }
-      transaction {
-        blockId
-        chainId
-        code
-        continuation
-        createdAt
-        creationtime
-        data
-        gas
-        gaslimit
-        gasprice
-        hash
-        id
-        logs
-        metadata
-        numEvents
-        nonce
-        payloadHash
-        pactid
-        requestkey
-        proof
-        rollback
-        result
-        step
-        sigs
-        sender
-        updatedAt
-        ttl
-        txid
-      }
-      events {
-        chainId
-        createdAt
-        id
-        module
-        modulehash
-        params
-        name
-        paramtext
-        payloadHash
-        qualname
-        requestkey
-        transactionId
-        updatedAt
       }
     }
   }
@@ -124,15 +128,15 @@ const route = useRoute();
 
 const { $graphql } = useNuxtApp();
 
-const { data: transaction, pending } = useAsyncData('GetTransactionById', async () => {
+const { data: transaction, pending } = await useAsyncData('GetTransactionById', async () => {
   try {
     const {
-      transactionByRequestKey
+      transactionById
     } = await $graphql.default.request(query, {
-      requestKey: route.params.requestKey,
+      id: 5076570,
     });
 
-    return transactionByRequestKey
+    return transactionById
   } catch (e) {
     console.warn('error', e);
 
@@ -140,7 +144,9 @@ const { data: transaction, pending } = useAsyncData('GetTransactionById', async 
   }
 });
 
-if (!transaction.value && !pending) {
+console.log('route', transaction.value)
+
+if (!transaction.value) {
   await navigateTo('/404')
 }
 </script>
@@ -155,7 +161,7 @@ if (!transaction.value && !pending) {
 
     <PageContainer>
       <TransactionDetails
-        v-bind="transaction.transaction"
+        v-bind="transaction"
       />
     </PageContainer>
 
@@ -165,26 +171,26 @@ if (!transaction.value && !pending) {
       >
         <TabPanel>
           <TransactionOverview
-            v-bind="transaction.transaction"
-            :transfers="transaction.transfers"
+            v-bind="transaction"
+            :transfers="transaction?.transfersByTransactionId?.nodes || []"
           />
         </TabPanel>
 
         <TabPanel>
           <TransactionMeta
-            v-bind="transaction.transaction"
+            v-bind="transaction"
           />
         </TabPanel>
 
         <TabPanel>
           <TransactionOutput
-            v-bind="transaction.transaction"
+            v-bind="transaction"
           />
         </TabPanel>
 
         <TabPanel>
           <TransactionEvents
-            v-bind="transaction"
+            :events="transaction?.eventsByTransactionId?.nodes || []"
           />
         </TabPanel>
       </Tabs>
