@@ -86,7 +86,7 @@ console.log('transfers', transfers.value)
         <template #hash="{ row }">
           <ColumnLink
             :label="row.requestkey"
-            :to="`/transactions/${row.requestkey}`"
+            :to="`/transactions/${row.id}`"
           />
         </template>
 

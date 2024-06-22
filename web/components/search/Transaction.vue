@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 const props = defineProps<{
+  id?: number,
   nodeId: string,
   result: string,
   chainId: number,
@@ -12,7 +13,7 @@ const status = useTransactionStatus(props.result)
 
 <template>
   <NuxtLink
-    :to="`/transactions/${requestkey}`"
+    :to="`/transactions/${id}`"
     class="py-3 border-b border-gray-300 flex gap-2 hover:opacity-[0.8]"
   >
     <IconStatus

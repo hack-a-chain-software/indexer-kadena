@@ -97,7 +97,7 @@ const { data: transfers, pending } = useAsyncData('all-token-transfers', async (
         <template #requestkey="{ row }">
           <ColumnLink
             :label="row.requestkey"
-            :to="`/transactions/${row.requestkey}`"
+            :to="`/transactions/${row.id}`"
           />
         </template>
 
