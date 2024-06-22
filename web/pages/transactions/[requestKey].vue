@@ -124,7 +124,7 @@ const route = useRoute();
 
 const { $graphql } = useNuxtApp();
 
-const { data: transaction, pending } = useAsyncData('GetTransactionById', async () => {
+const { data: transaction } = await useAsyncData('GetTransactionById', async () => {
   try {
     const {
       transactionByRequestKey
@@ -140,7 +140,7 @@ const { data: transaction, pending } = useAsyncData('GetTransactionById', async 
   }
 });
 
-if (!transaction.value && !pending) {
+if (!transaction.value) {
   await navigateTo('/404')
 }
 </script>
