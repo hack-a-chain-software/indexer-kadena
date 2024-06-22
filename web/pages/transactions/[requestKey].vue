@@ -120,34 +120,46 @@ const query = gql`
   }
 `
 
-const route = useRoute()
+const route = useRoute();
 
 const { $graphql } = useNuxtApp();
 
-const { data: transaction, pending } = useAsyncData('GetTransactionById', async () => {
+// const { data: transaction, pending } = useAsyncData('GetTransactionById', async () => {
+//   try {
+//     const {
+//       transactionByRequestKey
+//     } = await $graphql.default.request(query, {
+//       requestKey: route.params.requestKey,
+//     });
+
+//     return transactionByRequestKey
+//   } catch (e) {
+//     console.warn('error', e);
+
+//     return;
+//   }
+// });
+
+// if (!transaction.value && !pending) {
+//   await navigateTo('/404')
+// }
+
+onMounted(async () => {
   try {
-    const {
-      transactionByRequestKey
-    } = await $graphql.default.request(query, {
+    const foo = await $graphql.default.request(query, {
       requestKey: route.params.requestKey,
     });
 
-    return transactionByRequestKey
-  } catch (e) {
-    console.warn('error', e);
-
-    return;
+    console.log('transaction', foo)
+  } catch(e) {
+    console.warn(e)
   }
-});
-
-if (!transaction.value && !pending) {
-  await navigateTo('/404')
-}
+})
 </script>
 
 <template>
   <PageRoot
-    v-if="transaction"
+    v-if="false"
   >
     <PageTitle>
       Transaction Details
