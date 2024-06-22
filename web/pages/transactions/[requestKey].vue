@@ -120,7 +120,7 @@ const query = gql`
   }
 `
 
-const route = useRoute()
+const route = useRoute();
 
 const { $graphql } = useNuxtApp();
 

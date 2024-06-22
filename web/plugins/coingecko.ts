@@ -12,7 +12,7 @@ export default defineNuxtPlugin(async () => {
     try {
       const response = await fetch(url, {
         headers: {
-          'x-cg-demo-api-key': apiKey
+          'x-cg-pro-api-key': apiKey
         }
       });
 
