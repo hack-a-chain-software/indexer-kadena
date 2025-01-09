@@ -10,7 +10,7 @@ const schema = zod.object({
   nodeNumberOfChains: zod.number(),
   nodeGenesisHeights: zod.array(zod.tuple([zod.string(), zod.number()])),
   nodePackageVersion: zod.string(),
-  nodeServiceDate: zod.string(),
+  // nodeServiceDate: zod.string(),
   nodeLatestBehaviorHeight: zod.number(),
   nodeGraphHistory: zod.any(),
   nodeHistoricalChains: zod.any(),
@@ -19,6 +19,7 @@ const schema = zod.object({
 const HOST_URL = getRequiredEnvString("NODE_API_URL");
 
 function validate(row: any): GetNodeInfo {
+  console.log(row);
   const res = schema.parse(row);
   return {
     apiVersion: res.nodeApiVersion,
@@ -32,7 +33,7 @@ function validate(row: any): GetNodeInfo {
       height,
     })),
     nodePackageVersion: res.nodePackageVersion,
-    nodeServiceDate: new Date(res.nodeServiceDate),
+    nodeServiceDate: new Date(),
     nodeLatestBehaviorHeight: res.nodeLatestBehaviorHeight,
   };
 }
