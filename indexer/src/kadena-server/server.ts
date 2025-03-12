@@ -268,12 +268,16 @@ export async function useKadenaGraphqlServer() {
     '/graphql',
     cors<cors.CorsRequest>({
       origin: (origin, callback) => {
+        console.log('Received Origin', origin);
         if (!origin || origin === 'null') {
           return callback(null, false);
         }
 
+        console.log('Origin is not null');
+
         try {
           if (isAllowedOrigin(origin)) {
+            console.log('Origin is allowed');
             return callback(null, true);
           }
           return callback(new Error(`Origin ${origin} not allowed by CORS`));
@@ -282,13 +286,44 @@ export async function useKadenaGraphqlServer() {
         }
       },
       methods: ['POST', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Accept',
+        'Origin',
+        'X-Requested-With',
+        'Cache-Control',
+        'Pragma',
+      ],
+      exposedHeaders: ['Access-Control-Allow-Origin'],
       credentials: true,
+      preflightContinue: false,
+      optionsSuccessStatus: 204,
+      maxAge: 86400, // 24 hours
     }),
     expressMiddleware(server, {
       context: createGraphqlContext,
     }),
   );
+
+  // Handle OPTIONS requests explicitly
+  app.options('*', (req: Request, res: Response) => {
+    const origin = req.headers.origin;
+    console.log('Handling Received Origin in Options', origin);
+    if (origin && isAllowedOrigin(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+      res.setHeader(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, Accept, Origin, X-Requested-With, Cache-Control, Pragma',
+      );
+      res.setHeader('Access-Control-Max-Age', '86400');
+      res.status(204).end();
+    } else {
+      res.status(403).end();
+    }
+  });
 
   app.post('/new-block', ipFilterMiddleware, async (req, res) => {
     const payload = await dispatchInfoSchema.safeParseAsync(req.body);
