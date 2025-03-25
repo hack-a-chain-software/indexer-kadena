@@ -1,5 +1,5 @@
 import { handleSingleQuery } from '../../kadena-server/utils/raw-query';
-import { TransactionAttributes } from '../../models/transaction';
+import { TransactionAttributes, TransactionCreationAttributes } from '../../models/transaction';
 import { TransferAttributes } from '../../models/transfer';
 import { getContract, saveContract, syncContract } from './contract';
 
@@ -73,7 +73,10 @@ const requests: Record<string, undefined | boolean> = {};
  * @param {any} requestKey - Associated to the T.
  * @returns {Promise<TransferAttributes[]>} A Promise that resolves to an array of transfer attributes specifically for coin transfers.
  */
-export function getCoinTransfers(eventsData: any, transactionAttributes: TransactionAttributes) {
+export function getCoinTransfers(
+  eventsData: any,
+  transactionAttributes: TransactionCreationAttributes,
+) {
   const TRANSFER_COIN_SIGNATURE = 'TRANSFER';
   const TRANSFER_COIN_PARAMS_LENGTH = 3;
 

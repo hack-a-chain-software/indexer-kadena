@@ -1,9 +1,19 @@
 import { closeDatabase, rootPgPool, sequelize } from '../../config/database';
-import TransactionModel from '../../models/transaction';
-import Transfer from '../../models/transfer';
+import TransactionModel, { TransactionCreationAttributes } from '../../models/transaction';
+import Transfer, { TransferAttributes } from '../../models/transfer';
 import { Transaction } from 'sequelize';
 import Event, { EventAttributes } from '../../models/event';
 import { getCoinTransfers } from './transfers';
+import Signer from '../../models/signer';
+import Guard from '../../models/guard';
+import { handleSingleQuery } from '../../kadena-server/utils/raw-query';
+import { TransactionDetailsCreationAttributes } from '../../models/transaction-details';
+
+interface CoinbaseTransactionData {
+  transactionAttributes: TransactionCreationAttributes;
+  eventsAttributes: EventAttributes[];
+  transfersCoinAttributes: TransferAttributes[];
+}
 
 export async function startBackfillCoinbaseTransactions() {
   console.info('[INFO][SYNC][COINBASE] Starting coinbase backfill ...');
@@ -61,10 +71,12 @@ export async function addCoinbaseTransactions(
     return output;
   });
 
-  const allData = (await Promise.all(fetchPromises)).filter(f => f !== undefined);
+  const allData = (await Promise.all(fetchPromises)).filter(
+    (f): f is CoinbaseTransactionData => f !== undefined,
+  );
 
   const transactionsAdded = await TransactionModel.bulkCreate(
-    allData.map(o => o?.transactionAttributes ?? []),
+    allData.map(o => o.transactionAttributes),
     {
       transaction: tx,
       returning: ['id'],
@@ -73,7 +85,7 @@ export async function addCoinbaseTransactions(
 
   const transfersToAdd = allData
     .map((d, index) => {
-      const transfersWithTransactionId = (d?.transfersCoinAttributes ?? []).map(t => ({
+      const transfersWithTransactionId = (d.transfersCoinAttributes ?? []).map(t => ({
         ...t,
         transactionId: transactionsAdded[index].id,
       }));
@@ -83,7 +95,7 @@ export async function addCoinbaseTransactions(
 
   const eventsToAdd = allData
     .map((d, index) => {
-      const eventsWithTransactionId = (d?.eventsAttributes ?? []).map(t => ({
+      const eventsWithTransactionId = (d.eventsAttributes ?? []).map(t => ({
         ...t,
         transactionId: transactionsAdded[index].id,
       }));
@@ -105,35 +117,22 @@ export async function addCoinbaseTransactions(
 export async function processCoinbaseTransaction(
   coinbase: any,
   block: { id: number; chainId: number; creationTime: bigint },
-) {
+): Promise<CoinbaseTransactionData | undefined> {
   if (!coinbase) return;
 
   const eventsData = coinbase.events || [];
   const transactionAttributes = {
     blockId: block.id,
-    code: {},
-    data: {},
     chainId: block.chainId,
-    creationtime: block.creationTime,
-    gaslimit: '0',
-    gasprice: '0',
+    creationtime: block.creationTime.toString(),
     hash: coinbase.reqKey,
-    nonce: '',
-    pactid: null,
-    continuation: {},
-    gas: '0',
     result: coinbase.result,
     logs: coinbase.logs,
     num_events: eventsData ? eventsData.length : 0,
     requestkey: coinbase.reqKey,
-    rollback: null,
     sender: 'coinbase',
-    sigs: [],
-    step: null,
-    proof: null,
-    ttl: '0',
     txid: coinbase.txId.toString(),
-  } as any;
+  } as TransactionCreationAttributes;
 
   const transfersCoinAttributes = await getCoinTransfers(eventsData, transactionAttributes);
 

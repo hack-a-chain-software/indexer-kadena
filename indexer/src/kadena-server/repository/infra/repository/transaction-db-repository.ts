@@ -181,26 +181,27 @@ export default class TransactionDbRepository implements TransactionRepository {
         SELECT
           t.id AS id,
           t.hash AS "hashTransaction",
-          t.nonce AS "nonceTransaction",
-          t.sigs AS sigs,
-          t.continuation AS continuation,
+          td.nonce AS "nonceTransaction",
+          td.sigs AS sigs,
+          td.continuation AS continuation,
           t.num_events AS "eventCount",
-          t.pactid AS "pactId",
-          t.proof AS proof,
-          t.rollback AS rollback,
+          td.pactid AS "pactId",
+          td.proof AS proof,
+          td.rollback AS rollback,
           t.txid AS txid,
           b.height AS "height",
           b."hash" AS "blockHash",
           b."chainId" AS "chainId",
-          t.gas AS "gas",
-          t.step AS step,
-          t.data AS data,
-          t.code AS code,
+          td.gas AS "gas",
+          td.step AS step,
+          td.data AS data,
+          td.code AS code,
           t.logs AS "logs",
           t.result AS "result",
           t.requestkey AS "requestKey"
         FROM filtered_block b
         JOIN "Transactions" t ON b.id = t."blockId"
+        LEFT JOIN "TransactionDetails" td ON t.id = td."transactionId"
         ${transactionsConditions}
         ORDER BY t.id ${order}
         LIMIT $1
@@ -208,7 +209,7 @@ export default class TransactionDbRepository implements TransactionRepository {
     } else {
       query = `
         WITH filtered_transactions AS (
-          SELECT id, "blockId", hash, nonce, sigs, continuation, num_events, pactid, proof, rollback, gas, step, data, code, logs, result, requestkey, "chainId", txid
+          SELECT t.id, t."blockId", t.hash, t.num_events, t.txid, t.logs, t.result, t.requestkey, t."chainId"
           FROM "Transactions" t
           ${transactionsConditions}
           ORDER BY t.id ${order}
@@ -217,26 +218,29 @@ export default class TransactionDbRepository implements TransactionRepository {
         SELECT
           t.id AS id,
           t.hash AS "hashTransaction",
-          t.nonce AS "nonceTransaction",
-          t.sigs AS sigs,
-          t.continuation AS continuation,
+          td.nonce AS "nonceTransaction",
+          td.sigs AS sigs,
+          td.continuation AS continuation,
           t.num_events AS "eventCount",
-          t.pactid AS "pactId",
-          t.proof AS proof,
-          t.rollback AS rollback,
+          td.pactid AS "pactId",
+          td.proof AS proof,
+          td.rollback AS rollback,
           t.txid AS txid,
           b.height AS "height",
           b."hash" AS "blockHash",
           b."chainId" AS "chainId",
-          t.gas AS "gas",
-          t.step AS step,
-          t.data AS data,
-          t.code AS code,
+          td.gas AS "gas",
+          td.step AS step,
+          td.data AS data,
+          td.code AS code,
+          td.nonce,
+          td.sigs,
           t.logs AS "logs",
           t.result AS "result",
           t.requestkey AS "requestKey"
         FROM filtered_transactions t
         JOIN "Blocks" b ON b.id = t."blockId"
+        LEFT JOIN "TransactionDetails" td ON t.id = td."transactionId"
         ${blocksConditions}
       `;
     }
@@ -256,27 +260,28 @@ export default class TransactionDbRepository implements TransactionRepository {
     const query = `
       SELECT t.id as id,
       t.hash as "hashTransaction",
-      t.nonce as "nonceTransaction",
-      t.sigs as sigs,
-      t.continuation as continuation,
+      td.nonce as "nonceTransaction",
+      td.sigs as sigs,
+      td.continuation as continuation,
       t.num_events as "eventCount",
-      t.pactid as "pactId",
-      t.proof as proof,
-      t.rollback as rollback,
+      td.pactid as "pactId",
+      td.proof as proof,
+      td.rollback as rollback,
       t.txid AS txid,
       b.height as "height",
       b."hash" as "blockHash",
       b."chainId" as "chainId",
-      t.gas as "gas",
-      t.step as step,
-      t.data as data,
-      t.code as code,
+      td.gas as "gas",
+      td.step as step,
+      td.data as data,
+      td.code as code,
       t.logs as "logs",
       t.result as "result",
       t.requestkey as "requestKey"
       FROM "Transactions" t
       JOIN "Blocks" b on t."blockId" = b.id
       JOIN "Transfers" tr on tr."transactionId" = t.id
+      LEFT JOIN "TransactionDetails" td on t.id = td."transactionId"
       WHERE tr.id = $1
     `;
 
@@ -296,11 +301,12 @@ export default class TransactionDbRepository implements TransactionRepository {
       SELECT t.id as id,
       t."chainId" as "chainId",
       t.creationtime as "creationTime",
-      t.gaslimit as "gasLimit",
-      t.gasprice as "gasPrice",
+      td.gaslimit as "gasLimit",
+      td.gasprice as "gasPrice",
       t.sender as sender,
-      t.ttl as ttl
+      td.ttl as ttl
       FROM "Transactions" t
+      LEFT JOIN "TransactionDetails" td on t.id = td."transactionId"
       WHERE t.id = $1
     `;
 
@@ -308,7 +314,6 @@ export default class TransactionDbRepository implements TransactionRepository {
 
     const [row] = rows;
     const output = transactionMetaValidator.validate(row);
-
     return output;
   }
 
@@ -330,26 +335,27 @@ export default class TransactionDbRepository implements TransactionRepository {
     const query = `
       SELECT t.id as id,
       t.hash as "hashTransaction",
-      t.nonce as "nonceTransaction",
-      t.sigs as sigs,
-      t.continuation as continuation,
+      td.nonce as "nonceTransaction",
+      td.sigs as sigs,
+      td.continuation as continuation,
       t.num_events as "eventCount",
-      t.pactid as "pactId",
-      t.proof as proof,
-      t.rollback as rollback,
+      td.pactid as "pactId",
+      td.proof as proof,
+      td.rollback as rollback,
       t.txid AS txid,
       b.height as "height",
       b."hash" as "blockHash",
       b."chainId" as "chainId",
       t.result as "result",
-      t.gas as "gas",
-      t.step as step,
-      t.data as data,
-      t.code as code,
+      td.gas as "gas",
+      td.step as step,
+      td.data as data,
+      td.code as code,
       t.logs as "logs",
       t.requestkey as "requestKey"
       FROM "Transactions" t
       JOIN "Blocks" b on t."blockId" = b.id 
+      LEFT JOIN "TransactionDetails" td on t.id = td."transactionId"
       WHERE t.requestkey = $1
       ${conditions}
     `;
@@ -392,21 +398,21 @@ export default class TransactionDbRepository implements TransactionRepository {
       SELECT
         t.id as id,
         t.hash as "hashTransaction",
-        t.nonce as "nonceTransaction",
-        t.sigs as sigs,
-        t.continuation as continuation,
+        td.nonce as "nonceTransaction",
+        td.sigs as sigs,
+        td.continuation as continuation,
         t.num_events as "eventCount",
-        t.pactid as "pactId",
-        t.proof as proof,
-        t.rollback as rollback,
+        td.pactid as "pactId",
+        td.proof as proof,
+        td.rollback as rollback,
         t.txid AS txid,
         b.height as "height",
         b."hash" as "blockHash",
         b."chainId" as "chainId",
-        t.gas as "gas",
-        t.step as step,
-        t.data as data,
-        t.code as code,
+        td.gas as "gas",
+        td.step as step,
+        td.data as data,
+        td.code as code,
         t.logs as "logs",
         t.result as "result",
         t.requestkey as "requestKey"
@@ -417,6 +423,7 @@ export default class TransactionDbRepository implements TransactionRepository {
         FROM "Signers" s
         WHERE s."pubkey" = $2
       ) filtered_signers ON t.id = filtered_signers."transactionId"
+      LEFT JOIN "TransactionDetails" td on t.id = td."transactionId"
       ${cursorCondition}
       ORDER BY t.id ${order}
       LIMIT $1;
@@ -571,21 +578,21 @@ export default class TransactionDbRepository implements TransactionRepository {
     const { rows } = await rootPgPool.query(
       `SELECT t.id as id,
       t.hash as "hashTransaction",
-      t.nonce as "nonceTransaction",
-      t.sigs as sigs,
-      t.continuation as continuation,
+      td.nonce as "nonceTransaction",
+      td.sigs as sigs,
+      td.continuation as continuation,
       t.num_events as "eventCount",
-      t.pactid as "pactId",
-      t.proof as proof,
-      t.rollback as rollback,
+      td.pactid as "pactId",
+      td.proof as proof,
+      td.rollback as rollback,
       t.txid AS txid,
       b.height as "height",
       b."hash" as "blockHash",
       b."chainId" as "chainId",
-      t.gas as "gas",
-      t.step as step,
-      t.data as data,
-      t.code as code,
+      td.gas as "gas",
+      td.step as step,
+      td.data as data,
+      td.code as code,
       t.logs as "logs",
       t.result as "result",
       e.id as "eventId",
@@ -593,6 +600,7 @@ export default class TransactionDbRepository implements TransactionRepository {
       FROM "Transactions" t
       JOIN "Blocks" b on t."blockId" = b.id
       JOIN "Events" e on e."transactionId" = t."id"
+      LEFT JOIN "TransactionDetails" td on t.id = td."transactionId"
       WHERE e.id = ANY($1::int[])`,
       [eventIds],
     );

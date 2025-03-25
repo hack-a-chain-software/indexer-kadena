@@ -31,10 +31,11 @@ type CmdData struct {
 	} `json:"payload"`
 }
 
-func PrepareTransactions(network string, blockId int64, payload fetch.ProcessedPayload, block repository.BlockAttributes) ([]repository.TransactionAttributes, error) {
+func PrepareTransactions(network string, blockId int64, payload fetch.ProcessedPayload, block repository.BlockAttributes) ([]repository.TransactionAttributes, []repository.TransactionDetailsAttributes, repository.TransactionAttributes, error) {
 	transactions := payload.Transactions
 
 	transactionRecords := make([]repository.TransactionAttributes, 0, len(transactions))
+	transactionDetailsRecords := make([]repository.TransactionDetailsAttributes, 0, len(transactions))
 
 	var cmdData CmdData
 	var continuationData struct {
@@ -51,16 +52,12 @@ func PrepareTransactions(network string, blockId int64, payload fetch.ProcessedP
 		}{}
 
 		if err := json.Unmarshal(t.Cmd, &rawCmd); err != nil {
-			return nil, fmt.Errorf("unmarshaling Cmd JSON for transaction %s: %w", t.Hash, err)
+			return nil, nil, repository.TransactionAttributes{}, fmt.Errorf("unmarshaling Cmd JSON for transaction %s: %w", t.Hash, err)
 		}
 
 		if err := json.Unmarshal([]byte(rawCmd), &cmdData); err != nil {
-			return nil, fmt.Errorf("unmarshaling raw command for transaction %s: %w", t.Hash, err)
+			return nil, nil, repository.TransactionAttributes{}, fmt.Errorf("unmarshaling raw command for transaction %s: %w", t.Hash, err)
 		}
-
-		// if err := json.Unmarshal([]byte(rawCmd), &cmdData); err != nil {
-		// 	return nil, fmt.Errorf("unmarshaling raw command for transaction %s: %w", t.Hash, err)
-		// }
 
 		continuationRaw := json.RawMessage("{}")
 		if string(t.Continuation) != "null" {
@@ -69,15 +66,15 @@ func PrepareTransactions(network string, blockId int64, payload fetch.ProcessedP
 
 		codeRaw, err := ensureNotEmpty(cmdData.Payload.Exec.Code)
 		if err != nil {
-			return nil, fmt.Errorf("ensuring code is not empty for transaction %s: %w", t.Hash, err)
+			return nil, nil, repository.TransactionAttributes{}, fmt.Errorf("ensuring code is not empty for transaction %s: %w", t.Hash, err)
 		}
 		dataRaw, err := ensureNotEmpty(cmdData.Payload.Exec.Data)
 		if err != nil {
-			return nil, fmt.Errorf("ensuring data is not empty for transaction %s: %w", t.Hash, err)
+			return nil, nil, repository.TransactionAttributes{}, fmt.Errorf("ensuring data is not empty for transaction %s: %w", t.Hash, err)
 		}
 
 		if err := json.Unmarshal(continuationRaw, &continuationData); err != nil {
-			return nil, fmt.Errorf("unmarshaling Continuation for transaction %s: %w", t.Hash, err)
+			return nil, nil, repository.TransactionAttributes{}, fmt.Errorf("unmarshaling Continuation for transaction %s: %w", t.Hash, err)
 		}
 
 		rollback := true
@@ -91,14 +88,13 @@ func PrepareTransactions(network string, blockId int64, payload fetch.ProcessedP
 		if cmdData.Meta.ChainId != "" {
 			chainId, err = strconv.Atoi(cmdData.Meta.ChainId)
 			if err != nil {
-				return nil, fmt.Errorf("converting ChainId for transaction %s: %w", t.Hash, err)
+				return nil, nil, repository.TransactionAttributes{}, fmt.Errorf("converting ChainId for transaction %s: %w", t.Hash, err)
 			}
 		} else {
 			chainId = block.ChainId
 		}
 
 		txId := strconv.Itoa(t.TxId)
-		// creationTimeStr := strconv.FormatFloat(cmdData.Meta.CreationTime, 'f', -1, 64)
 		gas := strconv.Itoa(t.Gas)
 
 		var proof *string
@@ -112,46 +108,45 @@ func PrepareTransactions(network string, blockId int64, payload fetch.ProcessedP
 		nonce = strings.ReplaceAll(nonce, "\"", "")
 		transactionRecord := repository.TransactionAttributes{
 			BlockId:      blockId,
-			Code:         codeRaw,
-			Data:         dataRaw,
 			ChainId:      chainId,
 			CreationTime: string(cmdData.Meta.CreationTime),
-			GasLimit:     string(cmdData.Meta.GasLimit),
-			GasPrice:     string(cmdData.Meta.GasPrice),
 			Hash:         t.Hash,
-			Nonce:        nonce,
-			PactId:       continuationData.PactID,
-			Continuation: continuationRaw,
-			Gas:          gas,
 			Result:       t.Result,
-			Proof:        proof,
 			Logs:         t.Logs,
 			NumEvents:    len(t.Events),
 			RequestKey:   t.ReqKey,
-			Rollback:     rollback,
 			Sender:       cmdData.Meta.Sender,
-			Sigs:         t.Sigs,
-			Step:         step,
-			TTL:          string(cmdData.Meta.TTL),
 			TxId:         txId,
 		}
+
+		// Create transaction details record
+		transactionDetailsRecord := repository.TransactionDetailsAttributes{
+			TransactionId: -1,
+			Code:          codeRaw,
+			Continuation:  continuationRaw,
+			Data:          dataRaw,
+			Gas:           gas,
+			GasLimit:      string(cmdData.Meta.GasLimit),
+			GasPrice:      string(cmdData.Meta.GasPrice),
+			Nonce:         nonce,
+			PactId:        continuationData.PactID,
+			Proof:         proof,
+			Rollback:      rollback,
+			Sigs:          t.Sigs,
+			Step:          step,
+			TTL:           string(cmdData.Meta.TTL),
+		}
+
 		transactionRecords = append(transactionRecords, transactionRecord)
+		transactionDetailsRecords = append(transactionDetailsRecords, transactionDetailsRecord)
 	}
 
-	// TODO: This will be removed after TransactionDetails migration
-	// if network == "mainnet01" {
-	// 	return transactionRecords, nil
-	// }
-
-	coinbaseTx, err := processCoinbaseTransaction(string(payload.Coinbase), blockId, block.CreationTime, int64(block.ChainId))
-
+	coinbaseTx, err := ProcessCoinbaseTransaction(string(payload.Coinbase), blockId, block.CreationTime, int64(block.ChainId))
 	if err != nil {
-		return nil, fmt.Errorf("processing coinbase transaction %d: %w", blockId, err)
+		return nil, nil, repository.TransactionAttributes{}, fmt.Errorf("processing coinbase transaction %d: %w", blockId, err)
 	}
 
-	transactionRecords = append(transactionRecords, coinbaseTx)
-
-	return transactionRecords, nil
+	return transactionRecords, transactionDetailsRecords, coinbaseTx, nil
 }
 
 func ensureNotEmpty(raw json.RawMessage) (json.RawMessage, error) {

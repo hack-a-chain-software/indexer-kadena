@@ -101,10 +101,11 @@ export default class TransferDbRepository implements TransferRepository {
         transfers.modulehash as "moduleHash",
         transfers.requestkey as "requestKey",
         transfers."orderIndex" as "orderIndex",
-        t.pactid as "pactId"
+        td.pactid as "pactId"
         from filtered_block b
         join "Transactions" t on b.id = t."blockId"
         join "Transfers" transfers on transfers."transactionId" = t.id
+        left join "TransactionDetails" td on t.id = td."transactionId"
         ${conditions}
         ORDER BY transfers.id ${order}
         LIMIT $1
@@ -113,7 +114,7 @@ export default class TransferDbRepository implements TransferRepository {
       queryParams.push(requestKey);
       query = `
         WITH filtered_transaction AS (
-          SELECT t.id, t.pactid, t."chainId", t."creationtime", t."blockId"
+          SELECT t.id, t."chainId", t."creationtime", t."blockId"
           FROM "Transactions" t
           WHERE t.requestkey = $${queryParams.length}
         )
@@ -130,10 +131,11 @@ export default class TransferDbRepository implements TransferRepository {
         transfers.modulehash as "moduleHash",
         transfers.requestkey as "requestKey",
         transfers."orderIndex" as "orderIndex",
-        t.pactid as "pactId"
+        td.pactid as "pactId"
         from filtered_transaction t
         join "Blocks" b on b.id = t."blockId"
         join "Transfers" transfers on transfers."transactionId" = t.id
+        left join "TransactionDetails" td on t.id = td."transactionId"
         ${conditions}
         ORDER BY transfers.id ${order}
         LIMIT $1
@@ -160,10 +162,11 @@ export default class TransferDbRepository implements TransferRepository {
         transfers.modulehash as "moduleHash",
         transfers.requestkey as "requestKey",
         transfers."orderIndex" as "orderIndex",
-        t.pactid as "pactId"
+        td.pactid as "pactId"
         from filtered_transfers transfers
         join "Transactions" t on t.id = transfers."transactionId"
         join "Blocks" b on b."id" = t."blockId"
+        left join "TransactionDetails" td on t.id = td."transactionId"
         LIMIT $1
       `;
     } else {
@@ -188,10 +191,11 @@ export default class TransferDbRepository implements TransferRepository {
         transfers.modulehash as "moduleHash",
         transfers.requestkey as "requestKey",
         transfers."orderIndex" as "orderIndex",
-        t.pactid as "pactId"
+        td.pactid as "pactId"
         from filtered_transfers transfers
         join "Transactions" t on t.id = transfers."transactionId"
         join "Blocks" b on b."id" = t."blockId"
+        left join "TransactionDetails" td on t.id = td."transactionId"
       `;
     }
 
@@ -221,10 +225,11 @@ export default class TransferDbRepository implements TransferRepository {
       transfers.modulehash as "moduleHash",
       transfers.requestkey as "requestKey",
       transfers."orderIndex" as "orderIndex",
-      transactions.pactid as "pactId"
+      td.pactid as "pactId"
       from "Blocks" b
       join "Transactions" transactions on b.id = transactions."blockId"
       join "Transfers" transfers on transfers."transactionId" = transactions.id 
+      left join "TransactionDetails" td on transactions.id = td."transactionId"
       where transactions.requestkey = $1
       and transfers.amount = $2
     `;
@@ -340,10 +345,11 @@ export default class TransferDbRepository implements TransferRepository {
       transfers.modulehash as "moduleHash",
       transfers.requestkey as "requestKey",
       transfers."orderIndex" as "orderIndex",
-      transactions.pactid as "pactId"
+      td.pactid as "pactId"
       from "Blocks" b
       join "Transactions" transactions on b.id = transactions."blockId"
       join "Transfers" transfers on transfers."transactionId" = transactions.id 
+      left join "TransactionDetails" td on transactions.id = td."transactionId"
       WHERE transactions.id = $2
       ${conditions}
       ORDER BY transfers.id ${order}

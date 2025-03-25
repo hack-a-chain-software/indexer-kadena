@@ -17,8 +17,6 @@ program
   .option('-g, --oldGraphql', 'Start GraphQL server based on Postgraphile')
   .option('-t, --graphql', 'Start GraphQL server based on kadena schema')
   .option('-f, --guards', 'Backfill the guards')
-  // this option shouldn't be used if you initialize the indexer from the beginning
-  .option('-c, --coinbase', 'Backfill coinbase transactions')
   .option('-m, --missing', 'Missing blocks')
   .option('-z, --database', 'Init the database');
 

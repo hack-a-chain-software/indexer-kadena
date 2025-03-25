@@ -37,7 +37,6 @@ func main() {
 		ChainIdStr := strconv.FormatInt(maxHeight.ChainID, 10)
 		Height := cuts.Hashes[ChainIdStr].Height
 		Hash := cuts.Hashes[ChainIdStr].Hash
-		// fmt.Println("Hash: ", Hash, " ChainId: ", ChainIdStr, " Height: ", Height, " MaxHeight: ", maxHeight.MaxHeight)
 		process.StartBackfill(Height, Hash, int(maxHeight.ChainID), int(maxHeight.MaxHeight+1), pool)
 	}
 }

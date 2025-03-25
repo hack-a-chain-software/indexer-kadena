@@ -17,8 +17,8 @@ type Event struct {
 }
 
 type Module struct {
-	Namespace string `json:"namespace"`
-	Name      string `json:"name"`
+	Namespace *string `json:"namespace"`
+	Name      string  `json:"name"`
 }
 
 type Result struct {

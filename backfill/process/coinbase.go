@@ -9,55 +9,44 @@ import (
 )
 
 type Coinbase struct {
-	ReqKey string          `json:"reqKey"`
-	TxID   int             `json:"txId"`
-	Events []fetch.Event   `json:"events"`
-	Result json.RawMessage `json:"result"`
-	Logs   string          `json:"logs"`
+	Gas          int              `json:"gas"`
+	Logs         string           `json:"logs"`
+	TxID         int              `json:"txId"`
+	Events       []fetch.Event    `json:"events"`
+	ReqKey       string           `json:"reqKey"`
+	Result       json.RawMessage  `json:"result"`
+	MetaData     *json.RawMessage `json:"metaData"`
+	Continuation *json.RawMessage `json:"continuation"`
 }
 
 func decodeCoinbase(jsonStr string) (*Coinbase, error) {
+	if jsonStr == "" {
+		return nil, fmt.Errorf("empty JSON string provided")
+	}
 	var coinbase Coinbase
 	err := json.Unmarshal([]byte(jsonStr), &coinbase)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal coinbase JSON: %v, input: %s", err, jsonStr)
 	}
 	return &coinbase, nil
 }
 
-func processCoinbaseTransaction(coinbase string, blockId int64, creationTime int64, chainId int64) (repository.TransactionAttributes, error) {
-
+func ProcessCoinbaseTransaction(coinbase string, blockId int64, creationTime int64, chainId int64) (repository.TransactionAttributes, error) {
 	coinbaseDecoded, err := decodeCoinbase(coinbase)
 	if err != nil {
 		return repository.TransactionAttributes{}, fmt.Errorf("decoding Coinbase JSON of block %d: %w", blockId, err)
 	}
 
-	emptyJSON, _ := json.Marshal(map[string]interface{}{})
-	emptyArray, _ := json.Marshal([]interface{}{})
-
 	txAttribute := repository.TransactionAttributes{
 		BlockId:      blockId,
-		Code:         emptyJSON,
-		Data:         emptyJSON,
 		ChainId:      int(chainId),
 		CreationTime: strconv.FormatInt(creationTime, 10),
-		GasLimit:     "0",
-		GasPrice:     "0",
 		Hash:         coinbaseDecoded.ReqKey,
-		Nonce:        "",
-		PactId:       nil,
-		Continuation: emptyJSON,
-		Gas:          "0",
 		Result:       coinbaseDecoded.Result,
 		Logs:         coinbaseDecoded.Logs,
 		NumEvents:    len(coinbaseDecoded.Events),
 		RequestKey:   coinbaseDecoded.ReqKey,
-		Rollback:     false,
 		Sender:       "coinbase",
-		Sigs:         emptyArray,
-		Step:         0,
-		Proof:        nil,
-		TTL:          "0",
 		TxId:         fmt.Sprintf("%d", coinbaseDecoded.TxID),
 	}
 

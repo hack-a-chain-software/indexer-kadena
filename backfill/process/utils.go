@@ -154,9 +154,9 @@ func convertToFloat64(event fetch.Event, index int) (float64, bool) {
 	return 0, false
 }
 
-func buildModuleName(namespace, name string) string {
-	if namespace != "" {
-		return namespace + "." + name
+func buildModuleName(namespace *string, name string) string {
+	if namespace != nil && *namespace != "" {
+		return *namespace + "." + name
 	}
 	return name
 }

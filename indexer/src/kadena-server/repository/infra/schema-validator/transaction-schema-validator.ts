@@ -14,19 +14,19 @@ const schema = zod.object({
   id: zod.number(),
   hashTransaction: zod.string(),
   txid: zod.string().nullable(),
-  sigs: zod.array(zod.any()),
-  continuation: zod.any(),
+  sigs: zod.array(zod.any()).nullable(),
+  continuation: zod.any().nullable(),
   eventCount: zod.number(),
-  gas: zod.string(),
+  gas: zod.string().nullable(),
   height: zod.number(),
   logs: zod.string(),
-  code: zod.any(),
-  data: zod.any(),
+  code: zod.any().nullable(),
+  data: zod.any().nullable(),
   pactId: zod.string().nullable(),
   proof: zod.string().nullable(),
   step: zod.number().nullable(),
-  rollback: zod.boolean(),
-  nonceTransaction: zod.string(),
+  rollback: zod.boolean().nullable(),
+  nonceTransaction: zod.string().nullable(),
   blockHash: zod.string(),
   requestKey: zod.string(),
   result: zod.any(),
@@ -42,7 +42,7 @@ function validate(row: any): TransactionOutput {
     blockHeight: res.height,
     blockHash: res.blockHash,
     hash: res.hashTransaction,
-    sigs: res.sigs,
+    sigs: res.sigs ?? [],
     result: {
       // TransactionMempoolInfo
       status: '', // TODO
@@ -72,8 +72,9 @@ function validate(row: any): TransactionOutput {
         rollback: res.rollback,
         step: res.step,
       },
+
       networkId: NETWORK_ID,
-      nonce: row.nonceTransaction,
+      nonce: row.nonceTransaction ?? '',
     },
   };
 }

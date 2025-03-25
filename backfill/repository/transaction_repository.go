@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -12,42 +11,44 @@ import (
 
 type TransactionAttributes struct {
 	BlockId      int64           `json:"blockId"`
-	Code         json.RawMessage `json:"code"` // JSONB column
-	Data         json.RawMessage `json:"data"` // JSONB column
 	ChainId      int             `json:"chainId"`
 	CreationTime string          `json:"creationTime"`
-	GasLimit     string          `json:"gasLimit"`
-	GasPrice     string          `json:"gasPrice"`
 	Hash         string          `json:"hash"`
-	Nonce        string          `json:"nonce"`
-	PactId       *string         `json:"pactId"`
-	Continuation json.RawMessage `json:"continuation"` // JSONB column
-	Gas          string          `json:"gas"`
 	Result       json.RawMessage `json:"result"` // JSONB column
 	Logs         string          `json:"logs"`
-	Proof        *string         `json:"proof"`
 	NumEvents    int             `json:"numEvents"`
 	RequestKey   string          `json:"requestKey"`
 	Rollback     bool            `json:"rollback"`
 	Sender       string          `json:"sender"`
-	Sigs         json.RawMessage `json:"sigs"` // JSONB column
-	Step         int             `json:"step"`
-	TTL          string          `json:"ttl"`
 	TxId         string          `json:"txId"`
 	CreatedAt    time.Time       `json:"createdAt"`
 	UpdatedAt    time.Time       `json:"updatedAt"`
 }
 
-func SaveTransactions(db pgx.Tx, transactions []TransactionAttributes) ([]int64, error) {
-	if len(transactions) == 0 {
-		return nil, nil
-	}
+type TransactionDetailsAttributes struct {
+	TransactionId int64
+	Code          json.RawMessage
+	Continuation  json.RawMessage
+	Data          json.RawMessage
+	Gas           string
+	GasLimit      string
+	GasPrice      string
+	Nonce         string
+	PactId        *string
+	Proof         *string
+	Rollback      bool
+	Sigs          json.RawMessage
+	Step          int
+	TTL           string
+}
+
+func SaveTransactions(db pgx.Tx, transactions []TransactionAttributes, coinbaseTx TransactionAttributes) ([]int64, error) {
 
 	query := `
 		INSERT INTO "Transactions" 
-		("blockId", code, data, "chainId", creationtime, gaslimit, gasprice, hash, nonce, pactid, continuation, gas, result, logs, proof, num_events, requestkey, rollback, sender, sigs, step, ttl, txid, "createdAt", "updatedAt")
+		("blockId", "chainId", creationtime, hash, result, logs, num_events, requestkey, sender, txid, "createdAt", "updatedAt")
 		VALUES 
-		($1, $2::jsonb, $3::jsonb, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13::jsonb, $14, $15, $16, $17, $18, $19, $20::jsonb, $21, $22, $23, $24, $25)
+		($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11, $12)
 		RETURNING id
 	`
 
@@ -55,80 +56,51 @@ func SaveTransactions(db pgx.Tx, transactions []TransactionAttributes) ([]int64,
 	batch := &pgx.Batch{}
 
 	for _, t := range transactions {
-		var codeStr string
-		json.Unmarshal(t.Code, &codeStr)
-		codeStrCleaned := strings.ReplaceAll(codeStr, "\u0000", "")
-		if codeStrCleaned != codeStr {
-			fmt.Printf("Code cleaned: %s\n", t.RequestKey)
-		}
-
-		codeCleaned, err := json.Marshal(codeStrCleaned)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal code: %v", err)
-		}
-
-		code := t.Code
-		if codeStrCleaned != "" {
-			code = codeCleaned
-		}
-
-		data, err := json.Marshal(t.Data)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal data: %v", err)
-		}
-
-		continuation, err := json.Marshal(t.Continuation)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal continuation: %v", err)
-		}
-
 		result, err := json.Marshal(t.Result)
 		if err != nil {
 			return nil, fmt.Errorf("failed to marshal result: %v", err)
 		}
 
-		sigs, err := json.Marshal(t.Sigs)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal sigs: %v", err)
-		}
-
 		batch.Queue(
 			query,
 			t.BlockId,
-			code,
-			data,
 			t.ChainId,
 			t.CreationTime,
-			t.GasLimit,
-			t.GasPrice,
 			t.Hash,
-			t.Nonce,
-			t.PactId,
-			continuation,
-			t.Gas,
 			result,
 			t.Logs,
-			t.Proof,
 			t.NumEvents,
 			t.RequestKey,
-			t.Rollback,
 			t.Sender,
-			sigs,
-			t.Step,
-			t.TTL,
 			t.TxId,
 			now,
 			now,
 		)
 	}
 
+	batch.Queue(
+		query,
+		coinbaseTx.BlockId,
+		coinbaseTx.ChainId,
+		coinbaseTx.CreationTime,
+		coinbaseTx.Hash,
+		coinbaseTx.Result,
+		coinbaseTx.Logs,
+		coinbaseTx.NumEvents,
+		coinbaseTx.RequestKey,
+		coinbaseTx.Sender,
+		coinbaseTx.TxId,
+		now,
+		now,
+	)
+
 	br := db.SendBatch(context.Background(), batch)
 	defer br.Close()
 
-	transactionIds := make([]int64, 0, len(transactions))
+	transactionIds := make([]int64, 0, len(transactions)+1) // +1 for coinbase
 
 	// Collect IDs for each queued query
-	for i := 0; i < len(transactions); i++ {
+	for i := 0; i < len(transactions)+1; i++ { // +1 for coinbase
 		var id int64
 		if err := br.QueryRow().Scan(&id); err != nil {
 			return nil, fmt.Errorf("failed to execute batch for transaction %d: %v", i, err)
@@ -137,4 +109,77 @@ func SaveTransactions(db pgx.Tx, transactions []TransactionAttributes) ([]int64,
 	}
 
 	return transactionIds, nil
+}
+
+func SaveTransactionDetails(db pgx.Tx, details []TransactionDetailsAttributes, transactionIds []int64) error {
+
+	if len(details) == 0 {
+		return nil
+	}
+
+	query := `
+		INSERT INTO "TransactionDetails" (
+			"transactionId", code, continuation, data, gas, gaslimit, gasprice,
+			nonce, pactid, proof, rollback, sigs, step, ttl, "createdAt", "updatedAt"
+		)
+		VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15, $16)
+	`
+
+	now := time.Now()
+	batch := &pgx.Batch{}
+
+	for index := 0; index < len(details); index++ {
+		detail := details[index]
+		code, err := json.Marshal(detail.Code)
+		if err != nil {
+			return fmt.Errorf("failed to marshal code: %v", err)
+		}
+
+		continuation, err := json.Marshal(detail.Continuation)
+		if err != nil {
+			return fmt.Errorf("failed to marshal continuation: %v", err)
+		}
+
+		data, err := json.Marshal(detail.Data)
+		if err != nil {
+			return fmt.Errorf("failed to marshal data: %v", err)
+		}
+
+		sigs, err := json.Marshal(detail.Sigs)
+		if err != nil {
+			return fmt.Errorf("failed to marshal sigs: %v", err)
+		}
+
+		batch.Queue(
+			query,
+			transactionIds[index],
+			code,
+			continuation,
+			data,
+			detail.Gas,
+			detail.GasLimit,
+			detail.GasPrice,
+			detail.Nonce,
+			detail.PactId,
+			detail.Proof,
+			detail.Rollback,
+			sigs,
+			detail.Step,
+			detail.TTL,
+			now,
+			now,
+		)
+	}
+
+	br := db.SendBatch(context.Background(), batch)
+	defer br.Close()
+
+	// Execute all queued queries
+	for i := 0; i < len(details); i++ {
+		if _, err := br.Exec(); err != nil {
+			return fmt.Errorf("failed to execute batch for transaction details %d: %v", i, err)
+		}
+	}
+
+	return nil
 }

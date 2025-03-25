@@ -14,11 +14,8 @@ func PrepareEvents(network string, payload fetch.ProcessedPayload, transactionsI
 	events := make([]repository.EventAttributes, 0, len(transactions)*avgEventsPerTransaction)
 
 	for txIndex, t := range transactions {
-
 		for eventIndex, event := range t.Events {
-
 			module := buildModuleName(event.Module.Namespace, event.Module.Name)
-
 			qualName := buildModuleName(event.Module.Namespace, event.Module.Name)
 
 			paramsJSON, err := json.Marshal(event.Params)
@@ -39,11 +36,6 @@ func PrepareEvents(network string, payload fetch.ProcessedPayload, transactionsI
 			events = append(events, eventRecord)
 		}
 	}
-
-	// TODO: This will be removed after TransactionDetails migration
-	// if network == "mainnet01" {
-	// 	return events, nil
-	// }
 
 	coinbaseDecoded, err := decodeCoinbase(string(payload.Coinbase))
 	if err != nil {

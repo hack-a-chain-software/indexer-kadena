@@ -26,10 +26,10 @@ export async function startStreaming() {
   eventSource.addEventListener('BlockHeader', async (event: any) => {
     try {
       const block = JSON.parse(event.data);
-      const payload = processPayload(block.payloadWithOutputs);
       if (blocksAlreadyReceived.has(block.header.hash)) {
         return;
       }
+      const payload = processPayload(block.payloadWithOutputs);
       blocksAlreadyReceived.add(block.header.hash);
 
       const tx = await sequelize.transaction();
