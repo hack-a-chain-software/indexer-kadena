@@ -15,4 +15,7 @@ COPY --from=builder /app/src/kadena-server/config/schema.graphql ./dist/kadena-s
 COPY --from=builder /app/src/circulating-coins/ ./dist/circulating-coins/
 EXPOSE 3001
 
-CMD ["node", "dist/index.js", "--graphql"]
+ARG NODE_MODE=graphql
+
+# Use the build argument in CMD
+CMD ["sh", "-c", "node dist/index.js --${NODE_MODE}"]

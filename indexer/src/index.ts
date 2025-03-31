@@ -8,7 +8,6 @@ import { usePostgraphile } from './server/metrics';
 import { useKadenaGraphqlServer } from './kadena-server/server';
 import { closeDatabase } from './config/database';
 import { initializeDatabase } from './config/init';
-import { startBackfillCoinbaseTransactions } from './services/sync/coinbase';
 import { backfillBalances } from './services/sync/balances';
 import { startMissingBlocks } from './services/sync/missing';
 
@@ -44,8 +43,6 @@ async function main() {
       await backfillBalances();
       await closeDatabase();
       process.exit(0);
-    } else if (options.coinbase) {
-      await startBackfillCoinbaseTransactions();
     } else if (options.missing) {
       await startMissingBlocks();
       process.exit(0);
