@@ -8,9 +8,10 @@ if [ -z "$1" ]; then
 fi
 
 MODE=$1
+INDEXER_MODE_PARAM="--$MODE"
 
 # Build the image with the specified mode
-docker build --build-arg NODE_MODE=$MODE --no-cache -t kadindexer-ecr:$MODE .
+docker build --build-arg INDEXER_MODE_PARAM=$INDEXER_MODE_PARAM --no-cache -t kadindexer-ecr:$MODE .
 
 # Tag the image
 docker tag kadindexer-ecr:$MODE 325501467038.dkr.ecr.us-east-1.amazonaws.com/kadindexer-ecr:$MODE
