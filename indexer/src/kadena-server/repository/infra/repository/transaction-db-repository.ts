@@ -65,7 +65,7 @@ export default class TransactionDbRepository implements TransactionRepository {
     const { accountName, after, before, requestKey, fungibleName, hasTokenId = false } = params;
     let conditions = '';
     const transactionParams: (string | number)[] = [...queryParams];
-    if (accountName) {
+    if (accountName && !hasTokenId) {
       transactionParams.push(accountName);
       const op = operator(transactionParams.length);
       conditions += `${op} t.sender = $${transactionParams.length}`;
@@ -104,14 +104,14 @@ export default class TransactionDbRepository implements TransactionRepository {
 
     if (accountName && hasTokenId) {
       transactionParams.push(accountName);
-      const op = operator(transactionParams.length + 1);
+      const op = operator(transactionParams.length);
       conditions += `
         ${op} EXISTS
         (
           SELECT 1
           FROM "Transfers" t
-          WHERE t."from_acct" = $${transactionParams.length}
-          AND t."hasTokenId" = true
+          WHERE (t."from_acct" = $${transactionParams.length} OR t."to_acct" = $${transactionParams.length})
+          AND t."modulename" = 'marmalade-v2.ledger'
         )`;
     }
 

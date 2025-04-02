@@ -8,6 +8,7 @@ export interface INonFungibleTokenBalance {
   balance: number;
   chainId: string;
   tokenId: string;
+  module: string;
 }
 
 export interface INonFungibleAccount {
@@ -58,6 +59,8 @@ export default interface BalanceRepository {
     accountName: string,
     chainId: string,
   ): Promise<INonFungibleChainAccount | null>;
+
+  getNonFungibleChainAccountsInfo(accountName: string): Promise<INonFungibleChainAccount[]>;
 
   getNonFungibleTokenBalance(
     accountName: string,

@@ -9,9 +9,13 @@ export const nonFungibleAccountQueryResolver: QueryResolvers<ResolverContext>['n
     const params = (account?.nonFungibleTokenBalances ?? []).map(n => ({
       tokenId: n.tokenId,
       chainId: n.chainId,
+      module: n.module,
     }));
 
-    const nftsInfo = await context.pactGateway.getNftsInfo(params ?? []);
+    const nftsInfo = await context.pactGateway.getNftsInfo(
+      params ?? [],
+      account?.accountName ?? '',
+    );
 
     const output = buildNonFungibleAccount(account, nftsInfo);
     return output;

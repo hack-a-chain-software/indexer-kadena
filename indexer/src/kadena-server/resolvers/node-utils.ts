@@ -87,7 +87,10 @@ export const getNode = async (context: ResolverContext, id: string) => {
       chainId: n.chainId,
     }));
 
-    const nftsInfo = await context.pactGateway.getNftsInfo(nftsInfoParams ?? []);
+    const nftsInfo = await context.pactGateway.getNftsInfo(
+      nftsInfoParams ?? [],
+      account?.accountName ?? '',
+    );
     const output = buildNonFungibleAccount(account, nftsInfo);
     return output;
   }
@@ -99,12 +102,17 @@ export const getNode = async (context: ResolverContext, id: string) => {
       chainId,
     );
 
+    if (!account) return null;
+
     const nftsInfoParams = (account?.nonFungibleTokenBalances ?? []).map(n => ({
       tokenId: n.tokenId,
       chainId: n.chainId,
     }));
 
-    const nftsInfo = await context.pactGateway.getNftsInfo(nftsInfoParams ?? []);
+    const nftsInfo = await context.pactGateway.getNftsInfo(
+      nftsInfoParams ?? [],
+      account?.accountName ?? '',
+    );
     return buildNonFungibleChainAccount(account, nftsInfo);
   }
 
@@ -120,7 +128,10 @@ export const getNode = async (context: ResolverContext, id: string) => {
 
     const nftsInfoParams = [{ tokenId, chainId }];
 
-    const [nftsInfo] = await context.pactGateway.getNftsInfo(nftsInfoParams ?? []);
+    const [nftsInfo] = await context.pactGateway.getNftsInfo(
+      nftsInfoParams ?? [],
+      account?.accountName ?? '',
+    );
 
     return {
       id: account.id,

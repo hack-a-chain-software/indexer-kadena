@@ -165,34 +165,66 @@ export default class BalanceDbRepository implements BalanceRepository {
 
     const { rows: accountRows } = await rootPgPool.query(balanceQuery, balanceQueryParams);
 
-    const output = accountRows.map(r => fungibleChainAccountValidator.validate(r));
+    const output = accountRows
+      .filter(r => r.hasTokenId)
+      .map(r => fungibleChainAccountValidator.validate(r));
     return output;
   }
 
   async getNonFungibleAccountInfo(accountName: string): Promise<INonFungibleAccount | null> {
     const queryParams = [accountName];
     let query = `
-      SELECT b.id, b."chainId", b.balance, b."tokenId", b.account
+      SELECT b.id, b."chainId", b.balance, b."tokenId", b.account, b.module, b."hasTokenId"
       FROM "Balances" b
       WHERE b.account = $1
-      AND "hasTokenId" = true
+      AND b.module = 'marmalade-v2.ledger'
     `;
 
     const { rows } = await rootPgPool.query(query, queryParams);
 
     if (rows.length === 0) return null;
 
-    const nonFungibleTokenBalances = rows.map(row => {
-      return nonFungibleTokenBalanceValidator.validate(row);
-    });
+    const nonFungibleTokenBalances = rows
+      .filter(r => r.hasTokenId)
+      .map(row => {
+        return nonFungibleTokenBalanceValidator.validate(row);
+      });
 
     return {
       id: getNonFungibleAccountBase64ID(accountName),
       accountName,
-      // TODO
       chainAccounts: [],
       nonFungibleTokenBalances,
     };
+  }
+
+  async getNonFungibleChainAccountsInfo(accountName: string): Promise<INonFungibleChainAccount[]> {
+    const queryParams = [accountName];
+    const query = `
+      SELECT b.id, b."chainId", b.balance, b."tokenId", b.account, b.module, b."hasTokenId"
+      FROM "Balances" b
+      WHERE b.account = $1
+      AND b.module = 'marmalade-v2.ledger'
+    `;
+
+    const { rows } = await rootPgPool.query(query, queryParams);
+
+    if (rows.length === 0) return [];
+
+    const nonFungibleTokenBalances = rows
+      .filter(row => row.hasTokenId)
+      .map(row => {
+        return nonFungibleTokenBalanceValidator.validate(row);
+      });
+
+    const output = rows.map(row => ({
+      id: getNonFungibleChainAccountBase64ID(row.chainId, accountName),
+      accountName,
+      chainId: row.chainId,
+      nonFungibleTokenBalances,
+    }));
+
+    return output;
   }
 
   async getNonFungibleChainAccountInfo(
@@ -201,11 +233,11 @@ export default class BalanceDbRepository implements BalanceRepository {
   ): Promise<INonFungibleChainAccount | null> {
     const queryParams = [accountName, chainId];
     const query = `
-      SELECT b.id, b."chainId", b.balance, b."tokenId", b.account
+      SELECT b.id, b."chainId", b.balance, b."tokenId", b.account, b.module, b."hasTokenId"
       FROM "Balances" b
       WHERE b.account = $1
-      AND "hasTokenId" = true
       AND b."chainId" = $2
+      AND b.module = 'marmalade-v2.ledger'
     `;
 
     const { rows } = await rootPgPool.query(query, queryParams);
@@ -231,7 +263,7 @@ export default class BalanceDbRepository implements BalanceRepository {
   ): Promise<INonFungibleTokenBalance | null> {
     const queryParams = [accountName, tokenId, chainId];
     let query = `
-      SELECT b.id, b."chainId", b.balance, b."tokenId", b.account
+      SELECT b.id, b."chainId", b.balance, b."tokenId", b.account, b."hasTokenId"
       FROM "Balances" b
       WHERE b.account = $1
       AND b."tokenId" = $2

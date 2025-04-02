@@ -7,6 +7,7 @@ const nonFungibleTokenBalanceSchema = zod.object({
   chainId: zod.number(),
   tokenId: zod.string(),
   balance: zod.string(),
+  module: zod.string(),
 });
 
 const getBase64ID = (tokenId: string, accountName: string, chainId: number): string => {
@@ -22,6 +23,7 @@ const validate = (row: any): INonFungibleTokenBalance => {
     accountName: res.account,
     balance: Number(res.balance),
     chainId: res.chainId.toString(),
+    module: res.module,
     tokenId: res.tokenId,
   };
 };

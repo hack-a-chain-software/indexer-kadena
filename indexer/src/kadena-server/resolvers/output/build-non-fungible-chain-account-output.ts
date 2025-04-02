@@ -1,26 +1,22 @@
-import { NonFungibleChainAccountTransactionsConnection } from '../../config/graphql-types';
+import {
+  NonFungibleChainAccount,
+  NonFungibleChainAccountTransactionsConnection,
+} from '../../config/graphql-types';
 import { INonFungibleChainAccount } from '../../repository/application/balance-repository';
 import { NftInfo } from '../../repository/gateway/pact-gateway';
 
 export const buildNonFungibleChainAccount = (
-  acc: INonFungibleChainAccount | null,
+  acc: INonFungibleChainAccount,
   nftsInfo: NftInfo[],
-) => {
-  if (!acc) return null;
-
+): NonFungibleChainAccount => {
   const nonFungibleTokenBalances = (nftsInfo ?? []).map((nft, index) => ({
     id: acc.nonFungibleTokenBalances[index].id,
     accountName: acc.accountName,
     chainId: acc.nonFungibleTokenBalances[index].chainId,
-    balance: acc.nonFungibleTokenBalances[index].balance,
     tokenId: acc.nonFungibleTokenBalances[index].tokenId,
+    balance: nft.balance,
     version: nft.version,
-    // TODO
-    guard: {
-      keys: [],
-      predicate: '',
-      raw: JSON.stringify('{}'),
-    },
+    guard: nft.guard,
     info: {
       precision: nft.precision,
       supply: nft.supply,
@@ -29,9 +25,10 @@ export const buildNonFungibleChainAccount = (
   }));
 
   return {
-    ...acc,
+    id: acc.id,
+    accountName: acc.accountName,
+    chainId: acc.chainId,
     nonFungibleTokenBalances,
-    // for resolvers
     transactions: {} as NonFungibleChainAccountTransactionsConnection,
   };
 };
