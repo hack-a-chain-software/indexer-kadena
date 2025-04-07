@@ -66,7 +66,6 @@
   "scripts": {
     "build": "tsc",
     "create:database": "ts-node src/index.ts --database && yarn migrate:up",
-    "dev": "docker-compose -f docker-compose.yml up && docker-compose logs -f indexer",
     "dev:guards": "ts-node src/index.ts --guards",
     "dev:database": "ts-node src/index.ts --database",
     "dev:streaming": "ts-node src/index.ts --streaming",
@@ -76,6 +75,10 @@
     "migrate:up": "dotenv -e .env npx sequelize-cli db:migrate",
     "migrate:down": "dotenv -e .env npx sequelize-cli db:migrate:undo",
     "test:unit": "jest tests/unit/*.test.ts",
-    "test:integration": "jest tests/integration/*.test.ts"
+    "test:integration": "dotenv -e .env.testing jest tests/integration/*.test.ts",
+    "test:file": "dotenv -e .env.testing jest",
+    "test:smoke": "yarn compose:up && sleep 5 && jest tests/integration/smoke.test.ts && yarn compose:down",
+    "compose:up": "docker-compose -f docker-compose.yml up -d",
+    "compose:down": "docker-compose -f docker-compose.yml down"
   }
 }

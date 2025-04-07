@@ -12,4 +12,5 @@ export default {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
+  reporters: ['default', '<rootDir>/test-timing-reporter.js'],
 };

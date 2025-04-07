@@ -54,7 +54,7 @@ function validate(row: any): TransactionOutput {
       transactionId: res.txid ? res.txid : null,
       height: res.height,
 
-      gas: res.gas,
+      gas: res.gas ?? '0',
       goodResult: isSuccess ? JSON.stringify(res.result.data) : null,
       logs: res.logs,
     },
