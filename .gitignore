@@ -10,3 +10,4 @@ draft/
 .github/workflows/.artifacts/
 .vercel
 indexer/indexer
+indexer/tests/logs/*
