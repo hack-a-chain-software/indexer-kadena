@@ -188,15 +188,15 @@ export default class EventDbRepository implements EventRepository {
     }
 
     if (fromHeight && toHeight) {
-      queryParams.push(fromHeight);
+      blockQueryParams.push(fromHeight);
       let op = localOperator(blockQueryParams.length);
       conditions += `${op} b."height" >= $${blockQueryParams.length + queryParams.length}`;
-      queryParams.push(toHeight);
+      blockQueryParams.push(toHeight);
       conditions += `\nAND b."height" <= $${blockQueryParams.length + queryParams.length}`;
     }
 
     if (minimumDepth) {
-      queryParams.push(minimumDepth);
+      blockQueryParams.push(minimumDepth);
       const op = localOperator(blockQueryParams.length);
       conditions += `${op} b."height" <= $${blockQueryParams.length + queryParams.length}`;
     }
