@@ -404,7 +404,7 @@ export default class EventDbRepository implements EventRepository {
   }
 
   async getLastEventId(): Promise<number> {
-    const query = `SELECT last_value AS lastValue from "Events_id_seq"`;
+    const query = `SELECT last_value AS "lastValue" from "Events_id_seq"`;
     const { rows } = await rootPgPool.query(query);
     const totalCount = parseInt(rows[0].lastValue, 10);
     return totalCount;
