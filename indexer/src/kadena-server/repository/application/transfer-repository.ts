@@ -24,6 +24,7 @@ export interface GetTotalCountParams {
 export interface GetCrossChainTransferByPactIdParams {
   pactId: string;
   amount: string;
+  requestKey: string;
 }
 
 export type TransferOutput = Omit<Transfer, 'block' | 'transaction' | 'crossChainTransfer'> & {
@@ -43,6 +44,6 @@ export default interface TransferRepository {
   }>;
   getCrossChainTransferByPactId(
     params: GetCrossChainTransferByPactIdParams,
-  ): Promise<TransferOutput>;
+  ): Promise<TransferOutput | null>;
   getTotalCountOfTransfers(params: GetTotalCountParams): Promise<number>;
 }

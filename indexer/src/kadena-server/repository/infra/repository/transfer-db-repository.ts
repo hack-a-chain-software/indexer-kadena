@@ -210,7 +210,25 @@ export default class TransferDbRepository implements TransferRepository {
     return pageInfo;
   }
 
-  async getCrossChainTransferByPactId({ amount, pactId }: GetCrossChainTransferByPactIdParams) {
+  async getCrossChainTransferByPactId({
+    amount,
+    pactId,
+    requestKey,
+  }: GetCrossChainTransferByPactIdParams) {
+    let requestKeyParam = pactId;
+
+    if (pactId === requestKey) {
+      const query = `
+        SELECT requestkey
+        FROM "Transactions" t
+        JOIN "TransactionDetails" td ON t.id = td."transactionId"
+        WHERE td.pactid = $1 AND requestkey != $1
+      `;
+      const { rows } = await rootPgPool.query(query, [requestKey]);
+      const row = rows[0];
+      requestKeyParam = row.requestkey;
+    }
+
     const query = `
       select transfers.id as id,
       transfers.amount as "transferAmount",
@@ -234,9 +252,10 @@ export default class TransferDbRepository implements TransferRepository {
       and transfers.amount = $2
     `;
 
-    const { rows } = await rootPgPool.query(query, [pactId, amount]);
+    const { rows } = await rootPgPool.query(query, [requestKeyParam, amount]);
 
     const [row] = rows;
+    if (!row) return null;
     const output = transferSchemaValidator.validate(row);
     return output;
   }
