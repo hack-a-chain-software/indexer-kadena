@@ -105,7 +105,8 @@ Docker Compose provides a way to run the entire indexer stack with a single comm
 To start all services:
 
 ```bash
-yarn dev
+$ yarn compose:up
+$ yarn compose:down
 ```
 
 **NOTE:** Using the image on with the composer require the database `DB_USERNAME` to default to `postgres`.

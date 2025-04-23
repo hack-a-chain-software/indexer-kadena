@@ -121,6 +121,9 @@ export default class BlockDbRepository implements BlockRepository {
    * supporting cursor-based pagination and chain filtering for efficient
    * navigation through large result sets.
    *
+   * Uses keyset pagination with compound cursors (height:id) for better performance
+   * when navigating through large datasets.
+   *
    * @param params - Object containing height range and pagination parameters
    * @returns Promise resolving to page info and block edges
    */
@@ -145,14 +148,140 @@ export default class BlockDbRepository implements BlockRepository {
     const queryParams: (string | number | string[])[] = [limit, startHeight];
     let conditions = '';
 
-    if (before) {
-      queryParams.push(before);
-      conditions += `\nAND b.id > $${queryParams.length}`;
+    // Handle "after" cursor (for forward pagination) - decode to get both height and id
+    let afterHeight, afterId;
+    if (after) {
+      try {
+        // Try to parse as compound cursor format (height:id)
+        const [height, id] = after.split(':');
+        afterHeight = parseInt(height, 10);
+        afterId = parseInt(id, 10);
+
+        // Check if values are valid numbers
+        if (!isNaN(afterHeight) && !isNaN(afterId)) {
+          // For forward pagination with "after", we want records where:
+          // (height < afterHeight) OR (height = afterHeight AND id < afterId)
+          queryParams.push(afterHeight, afterId);
+          conditions += `\nAND (b.height < $${queryParams.length - 1} OR (b.height = $${queryParams.length - 1} AND b.id < $${queryParams.length}))`;
+          console.info(
+            `[INFO][QUERY][OPTIMIZATION] Using optimized query with compound cursor: height=${afterHeight}, id=${afterId}`,
+          );
+        } else {
+          // Old cursor format - look up the height for this ID to optimize the query
+          const idValue = parseInt(after, 10);
+          if (!isNaN(idValue)) {
+            console.info(
+              `[INFO][QUERY][OPTIMIZATION] Converting old cursor format (id=${idValue}) to optimized format`,
+            );
+
+            // Get the height for this ID with a fast lookup
+            const heightQuery = `SELECT height FROM "Blocks" WHERE id = $1 LIMIT 1`;
+            const { rows } = await rootPgPool.query(heightQuery, [idValue]);
+
+            if (rows.length > 0) {
+              // We found the height, now use the optimized approach
+              afterHeight = rows[0].height;
+              afterId = idValue;
+
+              // Use the optimized condition
+              queryParams.push(afterHeight, afterId);
+              conditions += `\nAND (b.height < $${queryParams.length - 1} OR (b.height = $${queryParams.length - 1} AND b.id < $${queryParams.length}))`;
+              console.info(
+                `[INFO][QUERY][OPTIMIZATION] Converted to optimized query: height=${afterHeight}, id=${afterId}`,
+              );
+            } else {
+              // Fallback if we couldn't find the height
+              queryParams.push(after);
+              conditions += `\nAND b.id < $${queryParams.length}`;
+              console.info(
+                `[INFO][QUERY][OPTIMIZATION] Could not find height for id=${idValue}, using fallback approach`,
+              );
+            }
+          } else {
+            // Fallback for compatibility with old cursor format
+            queryParams.push(after);
+            conditions += `\nAND b.id < $${queryParams.length}`;
+            console.info(
+              `[INFO][QUERY][OPTIMIZATION] Using fallback approach with cursor=${after}`,
+            );
+          }
+        }
+      } catch (e: unknown) {
+        // Fallback for compatibility with old cursor format
+        queryParams.push(after);
+        conditions += `\nAND b.id < $${queryParams.length}`;
+        console.info(
+          `[INFO][QUERY][OPTIMIZATION] Error parsing cursor, using fallback approach: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
     }
 
-    if (after) {
-      queryParams.push(after);
-      conditions += `\nAND b.id < $${queryParams.length}`;
+    // Handle "before" cursor (for backward pagination) - decode to get both height and id
+    let beforeHeight, beforeId;
+    if (before) {
+      try {
+        // Try to parse as compound cursor format (height:id)
+        const [height, id] = before.split(':');
+        beforeHeight = parseInt(height, 10);
+        beforeId = parseInt(id, 10);
+
+        // Check if values are valid numbers
+        if (!isNaN(beforeHeight) && !isNaN(beforeId)) {
+          // For backward pagination with "before", we want records where:
+          // (height > beforeHeight) OR (height = beforeHeight AND id > beforeId)
+          queryParams.push(beforeHeight, beforeId);
+          conditions += `\nAND (b.height > $${queryParams.length - 1} OR (b.height = $${queryParams.length - 1} AND b.id > $${queryParams.length}))`;
+          console.info(
+            `[INFO][QUERY][OPTIMIZATION] Using optimized query with compound cursor: height=${beforeHeight}, id=${beforeId}`,
+          );
+        } else {
+          // Old cursor format - look up the height for this ID to optimize the query
+          const idValue = parseInt(before, 10);
+          if (!isNaN(idValue)) {
+            console.info(
+              `[INFO][QUERY][OPTIMIZATION] Converting old cursor format (id=${idValue}) to optimized format`,
+            );
+
+            // Get the height for this ID with a fast lookup
+            const heightQuery = `SELECT height FROM "Blocks" WHERE id = $1 LIMIT 1`;
+            const { rows } = await rootPgPool.query(heightQuery, [idValue]);
+
+            if (rows.length > 0) {
+              // We found the height, now use the optimized approach
+              beforeHeight = rows[0].height;
+              beforeId = idValue;
+
+              // Use the optimized condition
+              queryParams.push(beforeHeight, beforeId);
+              conditions += `\nAND (b.height > $${queryParams.length - 1} OR (b.height = $${queryParams.length - 1} AND b.id > $${queryParams.length}))`;
+              console.info(
+                `[INFO][QUERY][OPTIMIZATION] Converted to optimized query: height=${beforeHeight}, id=${beforeId}`,
+              );
+            } else {
+              // Fallback if we couldn't find the height
+              queryParams.push(before);
+              conditions += `\nAND b.id > $${queryParams.length}`;
+              console.info(
+                `[INFO][QUERY][OPTIMIZATION] Could not find height for id=${idValue}, using fallback approach`,
+              );
+            }
+          } else {
+            // Fallback for compatibility with old cursor format
+            queryParams.push(before);
+            conditions += `\nAND b.id > $${queryParams.length}`;
+            console.info(
+              `[INFO][QUERY][OPTIMIZATION] Using fallback approach with cursor=${before}`,
+            );
+          }
+        }
+      } catch (e: unknown) {
+        // Fallback for compatibility with old cursor format
+        queryParams.push(before);
+        conditions += `\nAND b.id > $${queryParams.length}`;
+        console.info(
+          `[INFO][QUERY][OPTIMIZATION] Error parsing cursor, using fallback approach: ${e instanceof Error ? e.message : String(e)}`,
+        );
+      }
     }
 
     if (chainIds?.length) {
@@ -164,6 +293,9 @@ export default class BlockDbRepository implements BlockRepository {
       queryParams.push(endHeight);
       conditions += `\nAND b."height" <= $${queryParams.length}`;
     }
+
+    // Record the start time to measure performance
+    const startTime = Date.now();
 
     const query = `
       SELECT b.id,
@@ -182,14 +314,21 @@ export default class BlockDbRepository implements BlockRepository {
       FROM "Blocks" b
       WHERE b.height >= $2
       ${conditions}
-      ORDER BY b.height ${order}
+      ORDER BY b.height ${order}, b.id ${order}
       LIMIT $1;
     `;
 
     const { rows: blockRows } = await rootPgPool.query(query, queryParams);
 
+    // Log the query performance
+    const endTime = Date.now();
+    console.info(
+      `[INFO][QUERY][PERFORMANCE] Block query executed in ${endTime - startTime}ms, returned ${blockRows.length} rows`,
+    );
+
+    // Create edges with a compound cursor containing both height and id
     const edges = blockRows.map(row => ({
-      cursor: row.id.toString(),
+      cursor: `${row.height}:${row.id}`, // Compound cursor for better pagination
       node: blockValidator.validate(row),
     }));
 
