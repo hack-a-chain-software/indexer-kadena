@@ -899,7 +899,7 @@ type NetworkInfo {
   numberOfChains: Int!
   genesisHeights: [GenesisHeight!]! @complexity(value: 5, multipliers: ["length"])
   nodePackageVersion: String!
-  nodeServiceDate: DateTime!
+  nodeServiceDate: DateTime
   nodeLatestBehaviorHeight: Int!
 }
 

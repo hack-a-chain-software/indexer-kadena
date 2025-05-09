@@ -29,7 +29,7 @@ const schema = zod.object({
   nodeNumberOfChains: zod.number(),
   nodeGenesisHeights: zod.array(zod.tuple([zod.string(), zod.number()])),
   nodePackageVersion: zod.string(),
-  nodeServiceDate: zod.string(),
+  nodeServiceDate: zod.string().nullable(),
   nodeLatestBehaviorHeight: zod.number(),
   nodeGraphHistory: zod.any(),
   nodeHistoricalChains: zod.any(),
@@ -69,7 +69,7 @@ function validate(row: any): GetNodeInfo {
       height,
     })),
     nodePackageVersion: res.nodePackageVersion,
-    nodeServiceDate: new Date(res.nodeServiceDate),
+    nodeServiceDate: res.nodeServiceDate ? new Date(res.nodeServiceDate) : null,
     nodeLatestBehaviorHeight: res.nodeLatestBehaviorHeight,
   };
 }

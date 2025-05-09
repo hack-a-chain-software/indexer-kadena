@@ -17,7 +17,7 @@ export interface GetNodeInfo {
   numberOfChains: number;
   genesisHeights: Array<{ chainId: string; height: number }>;
   nodePackageVersion: string;
-  nodeServiceDate: Date;
+  nodeServiceDate: Date | null;
   nodeLatestBehaviorHeight: number;
 }
 

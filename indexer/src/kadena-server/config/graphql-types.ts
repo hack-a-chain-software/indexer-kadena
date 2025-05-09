@@ -1,50 +1,3 @@
-/**
- * GraphQL Types for the Kadena Indexer
- *
- * This file contains all the TypeScript type definitions that correspond to the GraphQL schema
- * used in the Kadena blockchain indexer. These types are generated from the GraphQL schema using
- * a code generator and should not be manually edited.
- *
- * The file defines:
- * 1. Scalar types (ID, String, Boolean, BigInt, DateTime, Decimal)
- * 2. Object types representing blockchain entities (Block, Transaction, Event, Transfer, etc.)
- * 3. Connection types for pagination (following the Relay cursor connection spec)
- * 4. Input types for queries and filtering
- * 5. Resolver types for implementing the GraphQL resolvers
- *
- * The schema supports a rich query interface for the Kadena blockchain, including:
- * - Block queries by hash, height, and depth
- * - Transaction queries with various filters
- * - Event and transfer tracking
- * - Account information for both fungible and non-fungible tokens
- * - Guard (security predicate) information
- *
- * This type system forms the backbone of the GraphQL API and ensures
- * type safety throughout the application.
- *
- * File Structure Overview:
- *
- * 1. Type Utility Definitions (lines ~20-40): Helper types for TypeScript type manipulations
- *    such as Maybe, InputMaybe, Exact, etc., which enhance type safety and handle nullable fields.
- *
- * 2. Scalar Definitions (lines ~40-55): Define basic data types used throughout the schema
- *    including custom scalars for blockchain-specific data types like BigInt and Decimal.
- *
- * 3. Core Blockchain Entity Types (lines ~55-250): Type definitions for fundamental
- *    blockchain entities such as Block, Event, Transaction, etc., representing the core
- *    data structures of the Kadena blockchain.
- *
- * 4. Fungible Token Types (lines ~250-350): Type definitions for fungible tokens, accounts,
- *    and related connections, handling cryptocurrency-like tokens with divisible values.
- *
- * 5. Non-Fungible Token Types (lines ~350-450): Type definitions for NFT tokens, accounts,
- *    and related connections, supporting unique digital assets.
- *
- * 6. Query Interface Types (lines ~450-500): Type definitions for the GraphQL query interface,
- *    allowing clients to retrieve data from the indexer with various filters and pagination.
- *
- * TODO: I've stopped here and set this todo to breadk down this file into smaller files, because it's too big to handle.
- */
 import { GraphQLResolveInfo, GraphQLScalarType, GraphQLScalarTypeConfig } from 'graphql';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
@@ -118,10 +71,6 @@ export type BlockTransactionsArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/**
- * Connection type for paginated block events
- * Contains edges, pagination info, and total count of events in a block
- */
 export type BlockEventsConnection = {
   __typename?: 'BlockEventsConnection';
   edges: Array<BlockEventsConnectionEdge>;
@@ -129,30 +78,19 @@ export type BlockEventsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for BlockEventsConnection
- * Contains a cursor for pagination and the event node
- */
 export type BlockEventsConnectionEdge = {
   __typename?: 'BlockEventsConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Event;
 };
 
-/**
- * The neighbor of a block.
- * Represents an adjacent block in the blockchain with its chain ID and hash
- */
+/** The neighbor of a block. */
 export type BlockNeighbor = {
   __typename?: 'BlockNeighbor';
   chainId: Scalars['String']['output'];
   hash: Scalars['String']['output'];
 };
 
-/**
- * Connection type for paginated block transactions
- * Contains edges, pagination info, and total count of transactions in a block
- */
 export type BlockTransactionsConnection = {
   __typename?: 'BlockTransactionsConnection';
   edges: Array<BlockTransactionsConnectionEdge>;
@@ -160,20 +98,13 @@ export type BlockTransactionsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for BlockTransactionsConnection
- * Contains a cursor for pagination and the transaction node
- */
 export type BlockTransactionsConnectionEdge = {
   __typename?: 'BlockTransactionsConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Transaction;
 };
 
-/**
- * The payload of a continuation transaction.
- * Contains data and metadata for continuing multi-step transactions across chains
- */
+/** The payload of an cont transaction. */
 export type ContinuationPayload = {
   __typename?: 'ContinuationPayload';
   /** The environment data made available to the transaction. Formatted as raw JSON. */
@@ -188,10 +119,7 @@ export type ContinuationPayload = {
   step?: Maybe<Scalars['Int']['output']>;
 };
 
-/**
- * An event emitted by the execution of a smart-contract function.
- * Contains all metadata about the event, including block, chain, module, parameters, etc.
- */
+/** An event emitted by the execution of a smart-contract function. */
 export type Event = Node & {
   __typename?: 'Event';
   block: Block;
@@ -211,10 +139,7 @@ export type Event = Node & {
   transaction?: Maybe<Transaction>;
 };
 
-/**
- * The payload of an exec transaction.
- * Contains the Pact code and environment data for the transaction
- */
+/** The payload of an exec transaction. */
 export type ExecutionPayload = {
   __typename?: 'ExecutionPayload';
   /** The Pact expressions executed in this transaction when it is an `exec` transaction. */
@@ -223,10 +148,7 @@ export type ExecutionPayload = {
   data: Scalars['String']['output'];
 };
 
-/**
- * A fungible-specific account.
- * Represents an account with fungible token holdings across multiple chains
- */
+/** A fungible-specific account. */
 export type FungibleAccount = Node & {
   __typename?: 'FungibleAccount';
   accountName: Scalars['String']['output'];
@@ -250,10 +172,7 @@ export type FungibleAccount = Node & {
   transfers: FungibleAccountTransfersConnection;
 };
 
-/**
- * Arguments for FungibleAccount transactions query
- * Controls pagination of transactions related to a fungible account
- */
+/** A fungible-specific account. */
 export type FungibleAccountTransactionsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -261,10 +180,7 @@ export type FungibleAccountTransactionsArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/**
- * Arguments for FungibleAccount transfers query
- * Controls pagination of transfers related to a fungible account
- */
+/** A fungible-specific account. */
 export type FungibleAccountTransfersArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -272,10 +188,6 @@ export type FungibleAccountTransfersArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/**
- * Connection type for paginated fungible account transactions
- * Contains edges, pagination info, and total count of transactions
- */
 export type FungibleAccountTransactionsConnection = {
   __typename?: 'FungibleAccountTransactionsConnection';
   edges: Array<FungibleAccountTransactionsConnectionEdge>;
@@ -283,20 +195,12 @@ export type FungibleAccountTransactionsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for FungibleAccountTransactionsConnection
- * Contains a cursor for pagination and the transaction node
- */
 export type FungibleAccountTransactionsConnectionEdge = {
   __typename?: 'FungibleAccountTransactionsConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Transaction;
 };
 
-/**
- * Connection type for paginated fungible account transfers
- * Contains edges, pagination info, and total count of transfers
- */
 export type FungibleAccountTransfersConnection = {
   __typename?: 'FungibleAccountTransfersConnection';
   edges: Array<FungibleAccountTransfersConnectionEdge>;
@@ -304,20 +208,13 @@ export type FungibleAccountTransfersConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for FungibleAccountTransfersConnection
- * Contains a cursor for pagination and the transfer node
- */
 export type FungibleAccountTransfersConnectionEdge = {
   __typename?: 'FungibleAccountTransfersConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Transfer;
 };
 
-/**
- * A fungible specific chain-account.
- * Represents an account's fungible token balance on a specific chain
- */
+/** A fungible specific chain-account. */
 export type FungibleChainAccount = Node & {
   __typename?: 'FungibleChainAccount';
   accountName: Scalars['String']['output'];
@@ -332,10 +229,7 @@ export type FungibleChainAccount = Node & {
   transfers: FungibleChainAccountTransfersConnection;
 };
 
-/**
- * Arguments for FungibleChainAccount transactions query
- * Controls pagination of transactions related to a fungible chain account
- */
+/** A fungible specific chain-account. */
 export type FungibleChainAccountTransactionsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -343,10 +237,7 @@ export type FungibleChainAccountTransactionsArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/**
- * Arguments for FungibleChainAccount transfers query
- * Controls pagination of transfers related to a fungible chain account
- */
+/** A fungible specific chain-account. */
 export type FungibleChainAccountTransfersArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -354,10 +245,6 @@ export type FungibleChainAccountTransfersArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/**
- * Connection type for paginated fungible chain account transactions
- * Contains edges, pagination info, and total count of transactions
- */
 export type FungibleChainAccountTransactionsConnection = {
   __typename?: 'FungibleChainAccountTransactionsConnection';
   edges: Array<FungibleChainAccountTransactionsConnectionEdge>;
@@ -365,20 +252,12 @@ export type FungibleChainAccountTransactionsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for FungibleChainAccountTransactionsConnection
- * Contains a cursor for pagination and the transaction node
- */
 export type FungibleChainAccountTransactionsConnectionEdge = {
   __typename?: 'FungibleChainAccountTransactionsConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Transaction;
 };
 
-/**
- * Connection type for paginated fungible chain account transfers
- * Contains edges, pagination info, and total count of transfers
- */
 export type FungibleChainAccountTransfersConnection = {
   __typename?: 'FungibleChainAccountTransfersConnection';
   edges: Array<FungibleChainAccountTransfersConnectionEdge>;
@@ -386,20 +265,12 @@ export type FungibleChainAccountTransfersConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for FungibleChainAccountTransfersConnection
- * Contains a cursor for pagination and the transfer node
- */
 export type FungibleChainAccountTransfersConnectionEdge = {
   __typename?: 'FungibleChainAccountTransfersConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Transfer;
 };
 
-/**
- * Gas limit estimation for a transaction
- * Contains details about the estimated gas required for a transaction
- */
 export type GasLimitEstimation = {
   __typename?: 'GasLimitEstimation';
   amount: Scalars['Int']['output'];
@@ -409,20 +280,13 @@ export type GasLimitEstimation = {
   usedSignatureVerification: Scalars['Boolean']['output'];
 };
 
-/**
- * Genesis height information for a chain
- * Represents the initial block height for a specific chain
- */
 export type GenesisHeight = {
   __typename?: 'GenesisHeight';
   chainId: Scalars['String']['output'];
   height: Scalars['Int']['output'];
 };
 
-/**
- * General information about the graph and chainweb-data.
- * Contains configuration details for the GraphQL API and indexer
- */
+/** General information about the graph and chainweb-data. */
 export type GraphConfiguration = {
   __typename?: 'GraphConfiguration';
   /** The lowest block-height that is indexed in this endpoint. */
@@ -431,10 +295,7 @@ export type GraphConfiguration = {
   version: Scalars['String']['output'];
 };
 
-/**
- * A guard interface representing security predicates in Kadena
- * Can be implemented by different guard types (e.g., KeysetGuard)
- */
+/** A guard. This is a union of all the different types of guards that can be used in a pact. */
 export type IGuard = {
   /** @deprecated deprecated, use KeysetGuard.keys */
   keys: Array<Scalars['String']['output']>;
@@ -443,10 +304,7 @@ export type IGuard = {
   raw: Scalars['String']['output'];
 };
 
-/**
- * A keyset guard implementation of IGuard
- * Represents a set of public keys and a predicate for authorization
- */
+/** A keyset guard. */
 export type KeysetGuard = IGuard & {
   __typename?: 'KeysetGuard';
   keys: Array<Scalars['String']['output']>;
@@ -454,10 +312,7 @@ export type KeysetGuard = IGuard & {
   raw: Scalars['String']['output'];
 };
 
-/**
- * Information about the Kadena network.
- * Contains network statistics, configuration, and status information
- */
+/** Information about the network. */
 export type NetworkInfo = {
   __typename?: 'NetworkInfo';
   /** The version of the API. */
@@ -475,7 +330,7 @@ export type NetworkInfo = {
   nodeChains: Array<Scalars['String']['output']>;
   nodeLatestBehaviorHeight: Scalars['Int']['output'];
   nodePackageVersion: Scalars['String']['output'];
-  nodeServiceDate: Scalars['DateTime']['output'];
+  nodeServiceDate?: Maybe<Scalars['DateTime']['output']>;
   numberOfChains: Scalars['Int']['output'];
   /** The total difficulty. */
   totalDifficulty: Scalars['Float']['output'];
@@ -483,18 +338,11 @@ export type NetworkInfo = {
   transactionCount: Scalars['Int']['output'];
 };
 
-/**
- * Interface for entities with a unique identifier
- * Base interface implemented by most entity types in the schema
- */
 export type Node = {
   id: Scalars['ID']['output'];
 };
 
-/**
- * A non-fungible-specific account.
- * Represents an account with non-fungible token (NFT) holdings across multiple chains
- */
+/** A non-fungible-specific account. */
 export type NonFungibleAccount = Node & {
   __typename?: 'NonFungibleAccount';
   accountName: Scalars['String']['output'];
@@ -505,10 +353,7 @@ export type NonFungibleAccount = Node & {
   transactions: NonFungibleAccountTransactionsConnection;
 };
 
-/**
- * Arguments for NonFungibleAccount transactions query
- * Controls pagination of transactions related to a non-fungible account
- */
+/** A non-fungible-specific account. */
 export type NonFungibleAccountTransactionsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -516,10 +361,6 @@ export type NonFungibleAccountTransactionsArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/**
- * Connection type for paginated non-fungible account transactions
- * Contains edges, pagination info, and total count of transactions
- */
 export type NonFungibleAccountTransactionsConnection = {
   __typename?: 'NonFungibleAccountTransactionsConnection';
   edges: Array<NonFungibleAccountTransactionsConnectionEdge>;
@@ -527,20 +368,13 @@ export type NonFungibleAccountTransactionsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for NonFungibleAccountTransactionsConnection
- * Contains a cursor for pagination and the transaction node
- */
 export type NonFungibleAccountTransactionsConnectionEdge = {
   __typename?: 'NonFungibleAccountTransactionsConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Transaction;
 };
 
-/**
- * A chain and non-fungible-specific account.
- * Represents an account's non-fungible token holdings on a specific chain
- */
+/** A chain and non-fungible-specific account. */
 export type NonFungibleChainAccount = Node & {
   __typename?: 'NonFungibleChainAccount';
   accountName: Scalars['String']['output'];
@@ -551,10 +385,7 @@ export type NonFungibleChainAccount = Node & {
   transactions: NonFungibleChainAccountTransactionsConnection;
 };
 
-/**
- * Arguments for NonFungibleChainAccount transactions query
- * Controls pagination of transactions related to a non-fungible chain account
- */
+/** A chain and non-fungible-specific account. */
 export type NonFungibleChainAccountTransactionsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -562,10 +393,6 @@ export type NonFungibleChainAccountTransactionsArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/**
- * Connection type for paginated non-fungible chain account transactions
- * Contains edges, pagination info, and total count of transactions
- */
 export type NonFungibleChainAccountTransactionsConnection = {
   __typename?: 'NonFungibleChainAccountTransactionsConnection';
   edges: Array<NonFungibleChainAccountTransactionsConnectionEdge>;
@@ -573,20 +400,13 @@ export type NonFungibleChainAccountTransactionsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for NonFungibleChainAccountTransactionsConnection
- * Contains a cursor for pagination and the transaction node
- */
 export type NonFungibleChainAccountTransactionsConnectionEdge = {
   __typename?: 'NonFungibleChainAccountTransactionsConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Transaction;
 };
 
-/**
- * Information related to a non-fungible token.
- * Contains details about an NFT collection such as supply and URI
- */
+/** Information related to a token. */
 export type NonFungibleToken = {
   __typename?: 'NonFungibleToken';
   precision: Scalars['Int']['output'];
@@ -594,10 +414,7 @@ export type NonFungibleToken = {
   uri: Scalars['String']['output'];
 };
 
-/**
- * The token identifier and its balance.
- * Represents a specific NFT token balance for an account on a chain
- */
+/** The token identifier and its balance. */
 export type NonFungibleTokenBalance = Node & {
   __typename?: 'NonFungibleTokenBalance';
   accountName: Scalars['String']['output'];
@@ -610,29 +427,18 @@ export type NonFungibleTokenBalance = Node & {
   version: Scalars['String']['output'];
 };
 
-/**
- * Input type for a Pact query
- * Specifies the chain, code, and data for executing a Pact query
- */
 export type PactQuery = {
   chainId: Scalars['String']['input'];
   code: Scalars['String']['input'];
   data?: InputMaybe<Array<PactQueryData>>;
 };
 
-/**
- * Key-value pair for Pact query data
- * Used to pass environment data to a Pact query
- */
 export type PactQueryData = {
   key: Scalars['String']['input'];
   value: Scalars['String']['input'];
 };
 
-/**
- * Response from a Pact query
- * Contains the result or error from executing a Pact query
- */
+/** Information related to a token. */
 export type PactQueryResponse = {
   __typename?: 'PactQueryResponse';
   chainId: Scalars['String']['output'];
@@ -642,10 +448,6 @@ export type PactQueryResponse = {
   status: Scalars['String']['output'];
 };
 
-/**
- * Pagination information for connections
- * Contains cursors and flags for navigating paginated results
- */
 export type PageInfo = {
   __typename?: 'PageInfo';
   endCursor?: Maybe<Scalars['String']['output']>;
@@ -711,7 +513,7 @@ export type Query = {
   nonFungibleChainAccount?: Maybe<NonFungibleChainAccount>;
   /** Execute arbitrary Pact code via a local call without gas-estimation or signature-verification (e.g. (+ 1 2) or (coin.get-details <account>)). */
   pactQuery: Array<PactQueryResponse>;
-  tokens?: Maybe<QueryTokensConnection>;
+  tokens: QueryTokensConnection;
   /** Retrieve one transaction by its unique key. Throws an error if multiple transactions are found. */
   transaction?: Maybe<Transaction>;
   /**
@@ -725,17 +527,10 @@ export type Query = {
   transfers: QueryTransfersConnection;
 };
 
-/**
- * Arguments for the block query to retrieve a specific block by hash.
- */
 export type QueryBlockArgs = {
   hash: Scalars['String']['input'];
 };
 
-/**
- * Arguments for retrieving blocks from a minimum depth in the blockchain.
- * Includes pagination and chain filtering parameters.
- */
 export type QueryBlocksFromDepthArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -745,10 +540,6 @@ export type QueryBlocksFromDepthArgs = {
   minimumDepth: Scalars['Int']['input'];
 };
 
-/**
- * Arguments for retrieving blocks from a specific height in the blockchain.
- * Allows fetching blocks within a range from startHeight to endHeight (optional).
- */
 export type QueryBlocksFromHeightArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -759,10 +550,6 @@ export type QueryBlocksFromHeightArgs = {
   startHeight: Scalars['Int']['input'];
 };
 
-/**
- * Arguments for retrieving completed block heights.
- * Used to check which block heights have been fully processed in the indexer.
- */
 export type QueryCompletedBlockHeightsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -773,10 +560,6 @@ export type QueryCompletedBlockHeightsArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/**
- * Arguments for querying events by various filters.
- * Requires a qualified event name (e.g., 'coin.TRANSFER') and supports additional filters.
- */
 export type QueryEventsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -793,95 +576,59 @@ export type QueryEventsArgs = {
   requestKey?: InputMaybe<Scalars['String']['input']>;
 };
 
-/**
- * Arguments for retrieving a fungible account by name and token type.
- */
 export type QueryFungibleAccountArgs = {
   accountName: Scalars['String']['input'];
   fungibleName?: InputMaybe<Scalars['String']['input']>;
 };
 
-/**
- * Arguments for retrieving fungible accounts by public key.
- */
 export type QueryFungibleAccountsByPublicKeyArgs = {
   fungibleName?: InputMaybe<Scalars['String']['input']>;
   publicKey: Scalars['String']['input'];
 };
 
-/**
- * Arguments for retrieving a fungible account on a specific chain.
- */
 export type QueryFungibleChainAccountArgs = {
   accountName: Scalars['String']['input'];
   chainId: Scalars['String']['input'];
   fungibleName?: InputMaybe<Scalars['String']['input']>;
 };
 
-/**
- * Arguments for retrieving fungible accounts across multiple chains.
- */
 export type QueryFungibleChainAccountsArgs = {
   accountName: Scalars['String']['input'];
   chainIds?: InputMaybe<Array<Scalars['String']['input']>>;
   fungibleName?: InputMaybe<Scalars['String']['input']>;
 };
 
-/**
- * Arguments for retrieving fungible chain accounts by public key on a specific chain.
- */
 export type QueryFungibleChainAccountsByPublicKeyArgs = {
   chainId: Scalars['String']['input'];
   fungibleName?: InputMaybe<Scalars['String']['input']>;
   publicKey: Scalars['String']['input'];
 };
 
-/**
- * Arguments for estimating gas limits for one or more transactions.
- */
 export type QueryGasLimitEstimateArgs = {
   input: Array<Scalars['String']['input']>;
 };
 
-/**
- * Arguments for retrieving a node by its unique ID.
- */
 export type QueryNodeArgs = {
   id: Scalars['ID']['input'];
 };
 
-/**
- * Arguments for retrieving multiple nodes by their IDs.
- */
 export type QueryNodesArgs = {
   ids: Array<Scalars['ID']['input']>;
 };
 
-/**
- * Arguments for retrieving a non-fungible account by name.
- */
 export type QueryNonFungibleAccountArgs = {
   accountName: Scalars['String']['input'];
 };
 
-/**
- * Arguments for retrieving a non-fungible account on a specific chain.
- */
 export type QueryNonFungibleChainAccountArgs = {
   accountName: Scalars['String']['input'];
   chainId: Scalars['String']['input'];
 };
 
-/**
- * Arguments for executing a Pact query.
- */
 export type QueryPactQueryArgs = {
   pactQuery: Array<PactQuery>;
 };
 
-/**
- * Arguments for retrieving tokens with pagination.
- */
 export type QueryTokensArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -889,20 +636,12 @@ export type QueryTokensArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/**
- * Arguments for retrieving a transaction by its request key.
- * Optionally can specify a minimum confirmation depth or block hash.
- */
 export type QueryTransactionArgs = {
   blockHash?: InputMaybe<Scalars['String']['input']>;
   minimumDepth?: InputMaybe<Scalars['Int']['input']>;
   requestKey: Scalars['String']['input'];
 };
 
-/**
- * Arguments for querying transactions with various filters.
- * Supports filtering by account, chain, block, and more.
- */
 export type QueryTransactionsArgs = {
   accountName?: InputMaybe<Scalars['String']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
@@ -918,9 +657,6 @@ export type QueryTransactionsArgs = {
   requestKey?: InputMaybe<Scalars['String']['input']>;
 };
 
-/**
- * Arguments for retrieving transactions by public key with pagination.
- */
 export type QueryTransactionsByPublicKeyArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -929,10 +665,6 @@ export type QueryTransactionsByPublicKeyArgs = {
   publicKey: Scalars['String']['input'];
 };
 
-/**
- * Arguments for querying transfers with various filters.
- * Supports filtering by account, chain, block, and more.
- */
 export type QueryTransfersArgs = {
   accountName?: InputMaybe<Scalars['String']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
@@ -945,70 +677,42 @@ export type QueryTransfersArgs = {
   requestKey?: InputMaybe<Scalars['String']['input']>;
 };
 
-/**
- * Connection type for blocks retrieved from a minimum depth.
- * Implements the Relay connection specification for pagination.
- */
 export type QueryBlocksFromDepthConnection = {
   __typename?: 'QueryBlocksFromDepthConnection';
   edges: Array<QueryBlocksFromDepthConnectionEdge>;
   pageInfo: PageInfo;
 };
 
-/**
- * Edge type for blocks from depth connection.
- * Contains the cursor and the block node.
- */
 export type QueryBlocksFromDepthConnectionEdge = {
   __typename?: 'QueryBlocksFromDepthConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Block;
 };
 
-/**
- * Connection type for blocks retrieved from a specific height.
- * Implements the Relay connection specification for pagination.
- */
 export type QueryBlocksFromHeightConnection = {
   __typename?: 'QueryBlocksFromHeightConnection';
   edges: Array<QueryBlocksFromHeightConnectionEdge>;
   pageInfo: PageInfo;
 };
 
-/**
- * Edge type for blocks from height connection.
- * Contains the cursor and the block node.
- */
 export type QueryBlocksFromHeightConnectionEdge = {
   __typename?: 'QueryBlocksFromHeightConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Block;
 };
 
-/**
- * Connection type for completed block heights.
- * Implements the Relay connection specification for pagination.
- */
 export type QueryCompletedBlockHeightsConnection = {
   __typename?: 'QueryCompletedBlockHeightsConnection';
   edges: Array<Maybe<QueryCompletedBlockHeightsConnectionEdge>>;
   pageInfo: PageInfo;
 };
 
-/**
- * Edge type for completed block heights connection.
- * Contains the cursor and the block node.
- */
 export type QueryCompletedBlockHeightsConnectionEdge = {
   __typename?: 'QueryCompletedBlockHeightsConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Block;
 };
 
-/**
- * Connection type for events query.
- * Implements the Relay connection specification for pagination and includes total count.
- */
 export type QueryEventsConnection = {
   __typename?: 'QueryEventsConnection';
   edges: Array<QueryEventsConnectionEdge>;
@@ -1016,40 +720,24 @@ export type QueryEventsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for events connection.
- * Contains the cursor and the event node.
- */
 export type QueryEventsConnectionEdge = {
   __typename?: 'QueryEventsConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Event;
 };
 
-/**
- * Connection type for tokens query.
- * Implements the Relay connection specification for pagination.
- */
 export type QueryTokensConnection = {
   __typename?: 'QueryTokensConnection';
   edges: Array<QueryTokensEdge>;
   pageInfo: PageInfo;
 };
 
-/**
- * Edge type for tokens connection.
- * Contains the cursor and the token node.
- */
 export type QueryTokensEdge = {
   __typename?: 'QueryTokensEdge';
   cursor: Scalars['String']['output'];
   node: Token;
 };
 
-/**
- * Connection type for transactions by public key.
- * Implements the Relay connection specification for pagination and includes total count.
- */
 export type QueryTransactionsByPublicKeyConnection = {
   __typename?: 'QueryTransactionsByPublicKeyConnection';
   edges: Array<QueryTransactionsByPublicKeyConnectionEdge>;
@@ -1057,20 +745,12 @@ export type QueryTransactionsByPublicKeyConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for transactions by public key connection.
- * Contains the cursor and the transaction node.
- */
 export type QueryTransactionsByPublicKeyConnectionEdge = {
   __typename?: 'QueryTransactionsByPublicKeyConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Transaction;
 };
 
-/**
- * Connection type for transactions query.
- * Implements the Relay connection specification for pagination and includes total count.
- */
 export type QueryTransactionsConnection = {
   __typename?: 'QueryTransactionsConnection';
   edges: Array<QueryTransactionsConnectionEdge>;
@@ -1078,20 +758,12 @@ export type QueryTransactionsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for transactions connection.
- * Contains the cursor and the transaction node.
- */
 export type QueryTransactionsConnectionEdge = {
   __typename?: 'QueryTransactionsConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Transaction;
 };
 
-/**
- * Connection type for transfers query.
- * Implements the Relay connection specification for pagination and includes total count.
- */
 export type QueryTransfersConnection = {
   __typename?: 'QueryTransfersConnection';
   edges: Array<QueryTransfersConnectionEdge>;
@@ -1099,10 +771,6 @@ export type QueryTransfersConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/**
- * Edge type for transfers connection.
- * Contains the cursor and the transfer node.
- */
 export type QueryTransfersConnectionEdge = {
   __typename?: 'QueryTransfersConnectionEdge';
   cursor: Scalars['String']['output'];
@@ -1150,7 +818,6 @@ export type Subscription = {
   transaction?: Maybe<Transaction>;
 };
 
-/** Arguments for events subscription query. */
 export type SubscriptionEventsArgs = {
   chainId?: InputMaybe<Scalars['String']['input']>;
   minimumDepth?: InputMaybe<Scalars['Int']['input']>;
@@ -1158,24 +825,20 @@ export type SubscriptionEventsArgs = {
   qualifiedEventName: Scalars['String']['input'];
 };
 
-/** Arguments for new blocks subscription query. */
 export type SubscriptionNewBlocksArgs = {
   chainIds?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
-/** Arguments for new blocks from depth subscription query. */
 export type SubscriptionNewBlocksFromDepthArgs = {
   chainIds?: InputMaybe<Array<Scalars['String']['input']>>;
   minimumDepth: Scalars['Int']['input'];
 };
 
-/** Arguments for transaction subscription query. */
 export type SubscriptionTransactionArgs = {
   chainId?: InputMaybe<Scalars['String']['input']>;
   requestKey: Scalars['String']['input'];
 };
 
-/** Represents a token in the blockchain. */
 export type Token = {
   __typename?: 'Token';
   chainId: Scalars['String']['output'];
@@ -1262,7 +925,7 @@ export type TransactionResult = {
   transfers: TransactionResultTransfersConnection;
 };
 
-/** Arguments for retrieving transaction result events with pagination. */
+/** The result of a transaction. */
 export type TransactionResultEventsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -1270,7 +933,7 @@ export type TransactionResultEventsArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/** Arguments for retrieving transaction result transfers with pagination. */
+/** The result of a transaction. */
 export type TransactionResultTransfersArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -1278,7 +941,6 @@ export type TransactionResultTransfersArgs = {
   last?: InputMaybe<Scalars['Int']['input']>;
 };
 
-/** Connection type for paginated event results in a transaction. */
 export type TransactionResultEventsConnection = {
   __typename?: 'TransactionResultEventsConnection';
   edges: Array<Maybe<TransactionResultEventsConnectionEdge>>;
@@ -1286,14 +948,12 @@ export type TransactionResultEventsConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/** Edge type for the transaction result events connection. */
 export type TransactionResultEventsConnectionEdge = {
   __typename?: 'TransactionResultEventsConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Event;
 };
 
-/** Connection type for paginated transfer results in a transaction. */
 export type TransactionResultTransfersConnection = {
   __typename?: 'TransactionResultTransfersConnection';
   edges: Array<Maybe<TransactionResultTransfersConnectionEdge>>;
@@ -1301,7 +961,6 @@ export type TransactionResultTransfersConnection = {
   totalCount: Scalars['Int']['output'];
 };
 
-/** Edge type for the transaction result transfers connection. */
 export type TransactionResultTransfersConnectionEdge = {
   __typename?: 'TransactionResultTransfersConnectionEdge';
   cursor: Scalars['String']['output'];
@@ -1351,20 +1010,15 @@ export type UserGuard = IGuard & {
   raw: Scalars['String']['output'];
 };
 
-/** Wrapper type for resolver functions that may return a promise. */
 export type ResolverTypeWrapper<T> = Promise<T> | T;
 
-/** Resolver with explicit resolve function. */
 export type ResolverWithResolve<TResult, TParent, TContext, TArgs> = {
   resolve: ResolverFn<TResult, TParent, TContext, TArgs>;
 };
-
-/** Resolver type for GraphQL fields. */
 export type Resolver<TResult, TParent = {}, TContext = {}, TArgs = {}> =
   | ResolverFn<TResult, TParent, TContext, TArgs>
   | ResolverWithResolve<TResult, TParent, TContext, TArgs>;
 
-/** Function signature for GraphQL field resolvers. */
 export type ResolverFn<TResult, TParent, TContext, TArgs> = (
   parent: TParent,
   args: TArgs,
@@ -1372,14 +1026,6 @@ export type ResolverFn<TResult, TParent, TContext, TArgs> = (
   info: GraphQLResolveInfo,
 ) => Promise<TResult> | TResult;
 
-/**
- * Represents a subscription function that establishes the initial subscription connection.
- * @template TResult - The result type that will be streamed in the subscription
- * @template TParent - The parent object type
- * @template TContext - The context type passed to resolvers
- * @template TArgs - The arguments type for the subscription
- * @returns An async iterable or promise of an async iterable that yields subscription results
- */
 export type SubscriptionSubscribeFn<TResult, TParent, TContext, TArgs> = (
   parent: TParent,
   args: TArgs,
@@ -1387,14 +1033,6 @@ export type SubscriptionSubscribeFn<TResult, TParent, TContext, TArgs> = (
   info: GraphQLResolveInfo,
 ) => AsyncIterable<TResult> | Promise<AsyncIterable<TResult>>;
 
-/**
- * Represents a resolver function that processes each emitted value in a subscription.
- * @template TResult - The final result type after processing
- * @template TParent - The parent object type
- * @template TContext - The context type passed to resolvers
- * @template TArgs - The arguments type for the resolver
- * @returns The resolved result or a promise of the result
- */
 export type SubscriptionResolveFn<TResult, TParent, TContext, TArgs> = (
   parent: TParent,
   args: TArgs,
@@ -1402,15 +1040,6 @@ export type SubscriptionResolveFn<TResult, TParent, TContext, TArgs> = (
   info: GraphQLResolveInfo,
 ) => TResult | Promise<TResult>;
 
-/**
- * Interface for subscription resolvers using the subscriber/resolver pattern.
- * This pattern separates the subscription setup from the payload processing.
- * @template TResult - The final result type
- * @template TKey - The key in the subscription payload
- * @template TParent - The parent object type
- * @template TContext - The context type passed to resolvers
- * @template TArgs - The arguments type for the subscription
- */
 export interface SubscriptionSubscriberObject<
   TResult,
   TKey extends string,
@@ -1422,40 +1051,15 @@ export interface SubscriptionSubscriberObject<
   resolve?: SubscriptionResolveFn<TResult, { [key in TKey]: TResult }, TContext, TArgs>;
 }
 
-/**
- * Interface for subscription resolvers using a simpler pattern where both
- * subscription setup and payload processing are combined.
- * @template TResult - The final result type
- * @template TParent - The parent object type
- * @template TContext - The context type passed to resolvers
- * @template TArgs - The arguments type for the subscription
- */
 export interface SubscriptionResolverObject<TResult, TParent, TContext, TArgs> {
   subscribe: SubscriptionSubscribeFn<any, TParent, TContext, TArgs>;
   resolve: SubscriptionResolveFn<TResult, any, TContext, TArgs>;
 }
 
-/**
- * Union type representing either subscription pattern that can be used.
- * @template TResult - The final result type
- * @template TKey - The key in the subscription payload
- * @template TParent - The parent object type
- * @template TContext - The context type passed to resolvers
- * @template TArgs - The arguments type for the subscription
- */
 export type SubscriptionObject<TResult, TKey extends string, TParent, TContext, TArgs> =
   | SubscriptionSubscriberObject<TResult, TKey, TParent, TContext, TArgs>
   | SubscriptionResolverObject<TResult, TParent, TContext, TArgs>;
 
-/**
- * The main subscription resolver type that can be either a function returning a SubscriptionObject
- * or a SubscriptionObject itself.
- * @template TResult - The final result type
- * @template TKey - The key in the subscription payload
- * @template TParent - The parent object type (defaults to empty object)
- * @template TContext - The context type passed to resolvers (defaults to empty object)
- * @template TArgs - The arguments type for the subscription (defaults to empty object)
- */
 export type SubscriptionResolver<
   TResult,
   TKey extends string,
@@ -1466,48 +1070,20 @@ export type SubscriptionResolver<
   | ((...args: any[]) => SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>)
   | SubscriptionObject<TResult, TKey, TParent, TContext, TArgs>;
 
-/**
- * Represents a type resolver function that determines the concrete type of an interface or union.
- * @template TTypes - The possible concrete types
- * @template TParent - The parent object type (defaults to empty object)
- * @template TContext - The context type passed to resolvers (defaults to empty object)
- * @returns The resolved type or a promise of the resolved type
- */
 export type TypeResolveFn<TTypes, TParent = {}, TContext = {}> = (
   parent: TParent,
   context: TContext,
   info: GraphQLResolveInfo,
 ) => Maybe<TTypes> | Promise<Maybe<TTypes>>;
 
-/**
- * Function that determines if an object is of a specific GraphQL type.
- * Used by the GraphQL executor to check if an object belongs to a certain type.
- * @template T - The type to check against (defaults to empty object)
- * @template TContext - The context type passed to resolvers (defaults to empty object)
- * @returns Boolean indicating whether the object is of the specified type
- */
 export type IsTypeOfResolverFn<T = {}, TContext = {}> = (
   obj: T,
   context: TContext,
   info: GraphQLResolveInfo,
 ) => boolean | Promise<boolean>;
 
-/**
- * Represents a function that continues the resolver chain.
- * Used in directive resolvers to continue execution after directive processing.
- * @template T - The result type of the next resolver
- * @returns A promise of the result from the next resolver
- */
 export type NextResolverFn<T> = () => Promise<T>;
 
-/**
- * Represents a directive resolver function that can modify the behavior of field resolution.
- * @template TResult - The result type (defaults to empty object)
- * @template TParent - The parent object type (defaults to empty object)
- * @template TContext - The context type passed to resolvers (defaults to empty object)
- * @template TArgs - The arguments type for the directive (defaults to empty object)
- * @returns The result or a promise of the result after directive processing
- */
 export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs = {}> = (
   next: NextResolverFn<TResult>,
   parent: TParent,
@@ -2422,7 +1998,7 @@ export type NetworkInfoResolvers<
   nodeChains?: Resolver<Array<ResolversTypes['String']>, ParentType, ContextType>;
   nodeLatestBehaviorHeight?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   nodePackageVersion?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  nodeServiceDate?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  nodeServiceDate?: Resolver<Maybe<ResolversTypes['DateTime']>, ParentType, ContextType>;
   numberOfChains?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   totalDifficulty?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   transactionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -2706,7 +2282,7 @@ export type QueryResolvers<
     RequireFields<QueryPactQueryArgs, 'pactQuery'>
   >;
   tokens?: Resolver<
-    Maybe<ResolversTypes['QueryTokensConnection']>,
+    ResolversTypes['QueryTokensConnection'],
     ParentType,
     ContextType,
     Partial<QueryTokensArgs>
