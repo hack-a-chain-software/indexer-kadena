@@ -24,6 +24,64 @@ directive @complexity(
   multipliers: [String!]
 ) on FIELD_DEFINITION
 
+"""
+Time frame for chart data
+"""
+enum TimeFrame {
+  """
+  Last 24 hours
+  """
+  DAY
+  """
+  Last 7 days
+  """
+  WEEK
+  """
+  Last 30 days
+  """
+  MONTH
+  """
+  Last 365 days
+  """
+  YEAR
+  """
+  All available data
+  """
+  ALL
+}
+
+"""
+A single data point in a chart
+"""
+type ChartDataPoint {
+  """
+  The timestamp of the data point
+  """
+  timestamp: DateTime!
+  """
+  The value at this timestamp
+  """
+  value: Decimal!
+}
+
+"""
+Chart data for a pool
+"""
+type PoolCharts {
+  """
+  Volume data points
+  """
+  volume: [ChartDataPoint!]!
+  """
+  TVL data points
+  """
+  tvl: [ChartDataPoint!]!
+  """
+  Fees data points
+  """
+  fees: [ChartDataPoint!]!
+}
+
 type Subscription {
   """
   Subscribe to new blocks.
@@ -275,6 +333,57 @@ type Query {
 
   tokens(after: String, before: String, first: Int, last: Int): QueryTokensConnection!
     @complexity(value: 10, multipliers: ["first", "last"])
+
+  """
+  Retrieve liquidity pools. Default page size is 20.
+  """
+  pools(
+    after: String
+    before: String
+    first: Int
+    last: Int
+    orderBy: PoolOrderBy = TVL_USD_DESC
+  ): QueryPoolsConnection! @complexity(value: 10, multipliers: ["first", "last"])
+
+  """
+  Retrieve a specific pool by its ID.
+  """
+  pool(id: ID!): Pool @complexity(value: 1)
+
+  poolTransactions(
+    pairId: Int!
+    type: PoolTransactionType
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): PoolTransactionsConnection
+
+  """
+  Get user's liquidity positions
+  """
+  liquidityPositions(
+    walletAddress: String!
+    first: Int
+    after: String
+    last: Int
+    before: String
+    orderBy: LiquidityPositionOrderBy = VALUE_USD_DESC
+  ): LiquidityPositionsConnection!
+
+  """
+  Get DEX metrics including TVL, volume, and pool count
+  """
+  dexMetrics(
+    """
+    Start date for historical data
+    """
+    startDate: DateTime
+    """
+    End date for historical data
+    """
+    endDate: DateTime
+  ): DexMetrics!
 }
 
 """
@@ -1051,4 +1160,253 @@ type Token {
   id: ID!
   name: String!
   chainId: String!
+}
+
+"""
+A liquidity pool for a token pair.
+"""
+type Pool implements Node {
+  id: ID!
+  address: String!
+  token0: Token!
+  token1: Token!
+  reserve0: String!
+  reserve1: String!
+  totalSupply: String!
+  key: String!
+  tvlUsd: Decimal!
+  tvlChange24h: Float!
+  volume24hUsd: Decimal!
+  volumeChange24h: Float!
+  volume7dUsd: Decimal!
+  fees24hUsd: Decimal!
+  feesChange24h: Float!
+  transactionCount24h: Int!
+  transactionCountChange24h: Float!
+  apr24h: Decimal!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  """
+  Get chart data for this pool
+  """
+  charts(timeFrame: TimeFrame!): PoolCharts!
+  """
+  Get transactions for this pool
+  """
+  transactions(
+    """
+    Type of transactions to fetch
+    """
+    type: PoolTransactionType
+    """
+    Number of items to fetch
+    """
+    first: Int
+    """
+    Cursor for pagination
+    """
+    after: String
+  ): PoolTransactionsConnection @complexity(value: 10, multipliers: ["first"])
+}
+
+type QueryPoolsConnection {
+  edges: [QueryPoolsConnectionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type QueryPoolsConnectionEdge {
+  cursor: String!
+  node: Pool!
+}
+
+"""
+Sort options for pools
+"""
+enum PoolOrderBy {
+  TVL_USD_ASC
+  TVL_USD_DESC
+  VOLUME_24H_ASC
+  VOLUME_24H_DESC
+  VOLUME_7D_ASC
+  VOLUME_7D_DESC
+  APR_24H_ASC
+  APR_24H_DESC
+  TRANSACTION_COUNT_24H_ASC
+  TRANSACTION_COUNT_24H_DESC
+}
+
+"""
+Transaction type for pool events
+"""
+enum PoolTransactionType {
+  """
+  Swap transaction
+  """
+  SWAP
+  """
+  Add liquidity transaction
+  """
+  ADD_LIQUIDITY
+  """
+  Remove liquidity transaction
+  """
+  REMOVE_LIQUIDITY
+}
+
+"""
+A swap transaction in a pool
+"""
+type PoolTransaction {
+  """
+  Unique identifier
+  """
+  id: ID!
+  """
+  User who made the swap
+  """
+  maker: String!
+  """
+  Amount of token0 swapped in
+  """
+  amount0In: Decimal!
+  """
+  Amount of token1 swapped in
+  """
+  amount1In: Decimal!
+  """
+  Amount of token0 swapped out
+  """
+  amount0Out: Decimal!
+  """
+  Amount of token1 swapped out
+  """
+  amount1Out: Decimal!
+  """
+  Total amount in USD
+  """
+  amountUsd: Decimal!
+  """
+  Transaction timestamp
+  """
+  timestamp: DateTime!
+  """
+  ID of the transaction
+  """
+  transactionId: Int
+  """
+  Request key of the transaction
+  """
+  requestkey: String!
+
+  """
+  The type of transaction
+  """
+  transactionType: PoolTransactionType!
+}
+
+"""
+Connection type for pool transactions
+"""
+type PoolTransactionsConnection {
+  """
+  List of transaction edges
+  """
+  edges: [PoolTransactionEdge!]
+  """
+  Pagination information
+  """
+  pageInfo: PageInfo
+  """
+  Total number of transactions
+  """
+  totalCount: Int
+}
+
+"""
+Edge type for pool transactions
+"""
+type PoolTransactionEdge {
+  """
+  Cursor for pagination
+  """
+  cursor: String!
+  """
+  The transaction node
+  """
+  node: PoolTransaction!
+}
+
+type LiquidityBalance {
+  id: Int!
+  pairId: Int!
+  liquidity: String!
+  walletAddress: String!
+  pair: Pool!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+Sort options for liquidity positions
+"""
+enum LiquidityPositionOrderBy {
+  VALUE_USD_ASC
+  VALUE_USD_DESC
+  LIQUIDITY_ASC
+  LIQUIDITY_DESC
+  APR_ASC
+  APR_DESC
+}
+
+"""
+A user's liquidity position in a pool
+"""
+type LiquidityPosition {
+  id: ID!
+  pairId: Int!
+  liquidity: String!
+  walletAddress: String!
+  valueUsd: Decimal!
+  apr24h: Decimal!
+  pair: Pool!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type LiquidityPositionsConnection {
+  edges: [LiquidityPositionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type LiquidityPositionEdge {
+  cursor: String!
+  node: LiquidityPosition!
+}
+
+"""
+DEX metrics including TVL, volume, and pool count
+"""
+type DexMetrics {
+  """
+  Total number of pools
+  """
+  totalPools: Int!
+  """
+  Current total value locked in USD
+  """
+  currentTvlUsd: Decimal!
+  """
+  Historical TVL data points
+  """
+  tvlHistory: [ChartDataPoint!]!
+  """
+  Historical volume data points
+  """
+  volumeHistory: [ChartDataPoint!]!
+  """
+  Total volume in USD for the specified period
+  """
+  totalVolumeUsd: Decimal!
 }

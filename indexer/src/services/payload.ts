@@ -28,6 +28,7 @@ import { addCoinbaseTransactions } from './coinbase';
 import { getRequiredEnvString } from '@/utils/helpers';
 import TransactionDetails, { TransactionDetailsAttributes } from '@/models/transaction-details';
 import { mapToEventModel } from '@/models/mappers/event-mapper';
+import { processPairCreationEvents } from './pair';
 
 // Constants for array indices in the transaction data structure
 const TRANSACTION_INDEX = 0;
@@ -196,14 +197,16 @@ export async function processTransaction(
       },
     );
 
-    // Store events with reference to the transaction
-    const eventsWithTransactionId = eventsAttributes.map(event => ({
-      ...event,
-      transactionId,
-    })) as EventAttributes[];
+    const eventsWithTransactionId = await Promise.all(eventsAttributes);
     await Event.bulkCreate(eventsWithTransactionId, { transaction: tx });
 
-    // Store signers with reference to the transaction
+    // Process pair creation events
+    try {
+      await processPairCreationEvents(eventsWithTransactionId);
+    } catch (error) {
+      console.error('Error processing pair creation events:', error);
+    }
+
     const signers = (cmdData.signers ?? []).map((signer: any, index: number) => ({
       address: signer.address,
       orderIndex: index,
@@ -267,7 +270,7 @@ export async function processTransaction(
       transaction: tx,
     });
 
-    return eventsAttributes;
+    return eventsWithTransactionId;
   } catch (error) {
     console.error(
       `[ERROR][DB][DATA_CORRUPT] Failed to save transaction ${transactionInfo.hash}: ${error}`,

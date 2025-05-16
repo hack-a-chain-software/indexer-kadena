@@ -1,6 +1,8 @@
-import { QueryTypes } from 'sequelize';
-import { sequelize } from './database';
 import '../models/guard';
+
+import { QueryTypes } from 'sequelize';
+
+import { sequelize } from './database';
 
 export async function initializeDatabase(noTrigger = true): Promise<void> {
   try {

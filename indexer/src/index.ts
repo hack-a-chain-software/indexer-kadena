@@ -15,12 +15,14 @@ console.info('[INFO][INFRA][INFRA_CONFIG] Loading environment variables...');
 dotenv.config();
 
 import { program } from 'commander';
-import { startGraphqlServer } from './kadena-server/server';
 import { closeDatabase } from './config/database';
 import { initializeDatabase } from './config/init';
+import { startGraphqlServer } from './kadena-server/server';
+import { backfillBalances } from './services/balances';
+import { startMissingBlocks } from './services/missing';
 import { startStreaming } from './services/streaming';
-import { backfillBalances } from '@/services/balances';
-import { startMissingBlocks } from '@/services/missing';
+import { backfillPairEvents } from './services/pair';
+import { setupAssociations } from './models/setup-associations';
 
 /**
  * Command-line interface configuration using Commander.
@@ -31,7 +33,8 @@ program
   .option('-t, --graphql', 'Start GraphQL server based on kadena schema')
   .option('-f, --guards', 'Backfill the guards')
   .option('-m, --missing', 'Missing blocks')
-  .option('-z, --database', 'Init the database');
+  .option('-z, --database', 'Init the database')
+  .option('-p, --backfillPairs', 'Backfill the pairs');
 
 program.parse(process.argv);
 
@@ -55,6 +58,8 @@ async function main() {
   try {
     if (options.database) {
       await initializeDatabase();
+      // Setup model associations
+      setupAssociations();
       await closeDatabase();
       process.exit(0);
     }
@@ -70,6 +75,8 @@ async function main() {
       process.exit(0);
     } else if (options.graphql) {
       await startGraphqlServer();
+    } else if (options.backfillPairs) {
+      await backfillPairEvents();
     } else {
       console.info('[INFO][BIZ][BIZ_FLOW] No specific task requested.');
     }

@@ -20,18 +20,25 @@ import BalanceRepository from '../repository/application/balance-repository';
 import EventRepository from '../repository/application/event-repository';
 import TransferRepository from '../repository/application/transfer-repository';
 import NetworkRepository from '../repository/application/network-repository';
+import PoolRepository from '../repository/application/pool-repository';
+import { PubSub } from 'graphql-subscriptions';
 import BlockDbRepository from '../repository/infra/repository/block-db-repository';
 import TransactionDbRepository from '../repository/infra/repository/transaction-db-repository';
 import BalanceDbRepository from '../repository/infra/repository/balance-db-repository';
 import EventDbRepository from '../repository/infra/repository/event-db-repository';
 import TransferDbRepository from '../repository/infra/repository/transfer-db-repository';
 import NetworkDbRepository from '../repository/infra/repository/network-db-repository';
+import PoolDbRepository from '../repository/infra/repository/pool-db-repository';
 import GasGateway from '../repository/gateway/gas-gateway';
 import GasApiGateway from '../repository/infra/gateway/gas-api-gateway';
 import MempoolGateway from '../repository/gateway/mempool-gateway';
 import MempoolApiGateway from '../repository/infra/gateway/mempool-api-gateway';
 import PactGateway from '../repository/gateway/pact-gateway';
 import PactApiGateway from '../repository/infra/gateway/pact-api-gateway';
+import { LiquidityPositionRepository } from '../repository/application/liquidity-position-repository';
+import LiquidityPositionDbRepository from '../repository/infra/repository/liquidity-position-db-repository';
+import { DexMetricsRepository } from '../repository/application/dex-metrics-repository';
+import DexMetricsDbRepository from '../repository/infra/repository/dex-metrics-db-repository';
 
 /**
  * Resolver context type definition for the GraphQL API
@@ -102,10 +109,13 @@ export type ResolverContext = {
   transferRepository: TransferRepository;
   transactionRepository: TransactionRepository;
   networkRepository: NetworkRepository;
+  poolRepository: PoolRepository;
   gasGateway: GasGateway;
   mempoolGateway: MempoolGateway;
   pactGateway: PactGateway;
   signal: AbortSignal;
+  liquidityPositionRepository: LiquidityPositionRepository;
+  dexMetricsRepository: DexMetricsRepository;
 };
 
 /**
@@ -133,10 +143,13 @@ export const createGraphqlContext = () => {
     eventRepository: new EventDbRepository(),
     transferRepository: new TransferDbRepository(),
     networkRepository: new NetworkDbRepository(),
+    poolRepository: new PoolDbRepository(),
     gasGateway: new GasApiGateway(),
     mempoolGateway: new MempoolApiGateway(),
     pactGateway: new PactApiGateway(),
     signal: new AbortController().signal,
+    liquidityPositionRepository: new LiquidityPositionDbRepository(),
+    dexMetricsRepository: new DexMetricsDbRepository(),
   };
 
   return Promise.resolve({

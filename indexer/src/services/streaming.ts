@@ -22,8 +22,8 @@ import { sequelize } from '@/config/database';
 import StreamingError from '@/models/streaming-error';
 import { backfillGuards } from './guards';
 import { Transaction } from 'sequelize';
+import { PriceUpdaterService } from './price/price-updater.service';
 
-// Environment variables for blockchain node connection
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
 
@@ -46,7 +46,9 @@ const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
 export async function startStreaming() {
   console.info('[INFO][WORKER][BIZ_FLOW] Starting blockchain streaming service...');
 
-  // Set to track processed blocks and prevent duplicate processing
+  // Initialize price updater
+  PriceUpdaterService.getInstance();
+
   const blocksAlreadyReceived = new Set<string>();
 
   // Initialize EventSource connection to the blockchain node

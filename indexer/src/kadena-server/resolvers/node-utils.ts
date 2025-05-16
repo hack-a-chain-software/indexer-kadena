@@ -190,5 +190,12 @@ export const getNode = async (context: ResolverContext, id: string) => {
     };
   }
 
+  if (type === 'Pool') {
+    // Resolve Pool node - requires poolId
+    const [poolId] = JSON.parse(params);
+    const output = await context.poolRepository.getPool({ id: parseInt(poolId, 10) });
+    return output;
+  }
+
   return null;
 };
