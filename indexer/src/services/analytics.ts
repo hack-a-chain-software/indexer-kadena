@@ -6,12 +6,12 @@
  *
  * Instead of running expensive real-time queries that take 30+ minutes,
  * this service pre-computes metrics during block ingestion and stores them
- * in the AnalyticsSummary table for instant retrieval.
+ * in the AnalyticSummaries table for instant retrieval.
  */
 
 import { Transaction } from 'sequelize';
 import { sequelize } from '@/config/database';
-import AnalyticsSummary from '@/models/analytics-summary';
+import AnalyticSummaries from '@/models/analytics-summary';
 import { BlockAttributes } from '@/models/block';
 import { EventAttributes } from '@/models/event';
 import { TransactionAttributes } from '@/models/transaction';
@@ -206,20 +206,27 @@ export async function storeAnalyticsMetrics(
   chainId?: number,
   tx?: Transaction,
 ): Promise<void> {
-  await AnalyticsSummary.upsert(
-    {
-      metricType,
-      timeframe,
-      periodStart,
-      periodEnd,
-      chainId,
-      metricData,
-    },
-    {
-      conflictFields: ['metricType', 'timeframe', 'periodStart', 'chainId'],
-      transaction: tx,
-    },
-  );
+  try {
+    await AnalyticSummaries.upsert(
+      {
+        metricType,
+        timeframe,
+        periodStart,
+        periodEnd,
+        chainId,
+        metricData,
+      },
+      {
+        conflictFields: ['metricType', 'timeframe', 'periodStart', 'chainId'],
+        transaction: tx,
+      },
+    );
+  } catch (error) {
+    console.error(
+      `[ANALYTICS] Failed to store analytics metrics for period ${periodStart.toISOString()}:`,
+      error,
+    );
+  }
 }
 
 /**
@@ -248,7 +255,14 @@ export async function computeAndStoreAnalytics(
       chainId,
       tx,
     );
+  } catch (error) {
+    console.error(
+      `[ANALYTICS] Failed to compute analytics for period ${periodStart.toISOString()}:`,
+      error,
+    );
+  }
 
+  try {
     // Compute event type metrics
     const eventMetrics = await computeEventTypeMetrics(periodStart, periodEnd, chainId, tx);
     await storeAnalyticsMetrics(
@@ -260,7 +274,14 @@ export async function computeAndStoreAnalytics(
       chainId,
       tx,
     );
+  } catch (error) {
+    console.error(
+      `[ANALYTICS] Failed to compute analytics for period ${periodStart.toISOString()}:`,
+      error,
+    );
+  }
 
+  try {
     // Compute network activity metrics
     const networkMetrics = await computeNetworkActivityMetrics(periodStart, periodEnd, chainId, tx);
     await storeAnalyticsMetrics(
@@ -281,7 +302,6 @@ export async function computeAndStoreAnalytics(
       `[ANALYTICS] Failed to compute analytics for period ${periodStart.toISOString()}:`,
       error,
     );
-    throw error;
   }
 }
 
@@ -349,7 +369,7 @@ export async function processBlockAnalytics(
     const now = new Date();
     if (end <= now) {
       // Period is complete, compute final analytics
-      await computeAndStoreAnalytics(start, end, timeframe, block.chainId, tx);
+      computeAndStoreAnalytics(start, end, timeframe, block.chainId, tx);
     }
   }
 }

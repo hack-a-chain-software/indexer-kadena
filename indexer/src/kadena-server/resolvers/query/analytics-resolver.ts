@@ -2,11 +2,11 @@
  * Analytics GraphQL Resolvers
  *
  * These resolvers provide fast access to pre-computed analytics metrics
- * stored in the AnalyticsSummary table. This avoids expensive real-time
+ * stored in the AnalyticSummaries table. This avoids expensive real-time
  * calculations and provides instant query responses.
  */
 
-import AnalyticsSummary from '../../../models/analytics-summary';
+import AnalyticSummaries from '../../../models/analytics-summary';
 import { Op } from 'sequelize';
 
 interface AnalyticsArgs {
@@ -39,7 +39,7 @@ export const analyticsResolvers = {
       whereClause.chainId = chainId;
     }
 
-    const results = await AnalyticsSummary.findAll({
+    const results = await AnalyticSummaries.findAll({
       where: whereClause,
       order: [['periodStart', 'ASC']],
     });
@@ -71,7 +71,7 @@ export const analyticsResolvers = {
       whereClause.chainId = chainId;
     }
 
-    const results = await AnalyticsSummary.findAll({
+    const results = await AnalyticSummaries.findAll({
       where: whereClause,
       order: [['periodStart', 'ASC']],
     });
@@ -116,7 +116,7 @@ export const analyticsResolvers = {
       whereClause.chainId = chainId;
     }
 
-    const results = await AnalyticsSummary.findAll({
+    const results = await AnalyticSummaries.findAll({
       where: whereClause,
       order: [['periodStart', 'ASC']],
     });

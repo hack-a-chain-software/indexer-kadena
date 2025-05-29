@@ -1,7 +1,7 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import { sequelize } from '../config/database';
 
-export interface AnalyticsSummaryAttributes {
+export interface AnalyticSummariesAttributes {
   id: number;
   metricType: string; // 'transaction_fees', 'event_types', 'network_activity', etc.
   timeframe: string; // 'hourly', 'daily', 'weekly', 'monthly', 'yearly'
@@ -13,8 +13,8 @@ export interface AnalyticsSummaryAttributes {
   updatedAt: Date;
 }
 
-export interface AnalyticsSummaryCreationAttributes
-  extends Optional<AnalyticsSummaryAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
+export interface AnalyticSummariesCreationAttributes
+  extends Optional<AnalyticSummariesAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
 
 /**
  * Analytics Summary Model
@@ -23,9 +23,9 @@ export interface AnalyticsSummaryCreationAttributes
  * This enables fast retrieval of transaction fees, event frequencies, and other
  * network statistics without scanning millions of records.
  */
-class AnalyticsSummary
-  extends Model<AnalyticsSummaryAttributes, AnalyticsSummaryCreationAttributes>
-  implements AnalyticsSummaryAttributes
+class AnalyticSummaries
+  extends Model<AnalyticSummariesAttributes, AnalyticSummariesCreationAttributes>
+  implements AnalyticSummariesAttributes
 {
   declare id: number;
   declare metricType: string;
@@ -38,7 +38,7 @@ class AnalyticsSummary
   declare updatedAt: Date;
 }
 
-AnalyticsSummary.init(
+AnalyticSummaries.init(
   {
     id: {
       type: DataTypes.INTEGER,
@@ -87,7 +87,7 @@ AnalyticsSummary.init(
   },
   {
     sequelize,
-    modelName: 'AnalyticsSummary',
+    modelName: 'AnalyticSummaries',
     indexes: [
       {
         name: 'analytics_summary_metric_timeframe_idx',
@@ -109,4 +109,4 @@ AnalyticsSummary.init(
   },
 );
 
-export default AnalyticsSummary;
+export default AnalyticSummaries;
