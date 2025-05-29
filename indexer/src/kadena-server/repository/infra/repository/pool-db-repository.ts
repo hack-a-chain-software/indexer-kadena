@@ -40,12 +40,14 @@ const POOL_ORDER_BY_MAP: Record<
 };
 
 export default class PoolDbRepository {
+  private readonly DEFAULT_PROTOCOL = 'kdlaunch.kdswap-exchange';
+
   async getPools(params: GetPoolsParams): Promise<{
     pageInfo: PageInfo;
     edges: ConnectionEdge<Pool>[];
     totalCount: number;
   }> {
-    const { after, before, first, last, orderBy } = params;
+    const { after, before, first, last, orderBy, protocolAddress = this.DEFAULT_PROTOCOL } = params;
     const pagination = getPaginationParams({ after, before, first, last });
 
     // Get the latest stats for each pool
@@ -80,6 +82,8 @@ export default class PoolDbRepository {
     if (timestampsStr) {
       conditions.push(`ps.timestamp IN (${timestampsStr})`);
     }
+
+    conditions.push(`p.address = '${protocolAddress}'`);
 
     if (pagination.after) {
       conditions.push(`p.id ${pagination.order === 'DESC' ? '<' : '>'} ${pagination.after}`);
@@ -132,6 +136,7 @@ export default class PoolDbRepository {
         id: {
           [Op.in]: pairIds,
         },
+        ...(protocolAddress ? { address: protocolAddress } : {}),
       },
     });
 

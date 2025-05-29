@@ -343,6 +343,7 @@ type Query {
     first: Int
     last: Int
     orderBy: PoolOrderBy = TVL_USD_DESC
+    protocolAddress: String
   ): QueryPoolsConnection! @complexity(value: 10, multipliers: ["first", "last"])
 
   """
@@ -383,6 +384,10 @@ type Query {
     End date for historical data
     """
     endDate: DateTime
+    """
+    Filter metrics by protocol address
+    """
+    protocolAddress: String
   ): DexMetrics!
 
   """

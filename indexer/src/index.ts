@@ -23,6 +23,7 @@ import { startMissingBlocks } from './services/missing';
 import { startStreaming } from './services/streaming';
 import { backfillPairEvents } from './services/pair';
 import { setupAssociations } from './models/setup-associations';
+import { PriceUpdaterService } from '@/services/price/price-updater.service';
 
 /**
  * Command-line interface configuration using Commander.
@@ -76,6 +77,7 @@ async function main() {
     } else if (options.graphql) {
       await startGraphqlServer();
     } else if (options.backfillPairs) {
+      PriceUpdaterService.getInstance();
       await backfillPairEvents();
     } else {
       console.info('[INFO][BIZ][BIZ_FLOW] No specific task requested.');

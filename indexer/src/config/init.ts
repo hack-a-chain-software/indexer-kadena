@@ -34,7 +34,39 @@ export async function initializeDatabase(noTrigger = true): Promise<void> {
           CREATE EXTENSION pg_trgm;
           CREATE EXTENSION btree_gin;
       `);
-    await sequelize.sync({ force: false });
+
+    // Only sync specific tables that don't have migrations
+    const tablesToSync = [
+      'Balances',
+      'Blocks',
+      'Contracts',
+      'Events',
+      'Guards',
+      'Signers',
+      'StreamingErrors',
+      'Transactions',
+      'Transfers',
+    ];
+
+    // Get all models
+    const models = Object.values(sequelize.models);
+
+    // Sync only the specified tables
+    for (const model of models) {
+      const tableNameObj = model.getTableName();
+      const tableName =
+        typeof tableNameObj === 'string'
+          ? tableNameObj
+          : (tableNameObj as { tableName: string }).tableName;
+
+      if (tablesToSync.includes(tableName)) {
+        try {
+          await model.sync({ force: false });
+        } catch (error) {
+          console.warn(`[WARN][DB][INFRA_CONFIG] Could not sync table ${tableName}:`, error);
+        }
+      }
+    }
 
     console.info('[INFO][DB][INFRA_CONFIG] Database tables synchronized successfully.');
 

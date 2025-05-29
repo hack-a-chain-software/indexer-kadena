@@ -1,23 +1,28 @@
 import { QueryTypes } from 'sequelize';
 import { sequelize } from '../../../../config/database';
-import Pair from '../../../../models/pair';
 import {
   DexMetrics,
   DexMetricsRepository,
   GetDexMetricsParams,
 } from '../../application/dex-metrics-repository';
 import { dexMetricsValidator } from '../schema-validator/dex-metrics-schema-validator';
+const DEFAULT_PROTOCOL_ADDRESS = 'kdlaunch.kdswap-exchange';
 
 export default class DexMetricsDbRepository implements DexMetricsRepository {
   async getDexMetrics(params: GetDexMetricsParams): Promise<DexMetrics> {
-    const { startDate, endDate } = params;
+    const { startDate, endDate, protocolAddress } = params;
     const now = new Date();
     const defaultStartDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
     const queryStartDate = startDate || defaultStartDate;
     const queryEndDate = endDate || now;
 
     // Get total pools count
-    const totalPools = await Pair.count();
+    const totalPoolsQuery = `SELECT COUNT(*) FROM "Pairs" WHERE address = $1`;
+    const totalPoolsResult = await sequelize.query(totalPoolsQuery, {
+      type: QueryTypes.SELECT,
+      bind: protocolAddress ? [protocolAddress] : [DEFAULT_PROTOCOL_ADDRESS],
+    });
+    const totalPools = parseInt((totalPoolsResult[0] as any).count, 10);
 
     // Get current TVL
     const currentTvlQuery = `
@@ -25,6 +30,7 @@ export default class DexMetricsDbRepository implements DexMetricsRepository {
         SELECT DISTINCT ON (ps."pairId") 
           ps.*
         FROM "PoolStats" ps
+        JOIN "Pairs" p ON p.id = ps."pairId" WHERE p.address = $1
         ORDER BY ps."pairId", ps.timestamp DESC
       )
       SELECT COALESCE(SUM(CAST(ls."tvlUsd" AS DECIMAL)), 0) as "currentTvlUsd"
@@ -33,50 +39,63 @@ export default class DexMetricsDbRepository implements DexMetricsRepository {
 
     const [currentTvlResult] = await sequelize.query(currentTvlQuery, {
       type: QueryTypes.SELECT,
+      bind: protocolAddress ? [protocolAddress] : [DEFAULT_PROTOCOL_ADDRESS],
     });
 
     // Get TVL history
     const tvlHistoryQuery = `
       SELECT 
-        date_trunc('day', timestamp) as timestamp,
-        SUM(CAST("tvlUsd" AS DECIMAL)) as value
-      FROM "PoolCharts"
-      WHERE timestamp BETWEEN $1 AND $2
-      GROUP BY date_trunc('day', timestamp)
+        date_trunc('day', pc.timestamp) as timestamp,
+        SUM(CAST(pc."tvlUsd" AS DECIMAL)) as value
+      FROM "PoolCharts" pc
+      JOIN "Pairs" p ON p.id = pc."pairId"
+      WHERE pc.timestamp BETWEEN $1 AND $2
+      AND p.address = $3
+      GROUP BY date_trunc('day', pc.timestamp)
       ORDER BY timestamp ASC
     `;
 
     const tvlHistory = await sequelize.query(tvlHistoryQuery, {
       type: QueryTypes.SELECT,
-      bind: [queryStartDate, queryEndDate],
+      bind: protocolAddress
+        ? [queryStartDate, queryEndDate, protocolAddress]
+        : [queryStartDate, queryEndDate, DEFAULT_PROTOCOL_ADDRESS],
     });
 
     // Get volume history
     const volumeHistoryQuery = `
       SELECT 
-        date_trunc('day', timestamp) as timestamp,
-        SUM("amountUsd") as value
-      FROM "PoolTransactions"
-      WHERE timestamp BETWEEN $1 AND $2
-      GROUP BY date_trunc('day', timestamp)
+        date_trunc('day', pt.timestamp) as timestamp,
+        SUM(pt."amountUsd") as value
+      FROM "PoolTransactions" pt
+      JOIN "Pairs" p ON p.id = pt."pairId"
+      WHERE pt.timestamp BETWEEN $1 AND $2
+      AND p.address = $3
+      GROUP BY date_trunc('day', pt.timestamp)
       ORDER BY timestamp ASC
     `;
 
     const volumeHistory = await sequelize.query(volumeHistoryQuery, {
       type: QueryTypes.SELECT,
-      bind: [queryStartDate, queryEndDate],
+      bind: protocolAddress
+        ? [queryStartDate, queryEndDate, protocolAddress]
+        : [queryStartDate, queryEndDate, DEFAULT_PROTOCOL_ADDRESS],
     });
 
     // Get total volume
     const totalVolumeQuery = `
-      SELECT COALESCE(SUM("amountUsd"), 0) as "totalVolumeUsd"
-      FROM "PoolTransactions"
-      WHERE timestamp BETWEEN $1 AND $2
+      SELECT COALESCE(SUM(pt."amountUsd"), 0) as "totalVolumeUsd"
+      FROM "PoolTransactions" pt
+      JOIN "Pairs" p ON p.id = pt."pairId"
+      WHERE pt.timestamp BETWEEN $1 AND $2
+      AND p.address = $3
     `;
 
     const [totalVolumeResult] = await sequelize.query(totalVolumeQuery, {
       type: QueryTypes.SELECT,
-      bind: [queryStartDate, queryEndDate],
+      bind: protocolAddress
+        ? [queryStartDate, queryEndDate, protocolAddress]
+        : [queryStartDate, queryEndDate, DEFAULT_PROTOCOL_ADDRESS],
     });
 
     const result = {

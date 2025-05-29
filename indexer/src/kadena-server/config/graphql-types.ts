@@ -341,8 +341,8 @@ export type LiquidityBalance = {
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['Int']['output'];
   liquidity: Scalars['String']['output'];
-  pairId: Scalars['Int']['output'];
   pair: Pool;
+  pairId: Scalars['Int']['output'];
   updatedAt: Scalars['DateTime']['output'];
   walletAddress: Scalars['String']['output'];
 };
@@ -354,8 +354,8 @@ export type LiquidityPosition = {
   createdAt: Scalars['DateTime']['output'];
   id: Scalars['ID']['output'];
   liquidity: Scalars['String']['output'];
-  pairId: Scalars['Int']['output'];
   pair: Pool;
+  pairId: Scalars['Int']['output'];
   updatedAt: Scalars['DateTime']['output'];
   valueUsd: Scalars['Decimal']['output'];
   walletAddress: Scalars['String']['output'];
@@ -766,6 +766,7 @@ export type QueryCompletedBlockHeightsArgs = {
 
 export type QueryDexMetricsArgs = {
   endDate?: InputMaybe<Scalars['DateTime']['input']>;
+  protocolAddress?: InputMaybe<Scalars['String']['input']>;
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
 };
 
@@ -866,6 +867,7 @@ export type QueryPoolsArgs = {
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<PoolOrderBy>;
+  protocolAddress?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type QueryTokensArgs = {
@@ -2311,8 +2313,8 @@ export type LiquidityBalanceResolvers<
   createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   liquidity?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  pairId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pair?: Resolver<ResolversTypes['Pool'], ParentType, ContextType>;
+  pairId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   walletAddress?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
@@ -2327,8 +2329,8 @@ export type LiquidityPositionResolvers<
   createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   liquidity?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  pairId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   pair?: Resolver<ResolversTypes['Pool'], ParentType, ContextType>;
+  pairId?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   valueUsd?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
   walletAddress?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
