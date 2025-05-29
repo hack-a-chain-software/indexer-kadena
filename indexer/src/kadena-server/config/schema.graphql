@@ -384,6 +384,72 @@ type Query {
     """
     endDate: DateTime
   ): DexMetrics!
+
+  """
+  Get transaction fee analytics for specified time periods
+  """
+  transactionFeeAnalytics(
+    """
+    Time aggregation level (hourly, daily, weekly, monthly, yearly)
+    """
+    timeframe: String!
+    """
+    Start date for the analytics period
+    """
+    startDate: DateTime!
+    """
+    End date for the analytics period
+    """
+    endDate: DateTime!
+    """
+    Optional chain ID filter
+    """
+    chainId: Int
+  ): [TransactionFeeAnalytics!]!
+
+  """
+  Get event type frequency analytics
+  """
+  eventTypeAnalytics(
+    """
+    Time aggregation level (hourly, daily, weekly, monthly, yearly)
+    """
+    timeframe: String!
+    """
+    Start date for the analytics period
+    """
+    startDate: DateTime!
+    """
+    End date for the analytics period
+    """
+    endDate: DateTime!
+    """
+    Optional chain ID filter
+    """
+    chainId: Int
+  ): [EventTypeAnalytics!]!
+
+  """
+  Get network activity analytics
+  """
+  networkActivityAnalytics(
+    """
+    Time aggregation level (hourly, daily, weekly, monthly, yearly)
+    """
+    timeframe: String!
+    """
+    Start date for the analytics period
+    """
+    startDate: DateTime!
+    """
+    End date for the analytics period
+    """
+    endDate: DateTime!
+    """
+    Optional chain ID filter
+    """
+    chainId: Int
+  ): [NetworkActivityAnalytics!]!
 }
 
 """
@@ -1409,4 +1475,136 @@ type DexMetrics {
   Total volume in USD for the specified period
   """
   totalVolumeUsd: Decimal!
+}
+
+"""
+Transaction fee analytics for a specific time period
+"""
+type TransactionFeeAnalytics {
+  """
+  Start of the time period
+  """
+  periodStart: DateTime!
+  """
+  End of the time period
+  """
+  periodEnd: DateTime!
+  """
+  Chain ID (null for cross-chain metrics)
+  """
+  chainId: Int
+  """
+  Total gas expenditure in the period
+  """
+  totalGasExpenditure: String!
+  """
+  Total number of transactions
+  """
+  totalTransactionCount: Int!
+  """
+  Number of unique senders
+  """
+  uniqueSenders: Int!
+  """
+  Average gas price
+  """
+  averageGasPrice: String!
+  """
+  Average gas used per transaction
+  """
+  averageGasUsed: String!
+  """
+  Average fee per transaction
+  """
+  averageFeePerTransaction: String!
+}
+
+"""
+Event type frequency analytics
+"""
+type EventTypeAnalytics {
+  """
+  Start of the time period
+  """
+  periodStart: DateTime!
+  """
+  End of the time period
+  """
+  periodEnd: DateTime!
+  """
+  Chain ID (null for cross-chain metrics)
+  """
+  chainId: Int
+  """
+  Event type frequencies
+  """
+  eventTypes: [EventTypeFrequency!]!
+}
+
+"""
+Individual event type frequency data
+"""
+type EventTypeFrequency {
+  """
+  Module name
+  """
+  module: String!
+  """
+  Event name
+  """
+  name: String!
+  """
+  Frequency count
+  """
+  frequency: Int!
+  """
+  Percentage of total events
+  """
+  percentage: Decimal!
+}
+
+"""
+Network activity analytics
+"""
+type NetworkActivityAnalytics {
+  """
+  Start of the time period
+  """
+  periodStart: DateTime!
+  """
+  End of the time period
+  """
+  periodEnd: DateTime!
+  """
+  Chain ID (null for cross-chain metrics)
+  """
+  chainId: Int
+  """
+  Total number of transactions
+  """
+  totalTransactions: Int!
+  """
+  Number of successful transactions
+  """
+  successfulTransactions: Int!
+  """
+  Number of failed transactions
+  """
+  failedTransactions: Int!
+  """
+  Number of unique accounts
+  """
+  uniqueAccounts: Int!
+  """
+  Total gas used
+  """
+  totalGasUsed: String!
+  """
+  Average block time in seconds
+  """
+  averageBlockTime: Decimal!
+  """
+  Transactions per second
+  """
+  transactionsPerSecond: Decimal!
 }
