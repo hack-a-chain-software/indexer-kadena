@@ -16,7 +16,7 @@ interface AnalyticsArgs {
   chainId?: number;
 }
 
-export const analyticsResolvers = {
+export const analyticsResolver: any = {
   /**
    * Retrieves transaction fee analytics for specified time periods
    */
@@ -71,10 +71,14 @@ export const analyticsResolvers = {
       whereClause.chainId = chainId;
     }
 
+    console.log('whereClause', whereClause);
+
     const results = await AnalyticSummaries.findAll({
       where: whereClause,
       order: [['periodStart', 'ASC']],
     });
+
+    console.log('results', results);
 
     return results.map(result => {
       const eventTypesData = result.metricData as any;

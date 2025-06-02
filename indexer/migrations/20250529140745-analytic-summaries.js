@@ -52,31 +52,31 @@ module.exports = {
     });
 
     // Add indexes for efficient querying
-    await queryInterface.addIndex('AnalyticsSummaries', ['metricType', 'timeframe'], {
-      name: 'analytics_summary_metric_timeframe_idx',
+    await queryInterface.addIndex('AnalyticSummaries', ['metricType', 'timeframe'], {
+      name: 'analytic_summaries_metric_timeframe_idx',
     });
 
-    await queryInterface.addIndex('AnalyticsSummaries', ['periodStart', 'periodEnd'], {
-      name: 'analytics_summary_period_idx',
+    await queryInterface.addIndex('AnalyticSummaries', ['periodStart', 'periodEnd'], {
+      name: 'analytic_summaries_period_idx',
     });
 
-    await queryInterface.addIndex('AnalyticsSummaries', ['chainId'], {
-      name: 'analytics_summary_chain_idx',
+    await queryInterface.addIndex('AnalyticSummaries', ['chainId'], {
+      name: 'analytic_summaries_chain_idx',
     });
 
     await queryInterface.addIndex(
-      'AnalyticsSummaries',
+      'AnalyticSummaries',
       ['metricType', 'timeframe', 'chainId', 'periodStart'],
       {
-        name: 'analytics_summary_lookup_idx',
+        name: 'analytic_summaries_lookup_idx',
       },
     );
 
     // Add unique constraint to prevent duplicate analytics for the same period
-    await queryInterface.addConstraint('AnalyticsSummaries', {
+    await queryInterface.addConstraint('AnalyticSummaries', {
       fields: ['metricType', 'timeframe', 'periodStart', 'chainId'],
       type: 'unique',
-      name: 'analytics_summary_unique_period',
+      name: 'analytic_summaries_unique_period',
     });
   },
 

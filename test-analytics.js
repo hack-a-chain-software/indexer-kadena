@@ -185,7 +185,7 @@ async function testAnalytics() {
   console.log('   - Adjust date ranges to match your indexed data');
   console.log('   - Try different timeframes: hourly, daily, weekly, monthly');
   console.log('   - Use chainId parameter to filter by specific chains');
-  console.log('   - Check the database for AnalyticsSummaries table data');
+  console.log('   - Check the database for AnalyticSummaries table data');
 }
 
 // Run the tests

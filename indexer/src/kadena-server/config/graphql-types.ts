@@ -163,6 +163,32 @@ export type Event = Node & {
   transaction?: Maybe<Transaction>;
 };
 
+/** Event type frequency analytics */
+export type EventTypeAnalytics = {
+  __typename?: 'EventTypeAnalytics';
+  /** Chain ID (null for cross-chain metrics) */
+  chainId?: Maybe<Scalars['Int']['output']>;
+  /** Event type frequencies */
+  eventTypes: Array<EventTypeFrequency>;
+  /** End of the time period */
+  periodEnd: Scalars['DateTime']['output'];
+  /** Start of the time period */
+  periodStart: Scalars['DateTime']['output'];
+};
+
+/** Individual event type frequency data */
+export type EventTypeFrequency = {
+  __typename?: 'EventTypeFrequency';
+  /** Frequency count */
+  frequency: Scalars['Int']['output'];
+  /** Module name */
+  module: Scalars['String']['output'];
+  /** Event name */
+  name: Scalars['String']['output'];
+  /** Percentage of total events */
+  percentage: Scalars['Decimal']['output'];
+};
+
 /** The payload of an exec transaction. */
 export type ExecutionPayload = {
   __typename?: 'ExecutionPayload';
@@ -382,6 +408,31 @@ export type LiquidityPositionsConnection = {
   edges: Array<LiquidityPositionEdge>;
   pageInfo: PageInfo;
   totalCount: Scalars['Int']['output'];
+};
+
+/** Network activity analytics */
+export type NetworkActivityAnalytics = {
+  __typename?: 'NetworkActivityAnalytics';
+  /** Average block time in seconds */
+  averageBlockTime: Scalars['Decimal']['output'];
+  /** Chain ID (null for cross-chain metrics) */
+  chainId?: Maybe<Scalars['Int']['output']>;
+  /** Number of failed transactions */
+  failedTransactions: Scalars['Int']['output'];
+  /** End of the time period */
+  periodEnd: Scalars['DateTime']['output'];
+  /** Start of the time period */
+  periodStart: Scalars['DateTime']['output'];
+  /** Number of successful transactions */
+  successfulTransactions: Scalars['Int']['output'];
+  /** Total gas used */
+  totalGasUsed: Scalars['String']['output'];
+  /** Total number of transactions */
+  totalTransactions: Scalars['Int']['output'];
+  /** Transactions per second */
+  transactionsPerSecond: Scalars['Decimal']['output'];
+  /** Number of unique accounts */
+  uniqueAccounts: Scalars['Int']['output'];
 };
 
 /** Information about the network. */
@@ -663,6 +714,8 @@ export type Query = {
   completedBlockHeights: QueryCompletedBlockHeightsConnection;
   /** Get DEX metrics including TVL, volume, and pool count */
   dexMetrics: DexMetrics;
+  /** Get event type frequency analytics */
+  eventTypeAnalytics: Array<EventTypeAnalytics>;
   /**
    * Retrieve events by qualifiedName (e.g. `coin.TRANSFER`). Default page size is 20.
    *
@@ -702,6 +755,8 @@ export type Query = {
   lastBlockHeight?: Maybe<Scalars['BigInt']['output']>;
   /** Get user's liquidity positions */
   liquidityPositions: LiquidityPositionsConnection;
+  /** Get network activity analytics */
+  networkActivityAnalytics: Array<NetworkActivityAnalytics>;
   /** Get information about the network. */
   networkInfo?: Maybe<NetworkInfo>;
   node?: Maybe<Node>;
@@ -720,6 +775,8 @@ export type Query = {
   tokens: QueryTokensConnection;
   /** Retrieve one transaction by its unique key. Throws an error if multiple transactions are found. */
   transaction?: Maybe<Transaction>;
+  /** Get transaction fee analytics for specified time periods */
+  transactionFeeAnalytics: Array<TransactionFeeAnalytics>;
   /**
    * Retrieve transactions. Default page size is 20.
    *  At least one of accountName, fungibleName, blockHash, or requestKey must be provided.
@@ -768,6 +825,13 @@ export type QueryDexMetricsArgs = {
   endDate?: InputMaybe<Scalars['DateTime']['input']>;
   protocolAddress?: InputMaybe<Scalars['String']['input']>;
   startDate?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export type QueryEventTypeAnalyticsArgs = {
+  chainId?: InputMaybe<Scalars['Int']['input']>;
+  endDate: Scalars['DateTime']['input'];
+  startDate: Scalars['DateTime']['input'];
+  timeframe: Scalars['String']['input'];
 };
 
 export type QueryEventsArgs = {
@@ -827,6 +891,13 @@ export type QueryLiquidityPositionsArgs = {
   walletAddress: Scalars['String']['input'];
 };
 
+export type QueryNetworkActivityAnalyticsArgs = {
+  chainId?: InputMaybe<Scalars['Int']['input']>;
+  endDate: Scalars['DateTime']['input'];
+  startDate: Scalars['DateTime']['input'];
+  timeframe: Scalars['String']['input'];
+};
+
 export type QueryNodeArgs = {
   id: Scalars['ID']['input'];
 };
@@ -881,6 +952,13 @@ export type QueryTransactionArgs = {
   blockHash?: InputMaybe<Scalars['String']['input']>;
   minimumDepth?: InputMaybe<Scalars['Int']['input']>;
   requestKey: Scalars['String']['input'];
+};
+
+export type QueryTransactionFeeAnalyticsArgs = {
+  chainId?: InputMaybe<Scalars['Int']['input']>;
+  endDate: Scalars['DateTime']['input'];
+  startDate: Scalars['DateTime']['input'];
+  timeframe: Scalars['String']['input'];
 };
 
 export type QueryTransactionsArgs = {
@@ -1141,6 +1219,29 @@ export type TransactionCommand = {
   nonce: Scalars['String']['output'];
   payload: TransactionPayload;
   signers: Array<Signer>;
+};
+
+/** Transaction fee analytics for a specific time period */
+export type TransactionFeeAnalytics = {
+  __typename?: 'TransactionFeeAnalytics';
+  /** Average fee per transaction */
+  averageFeePerTransaction: Scalars['String']['output'];
+  /** Average gas price */
+  averageGasPrice: Scalars['String']['output'];
+  /** Average gas used per transaction */
+  averageGasUsed: Scalars['String']['output'];
+  /** Chain ID (null for cross-chain metrics) */
+  chainId?: Maybe<Scalars['Int']['output']>;
+  /** End of the time period */
+  periodEnd: Scalars['DateTime']['output'];
+  /** Start of the time period */
+  periodStart: Scalars['DateTime']['output'];
+  /** Total gas expenditure in the period */
+  totalGasExpenditure: Scalars['String']['output'];
+  /** Total number of transactions */
+  totalTransactionCount: Scalars['Int']['output'];
+  /** Number of unique senders */
+  uniqueSenders: Scalars['Int']['output'];
 };
 
 /** The result of a transaction. */
@@ -1460,6 +1561,8 @@ export type ResolversTypes = {
       transaction?: Maybe<ResolversTypes['Transaction']>;
     }
   >;
+  EventTypeAnalytics: ResolverTypeWrapper<EventTypeAnalytics>;
+  EventTypeFrequency: ResolverTypeWrapper<EventTypeFrequency>;
   ExecutionPayload: ResolverTypeWrapper<ExecutionPayload>;
   Float: ResolverTypeWrapper<Scalars['Float']['output']>;
   FungibleAccount: ResolverTypeWrapper<
@@ -1524,6 +1627,7 @@ export type ResolversTypes = {
   LiquidityPositionEdge: ResolverTypeWrapper<LiquidityPositionEdge>;
   LiquidityPositionOrderBy: LiquidityPositionOrderBy;
   LiquidityPositionsConnection: ResolverTypeWrapper<LiquidityPositionsConnection>;
+  NetworkActivityAnalytics: ResolverTypeWrapper<NetworkActivityAnalytics>;
   NetworkInfo: ResolverTypeWrapper<NetworkInfo>;
   Node: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Node']>;
   NonFungibleAccount: ResolverTypeWrapper<
@@ -1657,6 +1761,7 @@ export type ResolversTypes = {
       payload: ResolversTypes['TransactionPayload'];
     }
   >;
+  TransactionFeeAnalytics: ResolverTypeWrapper<TransactionFeeAnalytics>;
   TransactionInfo: ResolverTypeWrapper<ResolversUnionTypes<ResolversTypes>['TransactionInfo']>;
   TransactionMempoolInfo: ResolverTypeWrapper<TransactionMempoolInfo>;
   TransactionMeta: ResolverTypeWrapper<TransactionMeta>;
@@ -1729,6 +1834,8 @@ export type ResolversParentTypes = {
     block: ResolversParentTypes['Block'];
     transaction?: Maybe<ResolversParentTypes['Transaction']>;
   };
+  EventTypeAnalytics: EventTypeAnalytics;
+  EventTypeFrequency: EventTypeFrequency;
   ExecutionPayload: ExecutionPayload;
   Float: Scalars['Float']['output'];
   FungibleAccount: Omit<FungibleAccount, 'chainAccounts' | 'transactions' | 'transfers'> & {
@@ -1781,6 +1888,7 @@ export type ResolversParentTypes = {
   LiquidityPosition: LiquidityPosition;
   LiquidityPositionEdge: LiquidityPositionEdge;
   LiquidityPositionsConnection: LiquidityPositionsConnection;
+  NetworkActivityAnalytics: NetworkActivityAnalytics;
   NetworkInfo: NetworkInfo;
   Node: ResolversInterfaceTypes<ResolversParentTypes>['Node'];
   NonFungibleAccount: Omit<
@@ -1891,6 +1999,7 @@ export type ResolversParentTypes = {
     meta: ResolversParentTypes['TransactionMeta'];
     payload: ResolversParentTypes['TransactionPayload'];
   };
+  TransactionFeeAnalytics: TransactionFeeAnalytics;
   TransactionInfo: ResolversUnionTypes<ResolversParentTypes>['TransactionInfo'];
   TransactionMempoolInfo: TransactionMempoolInfo;
   TransactionMeta: TransactionMeta;
@@ -2089,6 +2198,30 @@ export type EventResolvers<
   qualifiedName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   requestKey?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   transaction?: Resolver<Maybe<ResolversTypes['Transaction']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EventTypeAnalyticsResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['EventTypeAnalytics'] = ResolversParentTypes['EventTypeAnalytics'],
+> = {
+  chainId?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  eventTypes?: Resolver<Array<ResolversTypes['EventTypeFrequency']>, ParentType, ContextType>;
+  periodEnd?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  periodStart?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EventTypeFrequencyResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['EventTypeFrequency'] = ResolversParentTypes['EventTypeFrequency'],
+> = {
+  frequency?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  module?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  percentage?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2355,6 +2488,24 @@ export type LiquidityPositionsConnectionResolvers<
   edges?: Resolver<Array<ResolversTypes['LiquidityPositionEdge']>, ParentType, ContextType>;
   pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
   totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NetworkActivityAnalyticsResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['NetworkActivityAnalytics'] = ResolversParentTypes['NetworkActivityAnalytics'],
+> = {
+  averageBlockTime?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
+  chainId?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  failedTransactions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  periodEnd?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  periodStart?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  successfulTransactions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  totalGasUsed?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalTransactions?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  transactionsPerSecond?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
+  uniqueAccounts?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2673,6 +2824,12 @@ export type QueryResolvers<
     ContextType,
     Partial<QueryDexMetricsArgs>
   >;
+  eventTypeAnalytics?: Resolver<
+    Array<ResolversTypes['EventTypeAnalytics']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryEventTypeAnalyticsArgs, 'endDate' | 'startDate' | 'timeframe'>
+  >;
   events?: Resolver<
     ResolversTypes['QueryEventsConnection'],
     ParentType,
@@ -2725,6 +2882,12 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryLiquidityPositionsArgs, 'orderBy' | 'walletAddress'>
+  >;
+  networkActivityAnalytics?: Resolver<
+    Array<ResolversTypes['NetworkActivityAnalytics']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryNetworkActivityAnalyticsArgs, 'endDate' | 'startDate' | 'timeframe'>
   >;
   networkInfo?: Resolver<Maybe<ResolversTypes['NetworkInfo']>, ParentType, ContextType>;
   node?: Resolver<
@@ -2786,6 +2949,12 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryTransactionArgs, 'requestKey'>
+  >;
+  transactionFeeAnalytics?: Resolver<
+    Array<ResolversTypes['TransactionFeeAnalytics']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTransactionFeeAnalyticsArgs, 'endDate' | 'startDate' | 'timeframe'>
   >;
   transactions?: Resolver<
     ResolversTypes['QueryTransactionsConnection'],
@@ -3119,6 +3288,23 @@ export type TransactionCommandResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type TransactionFeeAnalyticsResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['TransactionFeeAnalytics'] = ResolversParentTypes['TransactionFeeAnalytics'],
+> = {
+  averageFeePerTransaction?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  averageGasPrice?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  averageGasUsed?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  chainId?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  periodEnd?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  periodStart?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  totalGasExpenditure?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalTransactionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  uniqueSenders?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type TransactionInfoResolvers<
   ContextType = any,
   ParentType extends
@@ -3299,6 +3485,8 @@ export type Resolvers<ContextType = any> = {
   Decimal?: GraphQLScalarType;
   DexMetrics?: DexMetricsResolvers<ContextType>;
   Event?: EventResolvers<ContextType>;
+  EventTypeAnalytics?: EventTypeAnalyticsResolvers<ContextType>;
+  EventTypeFrequency?: EventTypeFrequencyResolvers<ContextType>;
   ExecutionPayload?: ExecutionPayloadResolvers<ContextType>;
   FungibleAccount?: FungibleAccountResolvers<ContextType>;
   FungibleAccountTransactionsConnection?: FungibleAccountTransactionsConnectionResolvers<ContextType>;
@@ -3319,6 +3507,7 @@ export type Resolvers<ContextType = any> = {
   LiquidityPosition?: LiquidityPositionResolvers<ContextType>;
   LiquidityPositionEdge?: LiquidityPositionEdgeResolvers<ContextType>;
   LiquidityPositionsConnection?: LiquidityPositionsConnectionResolvers<ContextType>;
+  NetworkActivityAnalytics?: NetworkActivityAnalyticsResolvers<ContextType>;
   NetworkInfo?: NetworkInfoResolvers<ContextType>;
   Node?: NodeResolvers<ContextType>;
   NonFungibleAccount?: NonFungibleAccountResolvers<ContextType>;
@@ -3362,6 +3551,7 @@ export type Resolvers<ContextType = any> = {
   Transaction?: TransactionResolvers<ContextType>;
   TransactionCapability?: TransactionCapabilityResolvers<ContextType>;
   TransactionCommand?: TransactionCommandResolvers<ContextType>;
+  TransactionFeeAnalytics?: TransactionFeeAnalyticsResolvers<ContextType>;
   TransactionInfo?: TransactionInfoResolvers<ContextType>;
   TransactionMempoolInfo?: TransactionMempoolInfoResolvers<ContextType>;
   TransactionMeta?: TransactionMetaResolvers<ContextType>;

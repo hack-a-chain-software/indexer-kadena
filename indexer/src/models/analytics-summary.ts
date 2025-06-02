@@ -90,19 +90,19 @@ AnalyticSummaries.init(
     modelName: 'AnalyticSummaries',
     indexes: [
       {
-        name: 'analytics_summary_metric_timeframe_idx',
+        name: 'analytic_summaries_metric_timeframe_idx',
         fields: ['metricType', 'timeframe'],
       },
       {
-        name: 'analytics_summary_period_idx',
+        name: 'analytic_summaries_period_idx',
         fields: ['periodStart', 'periodEnd'],
       },
       {
-        name: 'analytics_summary_chain_idx',
+        name: 'analytic_summaries_chain_idx',
         fields: ['chainId'],
       },
       {
-        name: 'analytics_summary_lookup_idx',
+        name: 'analytic_summaries_lookup_idx',
         fields: ['metricType', 'timeframe', 'chainId', 'periodStart'],
       },
     ],
