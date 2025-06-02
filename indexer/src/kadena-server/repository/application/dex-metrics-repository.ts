@@ -1,6 +1,7 @@
 export interface GetDexMetricsParams {
   startDate?: Date | null;
   endDate?: Date | null;
+  protocolAddress?: string | null;
 }
 
 export interface DexMetrics {

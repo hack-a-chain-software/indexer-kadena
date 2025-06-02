@@ -1,0 +1,112 @@
+import { Model, DataTypes, Optional } from 'sequelize';
+import { sequelize } from '../config/database';
+
+export interface AnalyticSummariesAttributes {
+  id: number;
+  metricType: string; // 'transaction_fees', 'event_types', 'network_activity', etc.
+  timeframe: string; // 'hourly', 'daily', 'weekly', 'monthly', 'yearly'
+  periodStart: Date;
+  periodEnd: Date;
+  chainId?: number;
+  metricData: object; // JSON object containing the computed metrics
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AnalyticSummariesCreationAttributes
+  extends Optional<AnalyticSummariesAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
+
+/**
+ * Analytics Summary Model
+ *
+ * Stores pre-computed analytics metrics to avoid expensive real-time calculations.
+ * This enables fast retrieval of transaction fees, event frequencies, and other
+ * network statistics without scanning millions of records.
+ */
+class AnalyticSummaries
+  extends Model<AnalyticSummariesAttributes, AnalyticSummariesCreationAttributes>
+  implements AnalyticSummariesAttributes
+{
+  declare id: number;
+  declare metricType: string;
+  declare timeframe: string;
+  declare periodStart: Date;
+  declare periodEnd: Date;
+  declare chainId?: number;
+  declare metricData: object;
+  declare createdAt: Date;
+  declare updatedAt: Date;
+}
+
+AnalyticSummaries.init(
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+      comment: 'Unique identifier for the analytics summary record.',
+    },
+    metricType: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      comment: 'Type of metric (transaction_fees, event_types, network_activity, etc.)',
+    },
+    timeframe: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      comment: 'Time aggregation level (hourly, daily, weekly, monthly, yearly)',
+    },
+    periodStart: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      comment: 'Start of the time period for this metric',
+    },
+    periodEnd: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      comment: 'End of the time period for this metric',
+    },
+    chainId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: 'Chain ID for chain-specific metrics (null for cross-chain metrics)',
+    },
+    metricData: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      comment: 'JSON object containing the computed metrics data',
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+  },
+  {
+    sequelize,
+    modelName: 'AnalyticSummaries',
+    indexes: [
+      {
+        name: 'analytic_summaries_metric_timeframe_idx',
+        fields: ['metricType', 'timeframe'],
+      },
+      {
+        name: 'analytic_summaries_period_idx',
+        fields: ['periodStart', 'periodEnd'],
+      },
+      {
+        name: 'analytic_summaries_chain_idx',
+        fields: ['chainId'],
+      },
+      {
+        name: 'analytic_summaries_lookup_idx',
+        fields: ['metricType', 'timeframe', 'chainId', 'periodStart'],
+      },
+    ],
+  },
+);
+
+export default AnalyticSummaries;

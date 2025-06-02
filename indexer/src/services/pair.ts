@@ -1,12 +1,17 @@
 import { EventAttributes } from '../models/event';
 import Event from '../models/event';
 import { PairService } from './pair-service';
-import { sequelize } from '../config/database';
-import { Op } from 'sequelize';
+import { Op, Sequelize, WhereOptions } from 'sequelize';
 import Transaction from '../models/transaction';
+import Block from '@/models/block';
+import { getRequiredEnvString } from '@/utils/helpers';
 
 const MODULE_NAMES = ['kdlaunch.kdswap-exchange', 'sushiswap.sushi-exchange'];
 const EVENT_TYPES = ['CREATE_PAIR', 'UPDATE', 'SWAP', 'ADD_LIQUIDITY', 'REMOVE_LIQUIDITY'];
+
+const LAST_BLOCK_ID = process.env.BACKFILL_PAIR_EVENTS_LAST_BLOCK_ID
+  ? Number(process.env.BACKFILL_PAIR_EVENTS_LAST_BLOCK_ID)
+  : null;
 
 /**
  * Process pair creation events from transaction events
@@ -34,7 +39,6 @@ export async function processPairCreationEvents(events: EventAttributes[]): Prom
   );
 
   if (pairUpdateEvents.length > 0) {
-    console.log('pairUpdateEvents', pairUpdateEvents);
     const updateParams = pairUpdateEvents.map(event => ({
       moduleName: event.module,
       name: event.name,
@@ -96,7 +100,11 @@ export async function backfillPairEvents(
   endBlock?: number,
   batchSize: number = 1000,
 ): Promise<void> {
-  const whereClause: any = {
+  if (LAST_BLOCK_ID === null) {
+    throw new Error('BACKFILL_PAIR_EVENTS_LAST_BLOCK_ID is not set');
+  }
+
+  const whereClause: WhereOptions<EventAttributes> = {
     module: {
       [Op.in]: MODULE_NAMES,
     },
@@ -121,34 +129,37 @@ export async function backfillPairEvents(
   let processedCount = 0;
   let hasMore = true;
 
-  console.log('whereClause', whereClause);
-
   while (hasMore) {
+    const startTime = Date.now();
     const events = await Event.findAll({
       where: whereClause,
       include: [
         {
           model: Transaction,
           as: 'transaction',
-          attributes: ['blockId'],
+          attributes: ['blockId', 'creationtime'],
         },
       ],
       limit: batchSize,
       offset: processedCount,
-      order: [[sequelize.literal('"transaction"."blockId"'), 'ASC']],
+      order: [[{ model: Transaction, as: 'transaction' }, 'creationtime', 'ASC']],
     });
 
-    console.log('events', events);
     if (events.length === 0) {
       hasMore = false;
       continue;
     }
 
+    const progressPercentage = ((processedCount / LAST_BLOCK_ID) * 100).toFixed(2);
     console.log(
-      `Processing batch of ${events.length} events starting from offset ${processedCount}`,
+      `Processing batch of ${events.length} events starting from offset ${processedCount} (${progressPercentage}% complete)`,
     );
     await processPairCreationEvents(events.map(event => event.get({ plain: true })));
     processedCount += events.length;
+
+    const endTime = Date.now();
+    const timeTaken = (endTime - startTime) / 1000; // Convert to seconds
+    console.log(`Batch processed in ${timeTaken.toFixed(2)} seconds`);
 
     if (events.length < batchSize) {
       hasMore = false;

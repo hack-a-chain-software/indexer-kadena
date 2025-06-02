@@ -14,7 +14,7 @@ export const poolsQueryResolver: QueryResolvers<ResolverContext>['pools'] = asyn
   context: ResolverContext,
   info: GraphQLResolveInfo,
 ): Promise<QueryPoolsConnection> => {
-  const { after, before, first, last, orderBy } = args;
+  const { after, before, first, last, orderBy, protocolAddress } = args;
 
   const output = await context.poolRepository.getPools({
     after,
@@ -22,6 +22,7 @@ export const poolsQueryResolver: QueryResolvers<ResolverContext>['pools'] = asyn
     first,
     last,
     orderBy,
+    protocolAddress,
   });
 
   return {

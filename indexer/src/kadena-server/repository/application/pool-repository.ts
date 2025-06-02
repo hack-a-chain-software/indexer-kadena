@@ -3,12 +3,10 @@ import type Token from '../../../models/token';
 import {
   PageInfo,
   Pool,
-  PoolOrderBy,
   PoolCharts,
   PoolTransactionType,
   TimeFrame,
 } from '../../config/graphql-types';
-import { PaginationsParams } from '../pagination';
 import { ConnectionEdge } from '../types';
 
 export interface GetPoolsParams {
@@ -17,6 +15,7 @@ export interface GetPoolsParams {
   first?: number | null;
   last?: number | null;
   orderBy?: string;
+  protocolAddress?: string | null;
 }
 
 export interface GetPoolParams {

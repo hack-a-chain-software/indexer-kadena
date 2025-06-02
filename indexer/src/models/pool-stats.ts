@@ -141,7 +141,7 @@ PoolStats.init(
       comment: '24-hour transaction count',
     },
     apr24h: {
-      type: DataTypes.DECIMAL(10, 4),
+      type: DataTypes.DECIMAL(24, 8),
       allowNull: false,
       defaultValue: 0,
       comment: '24-hour Annual Percentage Rate',

@@ -3,7 +3,7 @@ import { Op, QueryTypes } from 'sequelize';
 import { sequelize } from '../../../../config/database';
 import Pair from '../../../../models/pair';
 import PoolStats from '../../../../models/pool-stats';
-import { getPageInfo, getPaginationParams } from '../../pagination';
+import { encodeCursor, getPageInfo, getPaginationParams } from '../../pagination';
 import {
   PageInfo,
   Pool,
@@ -40,12 +40,14 @@ const POOL_ORDER_BY_MAP: Record<
 };
 
 export default class PoolDbRepository {
+  private readonly DEFAULT_PROTOCOL = 'kdlaunch.kdswap-exchange';
+
   async getPools(params: GetPoolsParams): Promise<{
     pageInfo: PageInfo;
     edges: ConnectionEdge<Pool>[];
     totalCount: number;
   }> {
-    const { after, before, first, last, orderBy } = params;
+    const { after, before, first, last, orderBy, protocolAddress = this.DEFAULT_PROTOCOL } = params;
     const pagination = getPaginationParams({ after, before, first, last });
 
     // Get the latest stats for each pool
@@ -66,14 +68,6 @@ export default class PoolDbRepository {
       {} as Record<number, Date>,
     );
 
-    const orderByClause = [
-      [
-        'PoolStats',
-        POOL_ORDER_BY_MAP[orderBy || 'TVL_USD_DESC'].field,
-        POOL_ORDER_BY_MAP[orderBy || 'TVL_USD_DESC'].direction,
-      ],
-    ] as [string, string, 'ASC' | 'DESC'][];
-
     const pairIdsStr = pairIds.join(',');
     const timestampsStr = Object.values(maxTimestamps)
       .map(t => `'${t.toISOString()}'`)
@@ -87,6 +81,16 @@ export default class PoolDbRepository {
     }
     if (timestampsStr) {
       conditions.push(`ps.timestamp IN (${timestampsStr})`);
+    }
+
+    conditions.push(`p.address = '${protocolAddress}'`);
+
+    if (pagination.after) {
+      conditions.push(`p.id ${pagination.order === 'DESC' ? '<' : '>'} ${pagination.after}`);
+    }
+
+    if (pagination.before) {
+      conditions.push(`p.id ${pagination.order === 'DESC' ? '>' : '<'} ${pagination.before}`);
     }
 
     if (conditions.length > 0) {
@@ -111,50 +115,28 @@ export default class PoolDbRepository {
       JOIN "PoolStats" ps ON p.id = ps."pairId"
       ${whereClause}
       ORDER BY ps."${POOL_ORDER_BY_MAP[orderBy || 'TVL_USD_DESC'].field}" ${POOL_ORDER_BY_MAP[orderBy || 'TVL_USD_DESC'].direction}
-      LIMIT ${pagination.limit} OFFSET ${pagination.after ? 0 : pagination.limit}
+      LIMIT ${pagination.limit}
     `;
 
     const pairs = await sequelize.query(query, {
       type: QueryTypes.SELECT,
     });
 
-    const edges = pairs.map((pair: any) => ({
-      cursor: pair.id.toString(),
-      node: {
-        __typename: 'Pool',
-        id: pair.id.toString(),
-        address: pair.address,
-        token0: {
-          __typename: 'Token',
-          id: pair.token0Id.toString(),
-          name: pair.token0Name,
-          chainId: '0',
-        },
-        token1: {
-          __typename: 'Token',
-          id: pair.token1Id.toString(),
-          name: pair.token1Name,
-          chainId: '0',
-        },
-        reserve0: pair.reserve0,
-        reserve1: pair.reserve1,
-        totalSupply: pair.totalSupply,
-        key: pair.key,
-        tvlUsd: pair.tvlUsd ?? 0,
-        volume24hUsd: pair.volume24hUsd ?? 0,
-        volume7dUsd: pair.volume7dUsd ?? 0,
-        transactionCount24h: pair.transactionCount24h ?? 0,
-        apr24h: pair.apr24h ?? 0,
-        createdAt: pair.createdAt,
-        updatedAt: pair.updatedAt,
-      } as Pool,
-    }));
+    const promises = pairs.map((pair: any) => this.getPool(pair));
+    const pools = await Promise.all(promises);
+    const edges = pools
+      .filter((pool): pool is Pool => pool !== null)
+      .map(pool => ({
+        cursor: pool.id,
+        node: pool,
+      }));
 
     const totalCount = await Pair.count({
       where: {
         id: {
           [Op.in]: pairIds,
         },
+        ...(protocolAddress ? { address: protocolAddress } : {}),
       },
     });
 
@@ -351,7 +333,7 @@ export default class PoolDbRepository {
   ): Promise<PoolTransactionsConnection | null> {
     const { pairId, type, first, after, last, before } = params;
     const limit = first || last || 10;
-    const offset = after ? parseInt(Buffer.from(after, 'base64').toString()) : 0;
+    const order = last ? 'ASC' : 'DESC';
 
     let query = `
       SELECT 
@@ -379,8 +361,22 @@ export default class PoolDbRepository {
       paramIndex++;
     }
 
-    query += ` ORDER BY t."timestamp" DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    queryParams.push(limit, offset);
+    if (after) {
+      const afterId = parseInt(Buffer.from(after, 'base64').toString());
+      query += ` AND t.id ${order === 'DESC' ? '<' : '>'} $${paramIndex}`;
+      queryParams.push(afterId);
+      paramIndex++;
+    }
+
+    if (before) {
+      const beforeId = parseInt(Buffer.from(before, 'base64').toString());
+      query += ` AND t.id ${order === 'DESC' ? '>' : '<'} $${paramIndex}`;
+      queryParams.push(beforeId);
+      paramIndex++;
+    }
+
+    query += ` ORDER BY t.id ${order} LIMIT $${paramIndex}`;
+    queryParams.push(limit);
     const result = await sequelize.query(query, {
       type: QueryTypes.SELECT,
       bind: queryParams,
@@ -424,8 +420,8 @@ export default class PoolDbRepository {
     return {
       edges,
       pageInfo: {
-        hasNextPage: offset + limit < totalCount,
-        hasPreviousPage: offset > 0,
+        hasNextPage: limit + (after ? 0 : 1) < totalCount,
+        hasPreviousPage: limit + (before ? 0 : 1) > 0,
         startCursor: edges[0]?.cursor || null,
         endCursor: edges[edges.length - 1]?.cursor || null,
       },

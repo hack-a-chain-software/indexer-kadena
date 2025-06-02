@@ -23,6 +23,7 @@ import StreamingError from '@/models/streaming-error';
 import { backfillGuards } from './guards';
 import { Transaction } from 'sequelize';
 import { PriceUpdaterService } from './price/price-updater.service';
+import { processBlockAnalytics } from './analytics';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
@@ -211,7 +212,18 @@ export async function saveBlock(parsedData: any, tx?: Transaction): Promise<void
     });
 
     // Process the block's transactions and events
-    await processPayloadKey(createdBlock, payloadData, tx);
+    const events = await processPayloadKey(createdBlock, payloadData, tx);
+
+    // Process analytics for this block (async, non-blocking)
+    try {
+      await processBlockAnalytics(createdBlock, [], events, tx);
+    } catch (analyticsError) {
+      console.error(
+        `[ERROR][ANALYTICS] Failed to process analytics for block ${createdBlock.hash}:`,
+        analyticsError,
+      );
+      // Don't fail the entire block processing if analytics fail
+    }
   } catch (error) {
     console.error(`[ERROR][DB][DATA_CORRUPT] Failed to save block to database:`, error);
   }

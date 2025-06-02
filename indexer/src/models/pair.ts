@@ -64,13 +64,19 @@ Pair.init(
     key: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
     },
   },
   {
     sequelize,
     modelName: 'Pair',
     timestamps: true,
+    indexes: [
+      {
+        name: 'pair_address_key_unique',
+        unique: true,
+        fields: ['address', 'key'],
+      },
+    ],
   },
 );
 

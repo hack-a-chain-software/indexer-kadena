@@ -53,18 +53,24 @@ export default class LiquidityPositionDbRepository {
 
     // Build order by clause
     const orderByMap: Record<string, [string, string]> = {
-      VALUE_USD_ASC: ['valueUsd', 'ASC'],
-      VALUE_USD_DESC: ['valueUsd', 'DESC'],
-      LIQUIDITY_ASC: ['liquidity', 'ASC'],
-      LIQUIDITY_DESC: ['liquidity', 'DESC'],
-      APR_ASC: ['apr24h', 'ASC'],
-      APR_DESC: ['apr24h', 'DESC'],
+      VALUE_USD_ASC: [
+        '(CAST(lb.liquidity AS DECIMAL) / CAST(p."totalSupply" AS DECIMAL)) * CAST(ls."tvlUsd" AS DECIMAL)',
+        'ASC',
+      ],
+      VALUE_USD_DESC: [
+        '(CAST(lb.liquidity AS DECIMAL) / CAST(p."totalSupply" AS DECIMAL)) * CAST(ls."tvlUsd" AS DECIMAL)',
+        'DESC',
+      ],
+      LIQUIDITY_ASC: ['lb.liquidity', 'ASC'],
+      LIQUIDITY_DESC: ['lb.liquidity', 'DESC'],
+      APR_ASC: ['ls."apr24h"', 'ASC'],
+      APR_DESC: ['ls."apr24h"', 'DESC'],
     };
 
     const [orderField, orderDirection] = orderByMap[orderBy || 'VALUE_USD_DESC'];
 
     // Query to get positions with pool and token information
-    const query = `
+    let query = `
       WITH latest_stats AS (
         SELECT DISTINCT ON (ps."pairId") 
           ps.*
@@ -94,17 +100,30 @@ export default class LiquidityPositionDbRepository {
       JOIN "Tokens" t1 ON p."token1Id" = t1.id
       JOIN latest_stats ls ON p.id = ls."pairId"
       WHERE lb."walletAddress" = $1
-      ORDER BY "valueUsd" ${orderDirection}
-      LIMIT $2 OFFSET $3
     `;
+
+    const queryParams: any[] = [walletAddress];
+    let paramIndex = 2;
+
+    if (pagination.after) {
+      query += ` AND lb.id ${pagination.order === 'DESC' ? '<' : '>'} $${paramIndex}`;
+      queryParams.push(pagination.after);
+      paramIndex++;
+    }
+
+    if (pagination.before) {
+      query += ` AND lb.id ${pagination.order === 'DESC' ? '>' : '<'} $${paramIndex}`;
+      queryParams.push(pagination.before);
+      paramIndex++;
+    }
+
+    // First order by the requested field, then by id for consistent pagination
+    query += ` ORDER BY ${orderField} ${orderDirection}, lb.id ${pagination.order} LIMIT $${paramIndex}`;
+    queryParams.push(pagination.limit);
 
     const positions = await sequelize.query(query, {
       type: QueryTypes.SELECT,
-      bind: [
-        walletAddress,
-        pagination.limit,
-        pagination.after ? parseInt(Buffer.from(pagination.after, 'base64').toString()) : 0,
-      ],
+      bind: queryParams,
     });
 
     const edges = (positions as any[]).map(position => ({
