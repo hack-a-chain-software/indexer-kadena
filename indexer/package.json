@@ -75,6 +75,7 @@
     "create:database": "ts-node -r tsconfig-paths/register src/index.ts --database && yarn migrate:up",
     "dev:guards": "ts-node -r tsconfig-paths/register src/index.ts --guards",
     "dev:database": "ts-node -r tsconfig-paths/register src/index.ts --database",
+    "dev:canonical": "ts-node -r tsconfig-paths/register src/index.ts --canonical",
     "dev:backfillPairs": "ts-node -r tsconfig-paths/register src/index.ts --backfillPairs",
     "dev:streaming": "ts-node -r tsconfig-paths/register src/index.ts --streaming",
     "dev:graphql": "ts-node -r tsconfig-paths/register src/index.ts --graphql",
