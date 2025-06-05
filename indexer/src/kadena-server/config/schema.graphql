@@ -620,6 +620,8 @@ type Block implements Node {
   """
   powHash: String!
 
+  canonical: Boolean!
+
   parent: Block @complexity(value: 1)
   """
   Default page size is 20.

@@ -69,8 +69,6 @@ export async function backfillGuards() {
 
   // Continue processing batches until all balances are processed
   while (true) {
-    console.info(`[INFO][DB][METRIC] Processing guards batch: ${currentId}-${currentId + limit}`);
-
     // Fetch the next batch of balances to process, ordered by ID
     // This query retrieves a limited number of balances greater than the current ID
     const res = await rootPgPool.query(
@@ -123,7 +121,6 @@ export async function backfillGuards() {
 
       // Commit the transaction if successful
       await tx.commit();
-      console.info(`[INFO][DB][BIZ_FLOW] Row at ${currentId} id processed successfully.`);
 
       // Update the current ID to the last processed ID for the next batch
       currentId = rows[rows.length - 1].id;

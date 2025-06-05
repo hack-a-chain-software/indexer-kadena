@@ -23,6 +23,12 @@ import StreamingError from '@/models/streaming-error';
 import { backfillGuards } from './guards';
 import { Transaction } from 'sequelize';
 import { PriceUpdaterService } from './price/price-updater.service';
+import { defineCanonicalInStreaming } from '@/services/define-canonical';
+import {
+  fillChainGapsBeforeDefiningCanonicalBaseline,
+  checkCanonicalPathForAllChains,
+  startMissingBlocksBeforeStreamingProcess,
+} from '@/services/missing';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
@@ -43,22 +49,21 @@ const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
  * TODO: [OPTIMIZATION] Implement reconnection logic with exponential backoff
  * for better resilience against network failures.
  */
+
 export async function startStreaming() {
-  console.info('[INFO][WORKER][BIZ_FLOW] Starting blockchain streaming service...');
+  console.info('[INFO][WORKER][BIZ_FLOW] Starting blockchain streaming service ...');
+
+  await startMissingBlocksBeforeStreamingProcess();
+
+  const nextBlocksToProcess: any[] = [];
+  const blocksRecentlyProcessed = new Set<string>();
+  const initialChainGapsAlreadyFilled = new Set<string>();
 
   // Initialize price updater
   PriceUpdaterService.getInstance();
 
-  const blocksAlreadyReceived = new Set<string>();
-
   // Initialize EventSource connection to the blockchain node
   const eventSource = new EventSource(`${SYNC_BASE_URL}/${SYNC_NETWORK}/block/updates`);
-
-  // Handle connection errors
-  eventSource.onerror = (error: any) => {
-    console.error('[ERROR][NET][CONN_LOST] EventSource connection error:', error);
-    // TODO: [OPTIMIZATION] Add reconnection logic with exponential backoff here
-  };
 
   /**
    * Event handler for incoming blocks.
@@ -66,18 +71,26 @@ export async function startStreaming() {
    * Uses a transaction to ensure data consistency.
    */
   eventSource.addEventListener('BlockHeader', async (event: any) => {
-    try {
-      // Parse the block data from the event
-      const block = JSON.parse(event.data);
+    const block = JSON.parse(event.data);
+    nextBlocksToProcess.push(block);
+  });
 
-      // Skip processing if we've already seen this block
-      if (blocksAlreadyReceived.has(block.header.hash)) {
+  // Handle connection errors
+  eventSource.onerror = (error: any) => {
+    console.error('[ERROR][NET][CONN_LOST] EventSource connection error:', error);
+    // TODO: [OPTIMIZATION] Add reconnection logic with exponential backoff here
+  };
+
+  const processBlock = async (block: any) => {
+    const blockIdentifier = block.header.hash;
+    try {
+      if (blocksRecentlyProcessed.has(blockIdentifier)) {
+        await defineCanonicalInStreaming(blockIdentifier);
         return;
       }
 
       // Process the block payload (transactions, miner data, etc.)
       const payload = processPayload(block.payloadWithOutputs);
-      blocksAlreadyReceived.add(block.header.hash);
 
       // Create a database transaction for atomic operations
       const tx = await sequelize.transaction();
@@ -95,31 +108,68 @@ export async function startStreaming() {
         return;
       }
 
-      // Commit the transaction if everything succeeds
+      if (!initialChainGapsAlreadyFilled.has(block.header.chainId)) {
+        initialChainGapsAlreadyFilled.add(block.header.chainId);
+        await fillChainGapsBeforeDefiningCanonicalBaseline({
+          chainId: block.header.chainId,
+          lastHeight: block.header.height,
+          tx,
+        });
+      }
+
       await tx.commit();
+
+      await defineCanonicalInStreaming(block.header.hash);
+      blocksRecentlyProcessed.add(blockIdentifier);
     } catch (error) {
       console.error('[ERROR][DATA][DATA_CORRUPT] Failed to process block event:', error);
       // TODO: [OPTIMIZATION] Add better error handling and recovery logic
     }
-  });
+  };
 
-  /**
-   * Periodic cache cleanup to prevent memory leaks.
-   * Clears the set of processed blocks every 10 minutes.
-   */
+  const processBlocks = async () => {
+    const blocksToProcess: any[] = [];
+    while (nextBlocksToProcess.length > 0) {
+      const block = nextBlocksToProcess.shift();
+      blocksToProcess.push(block);
+    }
+
+    // Create a map of hash -> latest index
+    const lastIndexMap = new Map();
+    blocksToProcess.forEach((block, index) => {
+      lastIndexMap.set(block.header.hash, index);
+    });
+
+    // Filter keeping only blocks at their last index (don't need to process the same block twice)
+    const uniqueBlocks = blocksToProcess.filter(
+      (block, index) => lastIndexMap.get(block.header.hash) === index,
+    );
+
+    // The blocks have to be processed in order to maintain the correct canonical path
+    for (const block of uniqueBlocks) {
+      await processBlock(block);
+    }
+
+    blocksToProcess.length = 0;
+
+    setTimeout(processBlocks, 1000);
+  };
+
   setInterval(
     () => {
-      console.info('[INFO][CACHE][METRIC] Clearing blocks cache. Freeing memory for new blocks.');
-      blocksAlreadyReceived.clear();
+      blocksRecentlyProcessed.clear();
+      console.log('[INFO][SYNC][STREAMING] blocksRecentlyProcessed cleared');
     },
-    1000 * 60 * 10, // 10 minutes
+    1000 * 60 * 60 * 1,
   );
+
+  processBlocks();
 
   // Run guard backfilling immediately on startup
   backfillGuards();
 
-  // Schedule periodic guard backfilling every 12 hours
-  setInterval(backfillGuards, 1000 * 60 * 60 * 12); // every 12 hours
+  // Schedule a periodic check of canonical path for all chains every 1 hour
+  setInterval(checkCanonicalPathForAllChains, 1000 * 60 * 60 * 1);
 }
 
 /**
@@ -180,6 +230,7 @@ export function processPayload(payload: any) {
 export async function saveBlock(parsedData: any, tx?: Transaction): Promise<void> {
   const headerData = parsedData.header;
   const payloadData = parsedData.payload;
+  const canonical = parsedData.canonical ?? false;
   const transactions = payloadData.transactions || [];
 
   try {
@@ -203,6 +254,7 @@ export async function saveBlock(parsedData: any, tx?: Transaction): Promise<void
       outputsHash: payloadData.outputsHash,
       coinbase: payloadData.coinbase,
       transactionsCount: transactions.length,
+      canonical,
     } as BlockAttributes;
 
     // Create the block in the database

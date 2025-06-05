@@ -30,6 +30,7 @@ export type Scalars = {
 /** A unit of information that stores a set of verified transactions. */
 export type Block = Node & {
   __typename?: 'Block';
+  canonical: Scalars['Boolean']['output'];
   chainId: Scalars['BigInt']['output'];
   coinbase: Scalars['String']['output'];
   creationTime: Scalars['DateTime']['output'];
@@ -1983,6 +1984,7 @@ export type BlockResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Block'] = ResolversParentTypes['Block'],
 > = {
+  canonical?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   chainId?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   coinbase?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   creationTime?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;

@@ -4,6 +4,7 @@ import { PairService } from './pair-service';
 import { Op, WhereOptions, Transaction as SequelizeTransaction } from 'sequelize';
 import Transaction from '../models/transaction';
 import { DEFAULT_PROTOCOL } from '../kadena-server/config/apollo-server-config';
+import Block from '@/models/block';
 
 const MODULE_NAMES = [`${DEFAULT_PROTOCOL}`, `${DEFAULT_PROTOCOL}-tokens`];
 const EVENT_TYPES = ['CREATE_PAIR', 'UPDATE', 'SWAP', 'ADD_LIQUIDITY', 'REMOVE_LIQUIDITY'];
@@ -160,6 +161,16 @@ export async function backfillPairEvents(
           model: Transaction,
           as: 'transaction',
           attributes: ['blockId', 'creationtime'],
+          include: [
+            {
+              model: Block,
+              as: 'block',
+              attributes: ['height'],
+              where: {
+                canonical: true,
+              },
+            },
+          ],
         },
       ],
       limit: batchSize,
