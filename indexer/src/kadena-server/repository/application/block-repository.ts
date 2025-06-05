@@ -26,9 +26,14 @@ export interface GetLatestBlocksParams {
   chainIds?: string[];
 }
 
+export interface UpdateCanonicalStatusParams {
+  blocks: { hash: string; canonical: boolean }[];
+}
+
 export type BlockOutput = Omit<Block, 'parent' | 'events' | 'minerAccount' | 'transactions'> & {
   parentHash: string;
   blockId: number;
+  canonical: boolean;
 };
 
 export type FungibleChainAccountOutput = Omit<
@@ -38,6 +43,7 @@ export type FungibleChainAccountOutput = Omit<
 
 export default interface BlockRepository {
   getBlockByHash(hash: string): Promise<BlockOutput>;
+  getBlockParent(hash: string): Promise<BlockOutput | null>;
   getBlocksFromDepth(params: GetBlocksFromDepthParams): Promise<{
     pageInfo: PageInfo;
     edges: ConnectionEdge<BlockOutput>[];
@@ -74,6 +80,9 @@ export default interface BlockRepository {
     startingTimestamp: number,
     id?: string,
   ): Promise<BlockOutput[]>;
+
+  getBlocksWithSameHeight(blockHash: string): Promise<BlockOutput[]>;
+  updateCanonicalStatus(params: UpdateCanonicalStatusParams): Promise<void>;
 
   // dataloader
   getBlocksByEventIds(eventIds: string[]): Promise<BlockOutput[]>;

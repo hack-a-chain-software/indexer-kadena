@@ -23,6 +23,7 @@ import BlockRepository, {
   GetBlocksFromDepthParams,
   GetCompletedBlocksParams,
   GetLatestBlocksParams,
+  UpdateCanonicalStatusParams,
 } from '../../application/block-repository';
 import { getPageInfo, getPaginationParams } from '../../pagination';
 import { blockValidator } from '../schema-validator/block-schema-validator';
@@ -61,6 +62,24 @@ export default class BlockDbRepository implements BlockRepository {
     if (!block) {
       throw new Error('Block not found.');
     }
+
+    return blockValidator.mapFromSequelize(block);
+  }
+
+  /**
+   * Retrieves the parent block of a given block
+   *
+   * This method fetches the parent block of a given block by its hash.
+   *
+   * @param parentHash - The hash of the parent block to look up
+   * @returns Promise resolving to the parent block data if found, or null if not found
+   */
+  async getBlockParent(parentHash: string): Promise<BlockOutput | null> {
+    const block = await BlockModel.findOne({
+      where: { hash: parentHash },
+    });
+
+    if (!block) return null;
 
     return blockValidator.mapFromSequelize(block);
   }
@@ -913,5 +932,22 @@ export default class BlockDbRepository implements BlockRepository {
     const maxHeightsArray = await Promise.all(maxHeightsByChainIdPromises);
 
     return Object.assign({}, ...maxHeightsArray);
+  }
+
+  async getBlocksWithSameHeight(blockHash: string): Promise<BlockOutput[]> {
+    const query = `
+      SELECT b2.*
+      FROM "Blocks" b1
+      JOIN "Blocks" b2 ON b1.height = b2.height AND b1."chainId" = b2."chainId"
+      WHERE b1.hash = $1
+    `;
+
+    const { rows } = await rootPgPool.query(query, [blockHash]);
+
+    return rows.map(row => blockValidator.validate(row));
+  }
+
+  updateCanonicalStatus(params: UpdateCanonicalStatusParams) {
+    return Promise.resolve();
   }
 }

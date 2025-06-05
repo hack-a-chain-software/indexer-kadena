@@ -23,7 +23,8 @@ import { startMissingBlocks } from './services/missing';
 import { startStreaming } from './services/streaming';
 import { backfillPairEvents } from './services/pair';
 import { setupAssociations } from './models/setup-associations';
-import { PriceUpdaterService } from './services/price/price-updater.service';
+import { PriceUpdaterService } from '@/services/price/price-updater.service';
+import { updateCanonicalInBatches } from '@/services/canonical';
 
 /**
  * Command-line interface configuration using Commander.
@@ -31,6 +32,7 @@ import { PriceUpdaterService } from './services/price/price-updater.service';
  */
 program
   .option('-s, --streaming', 'Start streaming blockchain data')
+  .option('-c, --canonical', 'Update canonical status')
   .option('-t, --graphql', 'Start GraphQL server based on kadena schema')
   .option('-f, --guards', 'Backfill the guards')
   .option('-m, --missing', 'Missing blocks')
@@ -70,6 +72,10 @@ async function main() {
       await startStreaming();
     } else if (options.guards) {
       await backfillBalances();
+      await closeDatabase();
+      process.exit(0);
+    } else if (options.canonical) {
+      await updateCanonicalInBatches();
       await closeDatabase();
       process.exit(0);
     } else if (options.missing) {
