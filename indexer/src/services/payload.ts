@@ -198,7 +198,6 @@ export async function processTransaction(
     );
 
     const events = await Promise.all(eventsAttributes);
-    // Note: Should not summit debug to the 'main' branch
     // const swapEvents = events.filter(event => event.name === 'SWAP');
     // console.log('swapEvents', JSON.stringify(swapEvents, null, 2));
     // const addLiquidityEvents = events.filter(event => event.name === 'ADD_LIQUIDITY');

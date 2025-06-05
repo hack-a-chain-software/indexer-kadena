@@ -40,6 +40,7 @@ const schema = zod.object({
   target: zod.string(),
   adjacents: zod.record(zod.any()),
   parent: zod.string(),
+  canonical: zod.boolean().nullable(),
 });
 
 /**
@@ -80,7 +81,7 @@ const validate = (row: any): BlockOutput => {
     creationTime: convertStringToDate(res.creationTime),
     epoch: convertStringToDate(res.epochStart),
     flags: int64ToUint64String(res.featureFlags),
-    powHash: '...', // TODO (STREAMING)
+    powHash: '',
     hash: res.hash,
     height: res.height,
     nonce: res.nonce,
@@ -88,6 +89,7 @@ const validate = (row: any): BlockOutput => {
     target: res.target,
     weight: res.weight,
     chainId: res.chainId,
+    canonical: res.canonical === null ? true : res.canonical,
     difficulty: Number(calculateBlockDifficulty(res.target)),
     neighbors: Object.entries(res.adjacents).map(([chainId, hash]) => ({
       chainId,
@@ -114,7 +116,7 @@ const mapFromSequelize = (blockModel: BlockAttributes): BlockOutput => {
     parentHash: blockModel.parent,
     chainId: blockModel.chainId,
     creationTime: convertStringToDate(blockModel.creationTime),
-    powHash: '...', // TODO (STREAMING)
+    powHash: '',
     difficulty: Number(calculateBlockDifficulty(blockModel.target)),
     epoch: convertStringToDate(blockModel.epochStart),
     flags: int64ToUint64String(blockModel.featureFlags),
@@ -123,6 +125,7 @@ const mapFromSequelize = (blockModel: BlockAttributes): BlockOutput => {
     payloadHash: blockModel.payloadHash,
     weight: blockModel.weight,
     target: blockModel.target,
+    canonical: blockModel.canonical ?? false, //blockModel.canonical === null ? true : (blockModel.canonical ?? false),
     neighbors: Object.entries(blockModel.adjacents).map(([chainId, hash]) => ({
       chainId,
       hash,

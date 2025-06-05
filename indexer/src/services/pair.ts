@@ -3,6 +3,7 @@ import Event from '../models/event';
 import { PairService } from './pair-service';
 import { Op, WhereOptions, Transaction as SequelizeTransaction } from 'sequelize';
 import Transaction from '../models/transaction';
+import Block from '@/models/block';
 
 const MODULE_NAMES = [
   'n_bd19ba92f0449d4422e620740759c9e94cacdb37.sushi-exchange',
@@ -162,6 +163,16 @@ export async function backfillPairEvents(
           model: Transaction,
           as: 'transaction',
           attributes: ['blockId', 'creationtime'],
+          include: [
+            {
+              model: Block,
+              as: 'block',
+              attributes: ['height'],
+              where: {
+                canonical: true,
+              },
+            },
+          ],
         },
       ],
       limit: batchSize,

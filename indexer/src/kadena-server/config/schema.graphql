@@ -349,7 +349,15 @@ type Query {
   """
   Retrieve a specific pool by its ID.
   """
-  pool(id: ID!, timeFrame: TimeFrame, type: PoolTransactionType, first: Int, after: String, last: Int, before: String): Pool @complexity(value: 1)
+  pool(
+    id: ID!
+    timeFrame: TimeFrame
+    type: PoolTransactionType
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): Pool @complexity(value: 1)
 
   poolTransactions(
     pairId: String!
@@ -604,6 +612,8 @@ type Block implements Node {
   The proof of work hash.
   """
   powHash: String!
+
+  canonical: Boolean!
 
   parent: Block @complexity(value: 1)
   """
