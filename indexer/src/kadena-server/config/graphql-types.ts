@@ -532,11 +532,11 @@ export type PageInfo = {
 export type Pool = Node & {
   __typename?: 'Pool';
   address: Scalars['String']['output'];
-  apr24h: Scalars['Decimal']['output'];
+  apr24h: Scalars['Float']['output'];
   /** Get chart data for this pool */
   charts: PoolCharts;
   createdAt: Scalars['DateTime']['output'];
-  fees24hUsd: Scalars['Decimal']['output'];
+  fees24hUsd: Scalars['Float']['output'];
   feesChange24h: Scalars['Float']['output'];
   id: Scalars['ID']['output'];
   key: Scalars['String']['output'];
@@ -550,10 +550,10 @@ export type Pool = Node & {
   /** Get transactions for this pool */
   transactions?: Maybe<PoolTransactionsConnection>;
   tvlChange24h: Scalars['Float']['output'];
-  tvlUsd: Scalars['Decimal']['output'];
+  tvlUsd: Scalars['Float']['output'];
   updatedAt: Scalars['DateTime']['output'];
-  volume7dUsd: Scalars['Decimal']['output'];
-  volume24hUsd: Scalars['Decimal']['output'];
+  volume7dUsd: Scalars['Float']['output'];
+  volume24hUsd: Scalars['Float']['output'];
   volumeChange24h: Scalars['Float']['output'];
 };
 
@@ -565,7 +565,9 @@ export type PoolChartsArgs = {
 /** A liquidity pool for a token pair. */
 export type PoolTransactionsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
   type?: InputMaybe<PoolTransactionType>;
 };
 
@@ -717,6 +719,10 @@ export type Query = {
   poolTransactions?: Maybe<PoolTransactionsConnection>;
   /** Retrieve liquidity pools. Default page size is 20. */
   pools: QueryPoolsConnection;
+  /** Get price for a specific token */
+  tokenPrice?: Maybe<TokenPrice>;
+  /** Get prices for all tokens in a protocol */
+  tokenPrices: Array<TokenPrice>;
   tokens: QueryTokensConnection;
   /** Retrieve one transaction by its unique key. Throws an error if multiple transactions are found. */
   transaction?: Maybe<Transaction>;
@@ -849,7 +855,13 @@ export type QueryPactQueryArgs = {
 };
 
 export type QueryPoolArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
   id: Scalars['ID']['input'];
+  last?: InputMaybe<Scalars['Int']['input']>;
+  timeFrame?: InputMaybe<TimeFrame>;
+  type?: InputMaybe<PoolTransactionType>;
 };
 
 export type QueryPoolTransactionsArgs = {
@@ -867,6 +879,15 @@ export type QueryPoolsArgs = {
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<PoolOrderBy>;
+  protocolAddress?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type QueryTokenPriceArgs = {
+  protocolAddress?: InputMaybe<Scalars['String']['input']>;
+  tokenAddress: Scalars['String']['input'];
+};
+
+export type QueryTokenPricesArgs = {
   protocolAddress?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -1109,9 +1130,20 @@ export enum TimeFrame {
 
 export type Token = {
   __typename?: 'Token';
+  address?: Maybe<Scalars['String']['output']>;
   chainId: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+};
+
+export type TokenPrice = {
+  __typename?: 'TokenPrice';
+  id: Scalars['ID']['output'];
+  priceInKda: Scalars['Decimal']['output'];
+  priceInUsd: Scalars['Decimal']['output'];
+  protocolAddress: Scalars['String']['output'];
+  token: Token;
+  updatedAt: Scalars['DateTime']['output'];
 };
 
 /** A transaction. */
@@ -1643,6 +1675,7 @@ export type ResolversTypes = {
   Subscription: ResolverTypeWrapper<{}>;
   TimeFrame: TimeFrame;
   Token: ResolverTypeWrapper<Token>;
+  TokenPrice: ResolverTypeWrapper<TokenPrice>;
   Transaction: ResolverTypeWrapper<
     Omit<Transaction, 'cmd' | 'orphanedTransactions' | 'result'> & {
       cmd: ResolversTypes['TransactionCommand'];
@@ -1881,6 +1914,7 @@ export type ResolversParentTypes = {
   String: Scalars['String']['output'];
   Subscription: {};
   Token: Token;
+  TokenPrice: TokenPrice;
   Transaction: Omit<Transaction, 'cmd' | 'orphanedTransactions' | 'result'> & {
     cmd: ResolversParentTypes['TransactionCommand'];
     orphanedTransactions?: Maybe<Array<Maybe<ResolversParentTypes['Transaction']>>>;
@@ -2555,7 +2589,7 @@ export type PoolResolvers<
   ParentType extends ResolversParentTypes['Pool'] = ResolversParentTypes['Pool'],
 > = {
   address?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  apr24h?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
+  apr24h?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   charts?: Resolver<
     ResolversTypes['PoolCharts'],
     ParentType,
@@ -2563,7 +2597,7 @@ export type PoolResolvers<
     RequireFields<PoolChartsArgs, 'timeFrame'>
   >;
   createdAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
-  fees24hUsd?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
+  fees24hUsd?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   feesChange24h?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   key?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2581,10 +2615,10 @@ export type PoolResolvers<
     Partial<PoolTransactionsArgs>
   >;
   tvlChange24h?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
-  tvlUsd?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
+  tvlUsd?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
-  volume7dUsd?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
-  volume24hUsd?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
+  volume7dUsd?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  volume24hUsd?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   volumeChange24h?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -2774,6 +2808,18 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryPoolsArgs, 'orderBy'>
+  >;
+  tokenPrice?: Resolver<
+    Maybe<ResolversTypes['TokenPrice']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTokenPriceArgs, 'tokenAddress'>
+  >;
+  tokenPrices?: Resolver<
+    Array<ResolversTypes['TokenPrice']>,
+    ParentType,
+    ContextType,
+    Partial<QueryTokenPricesArgs>
   >;
   tokens?: Resolver<
     ResolversTypes['QueryTokensConnection'],
@@ -3073,9 +3119,23 @@ export type TokenResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Token'] = ResolversParentTypes['Token'],
 > = {
+  address?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   chainId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   name?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TokenPriceResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['TokenPrice'] = ResolversParentTypes['TokenPrice'],
+> = {
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  priceInKda?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
+  priceInUsd?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
+  protocolAddress?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  token?: Resolver<ResolversTypes['Token'], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3359,6 +3419,7 @@ export type Resolvers<ContextType = any> = {
   Signer?: SignerResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
   Token?: TokenResolvers<ContextType>;
+  TokenPrice?: TokenPriceResolvers<ContextType>;
   Transaction?: TransactionResolvers<ContextType>;
   TransactionCapability?: TransactionCapabilityResolvers<ContextType>;
   TransactionCommand?: TransactionCommandResolvers<ContextType>;

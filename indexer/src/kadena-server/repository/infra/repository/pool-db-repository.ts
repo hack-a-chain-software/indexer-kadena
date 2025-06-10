@@ -3,23 +3,23 @@ import { Op, QueryTypes } from 'sequelize';
 import { sequelize } from '../../../../config/database';
 import Pair from '../../../../models/pair';
 import PoolStats from '../../../../models/pool-stats';
-import { encodeCursor, getPageInfo, getPaginationParams } from '../../pagination';
+import { getPageInfo, getPaginationParams } from '../../pagination';
 import {
   PageInfo,
   Pool,
   PoolCharts,
-  PoolTransactionType,
+  QueryPoolArgs,
   TimeFrame,
 } from '../../../config/graphql-types';
 import {
   GetPoolsParams,
-  GetPoolParams,
   GetPoolTransactionsParams,
   GetPoolChartsParams,
   PoolTransactionsConnection,
 } from '../../application/pool-repository';
 import { ConnectionEdge } from '../../types';
 import TokenModel from '../../../../models/token';
+import { DEFAULT_PROTOCOL } from '../../../config/apollo-server-config';
 
 type OrderDirection = 'ASC' | 'DESC';
 
@@ -40,50 +40,20 @@ const POOL_ORDER_BY_MAP: Record<
 };
 
 export default class PoolDbRepository {
-  private readonly DEFAULT_PROTOCOL = 'kdlaunch.kdswap-exchange';
-
   async getPools(params: GetPoolsParams): Promise<{
     pageInfo: PageInfo;
     edges: ConnectionEdge<Pool>[];
     totalCount: number;
   }> {
-    const { after, before, first, last, orderBy, protocolAddress = this.DEFAULT_PROTOCOL } = params;
+    const { after, before, first, last, orderBy, protocolAddress = DEFAULT_PROTOCOL } = params;
     const pagination = getPaginationParams({ after, before, first, last });
-
-    // Get the latest stats for each pool
-    const latestStats = await PoolStats.findAll({
-      attributes: ['pairId', [sequelize.fn('MAX', sequelize.col('timestamp')), 'maxTimestamp']],
-      group: ['pairId'],
-    });
-
-    const pairIds = latestStats.map(stat => stat.pairId);
-    const maxTimestamps = latestStats.reduce(
-      (acc, stat) => {
-        const maxTimestamp = stat.get('maxTimestamp') as Date;
-        if (maxTimestamp) {
-          acc[stat.pairId] = maxTimestamp;
-        }
-        return acc;
-      },
-      {} as Record<number, Date>,
-    );
-
-    const pairIdsStr = pairIds.join(',');
-    const timestampsStr = Object.values(maxTimestamps)
-      .map(t => `'${t.toISOString()}'`)
-      .join(',');
 
     let whereClause = '';
     const conditions = [];
 
-    if (pairIdsStr) {
-      conditions.push(`p.id IN (${pairIdsStr})`);
+    if (protocolAddress) {
+      conditions.push(`p.address = '${protocolAddress}'`);
     }
-    if (timestampsStr) {
-      conditions.push(`ps.timestamp IN (${timestampsStr})`);
-    }
-
-    conditions.push(`p.address = '${protocolAddress}'`);
 
     if (pagination.after) {
       conditions.push(`p.id ${pagination.order === 'DESC' ? '<' : '>'} ${pagination.after}`);
@@ -98,24 +68,36 @@ export default class PoolDbRepository {
     }
 
     const query = `
+      WITH latest_stats AS (
+        SELECT DISTINCT ON ("pairId") 
+          "pairId",
+          "tvlUsd",
+          "volume24hUsd",
+          "volume7dUsd",
+          "transactionCount24h",
+          "apr24h",
+          timestamp
+        FROM "PoolStats"
+        ORDER BY "pairId", timestamp DESC
+      )
       SELECT 
         p.*,
         t0.id as "token0Id",
         t0.name as "token0Name",
         t1.id as "token1Id",
         t1.name as "token1Name",
-        ps."tvlUsd",
-        ps."volume24hUsd",
-        ps."volume7dUsd",
-        ps."transactionCount24h",
-        ps."apr24h"
+        ls."tvlUsd",
+        ls."volume24hUsd",
+        ls."volume7dUsd",
+        ls."transactionCount24h",
+        ls."apr24h"
       FROM "Pairs" p
       JOIN "Tokens" t0 ON p."token0Id" = t0.id
       JOIN "Tokens" t1 ON p."token1Id" = t1.id
-      JOIN "PoolStats" ps ON p.id = ps."pairId"
+      JOIN latest_stats ls ON p.id = ls."pairId"
       ${whereClause}
-      ORDER BY ps."${POOL_ORDER_BY_MAP[orderBy || 'TVL_USD_DESC'].field}" ${POOL_ORDER_BY_MAP[orderBy || 'TVL_USD_DESC'].direction}
-      LIMIT ${pagination.limit}
+      ORDER BY ls."${POOL_ORDER_BY_MAP[orderBy || 'TVL_USD_DESC'].field}" ${POOL_ORDER_BY_MAP[orderBy || 'TVL_USD_DESC'].direction}
+      LIMIT ${pagination.limit - 1}
     `;
 
     const pairs = await sequelize.query(query, {
@@ -133,9 +115,6 @@ export default class PoolDbRepository {
 
     const totalCount = await Pair.count({
       where: {
-        id: {
-          [Op.in]: pairIds,
-        },
         ...(protocolAddress ? { address: protocolAddress } : {}),
       },
     });
@@ -155,7 +134,7 @@ export default class PoolDbRepository {
     };
   }
 
-  async getPool(params: GetPoolParams): Promise<Pool | null> {
+  async getPool(params: QueryPoolArgs): Promise<Pool | null> {
     const { id } = params;
 
     // Get the pair
@@ -183,7 +162,7 @@ export default class PoolDbRepository {
     if (!pairResult) {
       throw new Error(`Token pair not found for pool ${id}`);
     }
-    const pair = pairResult as any;
+    const pair = pairResult as Pair;
 
     // Get the tokens
     const tokensQuery = `
@@ -244,88 +223,116 @@ export default class PoolDbRepository {
       type: QueryTypes.SELECT,
       bind: [id],
     });
+    const statsResult1 = statsResult as any;
 
-    const stats = statsResult
-      ? (statsResult as any)
-      : {
-          tvlUsd: 0,
-          volume24hUsd: 0,
-          volume7dUsd: 0,
-          fees24hUsd: 0,
-          transactionCount24h: 0,
-          apr24h: 0,
-          previousTvlUsd: 0,
-          previousVolume24hUsd: 0,
-          previousFees24hUsd: 0,
-          previousTransactionCount24h: 0,
-        };
+    interface Stats {
+      tvlUsd: number;
+      volume24hUsd: number;
+      volume7dUsd: number;
+      fees24hUsd: number;
+      transactionCount24h: number;
+      apr24h: number;
+      previousTvlUsd: number;
+      previousVolume24hUsd: number;
+      previousFees24hUsd: number;
+      previousTransactionCount24h: number;
+    }
+
+    const stats: Stats = {
+      tvlUsd: statsResult1.tvlUsd ? parseFloat(statsResult1.tvlUsd.toString()) : 0,
+      volume24hUsd: statsResult1.volume24hUsd
+        ? parseFloat(statsResult1.volume24hUsd.toString())
+        : 0,
+      volume7dUsd: statsResult1.volume7dUsd ? parseFloat(statsResult1.volume7dUsd.toString()) : 0,
+      fees24hUsd: statsResult1.fees24hUsd ? parseFloat(statsResult1.fees24hUsd.toString()) : 0,
+      transactionCount24h: statsResult1.transactionCount24h
+        ? parseFloat(statsResult1.transactionCount24h.toString())
+        : 0,
+      apr24h: statsResult1.apr24h ? parseFloat(statsResult1.apr24h.toString()) : 0,
+      previousTvlUsd: statsResult1.previousTvlUsd
+        ? parseFloat(statsResult1.previousTvlUsd.toString())
+        : 0,
+      previousVolume24hUsd: statsResult1.previousVolume24hUsd
+        ? parseFloat(statsResult1.previousVolume24hUsd.toString())
+        : 0,
+      previousFees24hUsd: statsResult1.previousFees24hUsd
+        ? parseFloat(statsResult1.previousFees24hUsd.toString())
+        : 0,
+      previousTransactionCount24h: statsResult1.previousTransactionCount24h
+        ? parseFloat(statsResult1.previousTransactionCount24h.toString())
+        : 0,
+    };
     // Calculate percentage changes
     const calculatePercentageChange = (current: number, previous: number): number => {
       if (!previous) return 0;
       return ((current - previous) / previous) * 100;
     };
 
-    const tvlChange24h = calculatePercentageChange(
-      parseFloat(stats.tvlUsd),
-      parseFloat(stats.previousTvlUsd),
-    );
+    const tvlChange24h = calculatePercentageChange(stats.tvlUsd, stats.previousTvlUsd);
     const volumeChange24h = calculatePercentageChange(
-      parseFloat(stats.volume24hUsd),
-      parseFloat(stats.previousVolume24hUsd),
+      stats.volume24hUsd,
+      stats.previousVolume24hUsd,
     );
-    const feesChange24h = calculatePercentageChange(
-      parseFloat(stats.fees24hUsd),
-      parseFloat(stats.previousFees24hUsd),
-    );
+    const feesChange24h = calculatePercentageChange(stats.fees24hUsd, stats.previousFees24hUsd);
     const transactionCountChange24h = calculatePercentageChange(
       stats.transactionCount24h,
       stats.previousTransactionCount24h,
     );
 
     const charts = await this.getPoolCharts({
-      pairId: parseInt(pair.id),
-      timeFrame: TimeFrame.Day,
+      pairId: pair.id,
+      timeFrame: params.timeFrame || TimeFrame.Day,
     });
     const transactions = await this.getPoolTransactions({
-      pairId: parseInt(pair.id),
-      first: 10,
+      pairId: pair.id,
+      type: params.type || undefined,
+      first: params.first || undefined,
+      after: params.after || undefined,
+      last: params.last || undefined,
+      before: params.before || undefined,
     });
 
-    return {
-      __typename: 'Pool',
+    console.log({ stats });
+
+    const pool = {
+      __typename: 'Pool' as const,
       id: pair.id.toString(),
       address: pair.address,
       token0: {
-        __typename: 'Token',
+        __typename: 'Token' as const,
         id: token0.id.toString(),
         name: token0.name,
         chainId: '0',
+        address: token0.code,
       },
       token1: {
-        __typename: 'Token',
+        __typename: 'Token' as const,
         id: token1.id.toString(),
         name: token1.name,
         chainId: '0',
+        address: token1.code,
       },
       reserve0: pair.reserve0,
       reserve1: pair.reserve1,
       totalSupply: pair.totalSupply,
       key: pair.key,
-      tvlUsd: stats.tvlUsd ?? 0,
+      tvlUsd: stats.tvlUsd,
       tvlChange24h,
-      volume24hUsd: stats.volume24hUsd ?? 0,
+      volume24hUsd: stats.volume24hUsd,
       volumeChange24h,
-      volume7dUsd: stats.volume7dUsd ?? 0,
-      fees24hUsd: stats.fees24hUsd ?? 0,
+      volume7dUsd: stats.volume7dUsd,
+      fees24hUsd: stats.fees24hUsd,
       feesChange24h,
-      transactionCount24h: stats.transactionCount24h ?? 0,
+      transactionCount24h: stats.transactionCount24h,
       transactionCountChange24h,
-      apr24h: stats.apr24h ?? 0,
+      apr24h: stats.apr24h,
       createdAt: pair.createdAt,
       updatedAt: pair.updatedAt,
       charts,
       transactions,
     };
+    console.log(pool);
+    return pool;
   }
 
   async getPoolTransactions(

@@ -61,6 +61,95 @@ query GetTokenInfo {
 }
 ```
 
+### Get Token Price
+
+```graphql
+query GetTokenPrice($tokenAddress: String!, $protocolAddress: String) {
+  tokenPrice(tokenAddress: $tokenAddress, protocolAddress: $protocolAddress) {
+    id
+    token {
+      id
+      name
+      chainId
+      address
+    }
+    priceInKda
+    priceInUsd
+    protocolAddress
+    updatedAt
+  }
+}
+```
+
+**Input Parameters:**
+
+- `tokenAddress`: Address of the token (required, String!)
+- `protocolAddress`: Protocol address (optional, String)
+
+**Output Data:**
+
+```typescript
+{
+  tokenPrice: {
+    id: string;              // Price ID
+    token: {
+      id: string;           // Token ID
+      name: string;         // Token name
+      chainId: string;      // Chain ID
+      address: string;      // Token address
+    },
+    priceInKda: number;     // Price in KDA
+    priceInUsd: number;     // Price in USD
+    protocolAddress: string;// Protocol address
+    updatedAt: DateTime;    // Last update timestamp
+  }
+}
+```
+
+### Get All Token Prices
+
+```graphql
+query GetTokenPrices($protocolAddress: String) {
+  tokenPrices(protocolAddress: $protocolAddress) {
+    id
+    token {
+      id
+      name
+      chainId
+      address
+    }
+    priceInKda
+    priceInUsd
+    protocolAddress
+    updatedAt
+  }
+}
+```
+
+**Input Parameters:**
+
+- `protocolAddress`: Protocol address (optional, String)
+
+**Output Data:**
+
+```typescript
+{
+  tokenPrices: Array<{
+    id: string; // Price ID
+    token: {
+      id: string; // Token ID
+      name: string; // Token name
+      chainId: string; // Chain ID
+      address: string; // Token address
+    };
+    priceInKda: number; // Price in KDA
+    priceInUsd: number; // Price in USD
+    protocolAddress: string; // Protocol address
+    updatedAt: DateTime; // Last update timestamp
+  }>;
+}
+```
+
 ### Get Token Price and Exchange Rate
 
 ```graphql
@@ -318,64 +407,76 @@ query GetPools($first: Int, $orderBy: PoolOrderBy = TVL_USD_DESC, $after: String
 ### Get Pool by ID with Charts
 
 ```graphql
-query GetPoolDetails($poolId: ID!, $timeFrame: TimeFrame = DAY, $first: Int = 10) {
+query getPoolDetails($poolId: ID!, $timeFrame: TimeFrame!) {
   pool(id: $poolId) {
-    id
     address
-    token0 {
-      id
-      name
-    }
-    token1 {
-      id
-      name
-    }
+    apr24h
+    createdAt
+    fees24hUsd
+    feesChange24h
+    id
+    key
     reserve0
     reserve1
     totalSupply
-    tvlUsd
-    tvlChange24h
-    volume24hUsd
-    volumeChange24h
-    volume7dUsd
-    fees24hUsd
-    feesChange24h
     transactionCount24h
     transactionCountChange24h
-    apr24h
+    tvlChange24h
+    tvlUsd
+    updatedAt
+    volume24hUsd
+    volume7dUsd
+    volumeChange24h
     charts(timeFrame: $timeFrame) {
-      volume {
-        timestamp
+      fees {
         value
+        timestamp
       }
       tvl {
-        timestamp
         value
+        timestamp
       }
-      fees {
-        timestamp
+      volume {
         value
+        timestamp
       }
     }
-    transactions(first: $first) {
+    token0 {
+      name
+      id
+      chainId
+      address
+    }
+    token1 {
+      name
+      id
+      chainId
+      address
+    }
+    transactions {
+      totalCount
+      pageInfo {
+        endCursor
+        hasNextPage
+        startCursor
+        hasPreviousPage
+      }
       edges {
+        cursor
         node {
-          id
-          maker
           amount0In
-          amount1In
           amount0Out
+          amount1In
           amount1Out
-          amountUsd
-          timestamp
           transactionType
+          transactionId
+          timestamp
+          requestkey
+          maker
+          id
+          amountUsd
         }
       }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-      totalCount
     }
   }
 }

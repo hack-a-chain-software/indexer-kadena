@@ -21,6 +21,7 @@
  */
 
 import { ResolverContext } from '../config/apollo-server-config';
+import { QueryPoolArgs } from '../config/graphql-types';
 import { buildBlockOutput } from './output/build-block-output';
 import { buildEventOutput } from './output/build-event-output';
 import { buildFungibleAccount } from './output/build-fungible-account-output';
@@ -193,7 +194,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
   if (type === 'Pool') {
     // Resolve Pool node - requires poolId
     const [poolId] = JSON.parse(params);
-    const output = await context.poolRepository.getPool({ id: parseInt(poolId, 10) });
+    const output = await context.poolRepository.getPool({ id: poolId } as QueryPoolArgs);
     return output;
   }
 

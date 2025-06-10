@@ -23,7 +23,7 @@ import { startMissingBlocks } from './services/missing';
 import { startStreaming } from './services/streaming';
 import { backfillPairEvents } from './services/pair';
 import { setupAssociations } from './models/setup-associations';
-import { PriceUpdaterService } from '@/services/price/price-updater.service';
+import { PriceUpdaterService } from './services/price/price-updater.service';
 
 /**
  * Command-line interface configuration using Commander.
@@ -58,6 +58,7 @@ const options = program.opts();
 async function main() {
   try {
     setupAssociations();
+    await PriceUpdaterService.getInstance();
 
     if (options.database) {
       await initializeDatabase();

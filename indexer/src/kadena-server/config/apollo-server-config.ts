@@ -21,7 +21,6 @@ import EventRepository from '../repository/application/event-repository';
 import TransferRepository from '../repository/application/transfer-repository';
 import NetworkRepository from '../repository/application/network-repository';
 import PoolRepository from '../repository/application/pool-repository';
-import { PubSub } from 'graphql-subscriptions';
 import BlockDbRepository from '../repository/infra/repository/block-db-repository';
 import TransactionDbRepository from '../repository/infra/repository/transaction-db-repository';
 import BalanceDbRepository from '../repository/infra/repository/balance-db-repository';
@@ -39,6 +38,10 @@ import { LiquidityPositionRepository } from '../repository/application/liquidity
 import LiquidityPositionDbRepository from '../repository/infra/repository/liquidity-position-db-repository';
 import { DexMetricsRepository } from '../repository/application/dex-metrics-repository';
 import DexMetricsDbRepository from '../repository/infra/repository/dex-metrics-db-repository';
+import { TokenPriceRepository } from '../repository/application/token-price-repository';
+import TokenPriceDbRepository from '../repository/infra/repository/token-price-db-repository';
+
+export const DEFAULT_PROTOCOL = 'kdlaunch.kdswap-exchange';
 
 /**
  * Resolver context type definition for the GraphQL API
@@ -116,6 +119,7 @@ export type ResolverContext = {
   signal: AbortSignal;
   liquidityPositionRepository: LiquidityPositionRepository;
   dexMetricsRepository: DexMetricsRepository;
+  tokenPriceRepository: TokenPriceRepository;
 };
 
 /**
@@ -150,6 +154,7 @@ export const createGraphqlContext = () => {
     signal: new AbortController().signal,
     liquidityPositionRepository: new LiquidityPositionDbRepository(),
     dexMetricsRepository: new DexMetricsDbRepository(),
+    tokenPriceRepository: new TokenPriceDbRepository(),
   };
 
   return Promise.resolve({

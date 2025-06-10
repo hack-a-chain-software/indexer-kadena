@@ -5,6 +5,7 @@ import {
   Pool,
   PoolCharts,
   PoolTransactionType,
+  QueryPoolArgs,
   TimeFrame,
 } from '../../config/graphql-types';
 import { ConnectionEdge } from '../types';
@@ -134,7 +135,7 @@ export default interface PoolRepository {
     edges: ConnectionEdge<Pool>[];
     totalCount: number;
   }>;
-  getPool(params: GetPoolParams): Promise<Pool | null>;
+  getPool(params: QueryPoolArgs): Promise<Pool | null>;
   getPoolTransactions(
     params: GetPoolTransactionsParams,
   ): Promise<PoolTransactionsConnection | null>;

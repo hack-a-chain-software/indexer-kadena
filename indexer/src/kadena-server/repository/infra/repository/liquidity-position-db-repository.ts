@@ -119,7 +119,7 @@ export default class LiquidityPositionDbRepository {
 
     // First order by the requested field, then by id for consistent pagination
     query += ` ORDER BY ${orderField} ${orderDirection}, lb.id ${pagination.order} LIMIT $${paramIndex}`;
-    queryParams.push(pagination.limit);
+    queryParams.push(pagination.limit - 1);
 
     const positions = await sequelize.query(query, {
       type: QueryTypes.SELECT,

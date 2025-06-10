@@ -349,7 +349,7 @@ type Query {
   """
   Retrieve a specific pool by its ID.
   """
-  pool(id: ID!): Pool @complexity(value: 1)
+  pool(id: ID!, timeFrame: TimeFrame, type: PoolTransactionType, first: Int, after: String, last: Int, before: String): Pool @complexity(value: 1)
 
   poolTransactions(
     pairId: Int!
@@ -389,6 +389,16 @@ type Query {
     """
     protocolAddress: String
   ): DexMetrics!
+
+  """
+  Get price for a specific token
+  """
+  tokenPrice(tokenAddress: String!, protocolAddress: String): TokenPrice
+
+  """
+  Get prices for all tokens in a protocol
+  """
+  tokenPrices(protocolAddress: String): [TokenPrice!]!
 }
 
 """
@@ -1165,6 +1175,7 @@ type Token {
   id: ID!
   name: String!
   chainId: String!
+  address: String
 }
 
 """
@@ -1179,16 +1190,16 @@ type Pool implements Node {
   reserve1: String!
   totalSupply: String!
   key: String!
-  tvlUsd: Decimal!
+  tvlUsd: Float!
   tvlChange24h: Float!
-  volume24hUsd: Decimal!
+  volume24hUsd: Float!
   volumeChange24h: Float!
-  volume7dUsd: Decimal!
-  fees24hUsd: Decimal!
+  volume7dUsd: Float!
+  fees24hUsd: Float!
   feesChange24h: Float!
   transactionCount24h: Int!
   transactionCountChange24h: Float!
-  apr24h: Decimal!
+  apr24h: Float!
   createdAt: DateTime!
   updatedAt: DateTime!
   """
@@ -1211,6 +1222,14 @@ type Pool implements Node {
     Cursor for pagination
     """
     after: String
+    """
+    Number of items to fetch
+    """
+    last: Int
+    """
+    Cursor for pagination
+    """
+    before: String
   ): PoolTransactionsConnection @complexity(value: 10, multipliers: ["first"])
 }
 
@@ -1414,4 +1433,13 @@ type DexMetrics {
   Total volume in USD for the specified period
   """
   totalVolumeUsd: Decimal!
+}
+
+type TokenPrice {
+  id: ID!
+  token: Token!
+  priceInKda: Decimal!
+  priceInUsd: Decimal!
+  protocolAddress: String!
+  updatedAt: DateTime!
 }

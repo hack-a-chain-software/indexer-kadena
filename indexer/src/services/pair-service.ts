@@ -1,4 +1,4 @@
-import { Op, Transaction } from 'sequelize';
+import { Op, Transaction as SequelizeTransaction } from 'sequelize';
 
 import { sequelize } from '../config/database';
 import Pair from '../models/pair';
@@ -8,6 +8,8 @@ import PoolTransaction, { TransactionType } from '../models/pool-transaction';
 import Token from '../models/token';
 import LiquidityBalance from '../models/liquidity-balance';
 import { PriceService } from './price/price.service';
+import { DEFAULT_PROTOCOL } from '../kadena-server/config/apollo-server-config';
+import Transaction from '@/models/transaction';
 
 type TokenAmount = number | { decimal: string };
 
@@ -172,7 +174,10 @@ export class PairService {
    * @param token The token to get price for
    * @returns The token price in USD
    */
-  private static async getTokenPriceInUSD(token: Token): Promise<number | undefined> {
+  private static async getTokenPriceInUSD(
+    token: Token,
+    protocolAddress = DEFAULT_PROTOCOL,
+  ): Promise<number | undefined> {
     const now = Date.now();
     const cached = this.tokenPriceCache.get(token.id);
 
@@ -182,7 +187,7 @@ export class PairService {
     }
 
     // Calculate new price
-    const price = await this.calculateTokenPriceInUSD(token, { decimal: '1' });
+    const price = await this.calculateTokenPriceInUSD(token, { decimal: '1' }, protocolAddress);
     if (price !== undefined) {
       this.tokenPriceCache.set(token.id, { price, timestamp: now });
     }
@@ -201,6 +206,7 @@ export class PairService {
       parameters: string;
       qualifiedName: string;
       chainId: number;
+      transactionId: number;
     }>,
   ): Promise<void> {
     // Process events in smaller batches to avoid connection pool exhaustion
@@ -227,11 +233,14 @@ export class PairService {
         // Pre-fetch all pairs for this batch to reduce database queries
         const pairKeys = batch.map(event => {
           const [key] = JSON.parse(event.parameters) as [string, TokenAmount, TokenAmount];
-          return key;
+          return { key, address: event.moduleName };
         });
 
         const existingPairs = await Pair.findAll({
-          where: { key: { [Op.in]: pairKeys } },
+          where: {
+            key: { [Op.in]: pairKeys.map(pair => pair.key) },
+            address: { [Op.in]: pairKeys.map(pair => pair.address) },
+          },
           include: [
             { model: Token, as: 'token0' },
             { model: Token, as: 'token1' },
@@ -239,7 +248,7 @@ export class PairService {
           transaction: tx,
         });
 
-        const pairMap = new Map(existingPairs.map(pair => [pair.key, pair]));
+        const pairMap = new Map(existingPairs.map(pair => [`${pair.key}:${pair.address}`, pair]));
 
         // Process each event in the batch
         await Promise.all(
@@ -259,7 +268,7 @@ export class PairService {
                 typeof reserve1 === 'number' ? reserve1.toString() : reserve1.decimal;
 
               // Get pair from pre-fetched map
-              let pair = pairMap.get(key);
+              let pair = pairMap.get(`${key}:${event.moduleName}`);
 
               if (!pair) {
                 const [code0, code1] = key.split(':');
@@ -337,6 +346,8 @@ export class PairService {
                 : '0.00000000';
               const tvlUsd = this.formatTo8Decimals(Number(reserve0Usd) + Number(reserve1Usd));
 
+              const transaction = await Transaction.findByPk(event.transactionId);
+
               // Store chart data
               await PoolChart.create(
                 {
@@ -347,7 +358,9 @@ export class PairService {
                   reserve0Usd,
                   reserve1Usd,
                   tvlUsd,
-                  timestamp: new Date(),
+                  timestamp: transaction
+                    ? new Date(Number(transaction.creationtime) * 1000)
+                    : new Date(),
                 },
                 { transaction: tx },
               );
@@ -382,7 +395,7 @@ export class PairService {
    * Updates pool statistics for a given pair
    * @param pairId ID of the pair to update stats for
    */
-  private static async updatePoolStats(pairId: number, tx?: Transaction): Promise<void> {
+  private static async updatePoolStats(pairId: number, tx?: SequelizeTransaction): Promise<void> {
     const now = new Date();
     const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -485,7 +498,7 @@ export class PairService {
     token0: Token,
     token1: Token,
     moduleName: string,
-    tx?: Transaction,
+    tx?: SequelizeTransaction,
   ): Promise<Pair> {
     // Try to find existing pair
     const existingPair = await Pair.findOne({
@@ -590,8 +603,8 @@ export class PairService {
 
               // Get token prices in USD
               const [tokenInPrice, tokenOutPrice] = await Promise.all([
-                this.getTokenPriceInUSD(tokenIn),
-                this.getTokenPriceInUSD(tokenOut),
+                this.getTokenPriceInUSD(tokenIn, pair.address),
+                this.getTokenPriceInUSD(tokenOut, pair.address),
               ]);
 
               // Calculate USD value
@@ -718,6 +731,7 @@ export class PairService {
                     { token0Id: token0.id, token1Id: token1.id },
                     { token0Id: token1.id, token1Id: token0.id },
                   ],
+                  address: event.moduleName,
                 },
                 transaction: tx,
               });
@@ -729,8 +743,8 @@ export class PairService {
 
               // Get token prices in USD
               const [token0Price, token1Price] = await Promise.all([
-                this.getTokenPriceInUSD(token0),
-                this.getTokenPriceInUSD(token1),
+                this.getTokenPriceInUSD(token0, pair.address),
+                this.getTokenPriceInUSD(token1, pair.address),
               ]);
 
               // Calculate USD value
@@ -739,105 +753,67 @@ export class PairService {
                   (token1Price ? Number(amount1Str) * token1Price : 0),
               );
 
-              // Create pool transaction record
-              await PoolTransaction.create(
-                {
-                  pairId: pair.id,
-                  transactionId: event.transactionId,
-                  requestkey: event.requestkey,
-                  type:
-                    event.name === 'ADD_LIQUIDITY'
-                      ? TransactionType.ADD_LIQUIDITY
-                      : TransactionType.REMOVE_LIQUIDITY,
-                  maker: sender,
-                  timestamp: new Date(),
-                  amount0In:
-                    event.name === 'ADD_LIQUIDITY'
-                      ? pair.token0Id === token0.id
-                        ? amount0Str
-                        : amount1Str
-                      : '0',
-                  amount1In:
-                    event.name === 'ADD_LIQUIDITY'
-                      ? pair.token1Id === token0.id
-                        ? amount0Str
-                        : amount1Str
-                      : '0',
-                  amount0Out:
-                    event.name === 'REMOVE_LIQUIDITY'
-                      ? pair.token0Id === token1.id
-                        ? amount0Str
-                        : amount1Str
-                      : '0',
-                  amount1Out:
-                    event.name === 'REMOVE_LIQUIDITY'
-                      ? pair.token1Id === token1.id
-                        ? amount0Str
-                        : amount1Str
-                      : '0',
-                  amountUsd,
-                  feeUsd: '0.00000000',
-                },
-                { transaction: tx },
-              );
-
-              const liquidityBalance = await LiquidityBalance.findOne({
-                where: {
-                  pairId: pair.id,
-                  walletAddress: sender,
-                },
-                transaction: tx,
-              });
-
+              let totalSupply = Number(pair.totalSupply);
               if (event.name === 'ADD_LIQUIDITY') {
-                if (liquidityBalance) {
-                  // Update existing balance
-                  const currentLiquidity = BigInt(liquidityBalance.liquidity);
-                  const newLiquidity = currentLiquidity + BigInt(liquidity.toString());
-                  await liquidityBalance.update(
-                    {
-                      liquidity: newLiquidity.toString(),
-                    },
-                    { transaction: tx },
-                  );
-                } else {
-                  // Create new balance
-                  await LiquidityBalance.create(
-                    {
-                      pairId: pair.id,
-                      walletAddress: sender,
-                      liquidity: liquidity.toString(),
-                    },
-                    { transaction: tx },
-                  );
-                }
-              } else if (event.name === 'REMOVE_LIQUIDITY' && liquidityBalance) {
-                // Subtract liquidity
-                const currentLiquidity = BigInt(liquidityBalance.liquidity);
-                const newLiquidity = currentLiquidity - BigInt(liquidity.toString());
-                await liquidityBalance.update(
-                  {
-                    liquidity: newLiquidity.toString(),
-                  },
-                  { transaction: tx },
-                );
+                totalSupply = Number(pair.totalSupply) + Number(liquidity);
+              } else {
+                totalSupply = Number(pair.totalSupply) - Number(liquidity);
               }
 
+              await pair.update({
+                totalSupply: totalSupply.toString(),
+              });
+
+              // Create pool transaction record
+              await PoolTransaction.create({
+                pairId: pair.id,
+                transactionId: event.transactionId,
+                requestkey: event.requestkey,
+                type:
+                  event.name === 'ADD_LIQUIDITY'
+                    ? TransactionType.ADD_LIQUIDITY
+                    : TransactionType.REMOVE_LIQUIDITY,
+                maker: sender,
+                timestamp: new Date(),
+                amount0In:
+                  event.name === 'ADD_LIQUIDITY'
+                    ? pair.token0Id === token0.id
+                      ? amount0Str
+                      : amount1Str
+                    : '0',
+                amount1In:
+                  event.name === 'ADD_LIQUIDITY'
+                    ? pair.token1Id === token0.id
+                      ? amount0Str
+                      : amount1Str
+                    : '0',
+                amount0Out:
+                  event.name === 'REMOVE_LIQUIDITY'
+                    ? pair.token0Id === token1.id
+                      ? amount0Str
+                      : amount1Str
+                    : '0',
+                amount1Out:
+                  event.name === 'REMOVE_LIQUIDITY'
+                    ? pair.token1Id === token1.id
+                      ? amount0Str
+                      : amount1Str
+                    : '0',
+                amountUsd,
+                feeUsd: 0,
+              });
               // Update pool stats
-              await this.updatePoolStats(pair.id, tx);
+              await this.updatePoolStats(pair.id);
             } catch (error) {
-              console.error('Error processing liquidity event:', error);
-              throw error;
+              console.error(`Error processing event ${event.requestkey}:`, error);
             }
           }),
         );
-        await tx.commit();
       } catch (error) {
         await tx.rollback();
         console.error(`Error processing batch ${batchIndex + 1}/${batches.length}:`, error);
       }
     }
-    console.log('Finished processing all liquidity batches');
   }
 
   /**
@@ -846,13 +822,18 @@ export class PairService {
    * @param token1Id Second token ID
    * @returns The pair if found, null otherwise
    */
-  private static async findDirectPair(token0Id: number, token1Id: number): Promise<Pair | null> {
+  private static async findDirectPair(
+    token0Id: number,
+    token1Id: number,
+    protocolAddress = DEFAULT_PROTOCOL,
+  ): Promise<Pair | null> {
     return Pair.findOne({
       where: {
         [Op.or]: [
           { token0Id, token1Id },
           { token0Id: token1Id, token1Id: token0Id },
         ],
+        address: protocolAddress,
       },
       include: [
         { model: Token, as: 'token0' },
@@ -870,7 +851,8 @@ export class PairService {
   private static async findOptimalKdaPricePath(
     startTokenId: number,
     startAmount: number,
-  ): Promise<bigint | undefined> {
+    protocolAddress = DEFAULT_PROTOCOL,
+  ): Promise<number | undefined> {
     // Get KDA token
     const kdaToken = await Token.findOne({ where: { code: 'coin' } });
     if (!kdaToken) {
@@ -885,7 +867,7 @@ export class PairService {
       const [currentTokenId, currentAmount, path] = queue.shift()!;
 
       // Try direct path to KDA
-      const directPair = await this.findDirectPair(currentTokenId, kdaToken.id);
+      const directPair = await this.findDirectPair(currentTokenId, kdaToken.id, protocolAddress);
       if (directPair) {
         const reserve0 = Number(directPair.reserve0);
         const reserve1 = Number(directPair.reserve1);
@@ -898,7 +880,7 @@ export class PairService {
         }
 
         // Found the shortest path to KDA
-        return BigInt(kdaAmount.toFixed(0));
+        return kdaAmount;
       }
 
       // If path length is 4, don't explore further
@@ -910,6 +892,7 @@ export class PairService {
       const connectedPairs = await Pair.findAll({
         where: {
           [Op.or]: [{ token0Id: currentTokenId }, { token1Id: currentTokenId }],
+          address: protocolAddress,
         },
         include: [
           { model: Token, as: 'token0' },
@@ -952,7 +935,29 @@ export class PairService {
   static async calculateTokenPriceInUSD(
     token: Token,
     amount: TokenAmount,
+    protocolAddress = DEFAULT_PROTOCOL,
   ): Promise<number | undefined> {
+    try {
+      const prices = await this.calculateTokenPrice(token, protocolAddress);
+      if (!prices) return undefined;
+
+      const amountStr = typeof amount === 'number' ? amount.toString() : amount.decimal;
+      return prices.priceInUSD * Number(amountStr);
+    } catch (error) {
+      console.error('Error calculating token USD value:', error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Calculates the price of a token in USD
+   * @param token The token to calculate price for
+   * @returns The price of the token in USD
+   */
+  static async calculateTokenPrice(
+    token: Token,
+    protocolAddress = DEFAULT_PROTOCOL,
+  ): Promise<{ priceInUSD: number; priceInKDA: number } | undefined> {
     try {
       // Get KDA/USD price
       const priceService = PriceService.getInstance();
@@ -961,24 +966,196 @@ export class PairService {
         console.warn('KDA/USD price not available');
         return undefined;
       }
-
-      // Convert amount to string and then to BigInt
-      const amountStr = typeof amount === 'number' ? amount.toFixed(0) : amount.decimal;
-      const amountNumber = Number(amountStr);
+      // Use 1 token with proper decimals
+      const oneToken = 10 ** token.decimals;
 
       // Find shortest path to KDA using BFS
-      const kdaAmount = await this.findOptimalKdaPricePath(token.id, amountNumber);
+      const kdaAmount = await this.findOptimalKdaPricePath(token.id, oneToken, protocolAddress);
 
       if (kdaAmount === undefined) {
-        console.warn(`No path found to calculate USD value for token ${token.code}`);
+        console.warn(`No path found to calculate price for token ${token.code}`);
         return undefined;
       }
 
-      // Convert to USD
-      return Number(kdaAmount) * kdaUsdPrice;
+      // Convert to USD with proper decimal handling
+      const priceInUSD = (kdaAmount * kdaUsdPrice) / 10 ** token.decimals;
+      const priceInKDA = kdaAmount / 10 ** token.decimals;
+      return { priceInUSD, priceInKDA };
     } catch (error) {
-      console.error('Error calculating token USD value:', error);
+      console.error('Error calculating token price:', error);
       return undefined;
+    }
+  }
+
+  static async processExchangeTokenEvents(
+    exchangeTokenEvents: Array<{
+      moduleName: string;
+      name: string;
+      parameterText: string;
+      parameters: string;
+      qualifiedName: string;
+      chainId: number;
+      transactionId: number;
+      requestkey: string;
+    }>,
+  ): Promise<void> {
+    for (const event of exchangeTokenEvents) {
+      try {
+        switch (event.name) {
+          case 'TRANSFER_EVENT': {
+            const [token, sender, receiver, amount] = JSON.parse(event.parameters) as [
+              string,
+              string,
+              string,
+              TokenAmount,
+            ];
+
+            // Convert TokenAmount to string representation
+            const amountStr = typeof amount === 'number' ? amount.toString() : amount.decimal;
+            const pair = await Pair.findOne({
+              where: {
+                key: token,
+                address: event.moduleName,
+              },
+            });
+
+            if (!pair) {
+              console.warn(`Pair not found for token ${token}`);
+              continue;
+            }
+
+            // Find or create liquidity balances for both sender and receiver
+            const [senderBalance, receiverBalance] = await Promise.all([
+              LiquidityBalance.findOne({
+                where: { walletAddress: sender, pairId: pair.id },
+              }),
+              LiquidityBalance.findOne({
+                where: { walletAddress: receiver, pairId: pair.id },
+              }),
+            ]);
+
+            // Update or create sender's balance
+            if (senderBalance) {
+              const currentLiquidity = Number(senderBalance.liquidity);
+              const newLiquidity = currentLiquidity - Number(amountStr);
+              await senderBalance.update({
+                liquidity: newLiquidity.toString(),
+              });
+            } else {
+              await LiquidityBalance.create({
+                walletAddress: sender,
+                pairId: pair.id,
+                liquidity: (-Number(amountStr)).toString(),
+              });
+            }
+
+            // Update or create receiver's balance
+            if (receiverBalance) {
+              const currentLiquidity = Number(receiverBalance.liquidity);
+              const newLiquidity = currentLiquidity + Number(amountStr);
+              await receiverBalance.update({
+                liquidity: newLiquidity.toString(),
+              });
+            } else {
+              await LiquidityBalance.create({
+                walletAddress: receiver,
+                pairId: pair.id,
+                liquidity: amountStr,
+              });
+            }
+            break;
+          }
+
+          case 'BURN_EVENT': {
+            const [token, account, amount] = JSON.parse(event.parameters) as [
+              string,
+              string,
+              TokenAmount,
+            ];
+
+            // Convert TokenAmount to string representation
+            const amountStr = typeof amount === 'number' ? amount.toString() : amount.decimal;
+            const pair = await Pair.findOne({
+              where: {
+                key: token,
+                address: event.moduleName,
+              },
+            });
+
+            if (!pair) {
+              console.warn(`Pair not found for token ${token}`);
+              continue;
+            }
+
+            // Find or create the account's liquidity balance
+            const balance = await LiquidityBalance.findOne({
+              where: { walletAddress: account, pairId: pair.id },
+            });
+
+            if (balance) {
+              const currentLiquidity = Number(balance.liquidity);
+              const newLiquidity = currentLiquidity - Number(amountStr);
+              await balance.update({
+                liquidity: newLiquidity.toString(),
+              });
+            } else {
+              await LiquidityBalance.create({
+                walletAddress: account,
+                pairId: pair.id,
+                liquidity: (-Number(amountStr)).toString(),
+              });
+            }
+            break;
+          }
+
+          case 'MINT_EVENT': {
+            const [token, account, amount] = JSON.parse(event.parameters) as [
+              string,
+              string,
+              TokenAmount,
+            ];
+
+            // Convert TokenAmount to string representation
+            const amountStr = typeof amount === 'number' ? amount.toString() : amount.decimal;
+            const pair = await Pair.findOne({
+              where: {
+                key: token,
+                address: event.moduleName,
+              },
+            });
+
+            if (!pair) {
+              console.warn(`Pair not found for token ${token}`);
+              continue;
+            }
+
+            // Find or create the account's liquidity balance
+            const balance = await LiquidityBalance.findOne({
+              where: { walletAddress: account, pairId: pair.id },
+            });
+
+            if (balance) {
+              const currentLiquidity = Number(balance.liquidity);
+              const newLiquidity = currentLiquidity + Number(amountStr);
+              await balance.update({
+                liquidity: newLiquidity.toString(),
+              });
+            } else {
+              await LiquidityBalance.create({
+                walletAddress: account,
+                pairId: pair.id,
+                liquidity: amountStr,
+              });
+            }
+            break;
+          }
+
+          default:
+            console.warn(`Unknown event type: ${event.name}`);
+        }
+      } catch (error) {
+        console.error('Error processing exchange token event:', error);
+      }
     }
   }
 }
