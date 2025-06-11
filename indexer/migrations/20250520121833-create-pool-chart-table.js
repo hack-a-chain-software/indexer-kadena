@@ -62,7 +62,6 @@ module.exports = {
 
     // Add indexes
     await queryInterface.addIndex('PoolCharts', ['pairId']);
-    await queryInterface.addIndex('PoolCharts', ['timestamp']);
     await queryInterface.addIndex('PoolCharts', ['pairId', 'timestamp']);
   },
 

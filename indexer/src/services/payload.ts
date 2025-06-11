@@ -29,6 +29,7 @@ import { getRequiredEnvString } from '@/utils/helpers';
 import TransactionDetails, { TransactionDetailsAttributes } from '@/models/transaction-details';
 import { mapToEventModel } from '@/models/mappers/event-mapper';
 import { processPairCreationEvents } from './pair';
+import PactCodeSearchService from './pact-code-search';
 
 // Constants for array indices in the transaction data structure
 const TRANSACTION_INDEX = 0;
@@ -195,6 +196,13 @@ export async function processTransaction(
       {
         transaction: tx,
       },
+    );
+
+    // Process Pact code for search indexing (non-blocking)
+    await PactCodeSearchService.processTransactionCode(
+      transactionAttributes.requestkey,
+      transactionDetailsAttributes.code,
+      tx,
     );
 
     const events = await Promise.all(eventsAttributes);

@@ -107,11 +107,6 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
     });
-
-    // Add indexes
-    await queryInterface.addIndex('PoolStats', ['pairId', 'timestamp'], {
-      name: 'pool_stats_pairid_timestamp_idx',
-    });
   },
 
   async down(queryInterface) {

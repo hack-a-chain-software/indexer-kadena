@@ -38,12 +38,6 @@ module.exports = {
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
       },
     });
-
-    // Add indexes
-    await queryInterface.addIndex('LiquidityBalances', ['pairId', 'walletAddress'], {
-      unique: true,
-    });
-    await queryInterface.addIndex('LiquidityBalances', ['pairId']);
   },
 
   async down(queryInterface) {

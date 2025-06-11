@@ -148,7 +148,28 @@ yarn dev:streaming
 yarn dev:hot:graphql
 ```
 
-### 5.2. Additional Commands
+### 5.2 Migration
+
+To generate the migration file:
+
+```bash
+npx sequelize-cli migration:generate --name migration-name
+```
+
+After editting the migration file you will want to run the migration:
+
+```bash
+npx sequelize-cli db:migrate
+npx sequelize-cli db:migrate:status
+```
+
+To revert the last migration use:
+
+```bash
+npx sequelize-cli db:migrate:undo
+```
+
+### 5.3. Additional Commands
 
 The following commands will aid in the maintenance of the indexer.
 
