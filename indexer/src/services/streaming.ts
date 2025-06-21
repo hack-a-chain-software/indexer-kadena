@@ -23,6 +23,9 @@ import StreamingError from '@/models/streaming-error';
 import { backfillGuards } from './guards';
 import { Transaction } from 'sequelize';
 import { PriceUpdaterService } from './price/price-updater.service';
+import { markCanonicalTip } from '@/utils/canonical-tip';
+import BlockDbRepository from '@/kadena-server/repository/infra/repository/block-db-repository';
+import defineCanonical from '@/services/define-canonical';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');

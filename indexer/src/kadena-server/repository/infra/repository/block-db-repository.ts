@@ -14,7 +14,7 @@
  * - Optimized batch retrieval through DataLoader patterns
  */
 
-import { FindOptions, Op, QueryTypes } from 'sequelize';
+import { FindOptions, Op, QueryTypes, Transaction } from 'sequelize';
 import { rootPgPool, sequelize } from '../../../../config/database';
 import BlockModel, { BlockAttributes } from '../../../../models/block';
 import BlockRepository, {
@@ -326,7 +326,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.weight as "weight",
         b.target as "target",
         b.adjacents as "adjacents",
-        b.parent as "parent"
+        b.parent as "parent",
+        b.canonical as "canonical"
       FROM "Blocks" b
       WHERE b.height >= $2
       ${conditions}
@@ -605,6 +606,7 @@ export default class BlockDbRepository implements BlockRepository {
         b.target as "target",
         b.adjacents as "adjacents",
         b.parent as "parent",
+        b.canonical as "canonical",
         t.id as "transactionId"
         FROM "Blocks" b
         JOIN "Transactions" t ON b.id = t."blockId"
@@ -651,7 +653,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.weight as "weight",
         b.target as "target",
         b.adjacents as "adjacents",
-        b.parent as "parent"
+        b.parent as "parent",
+        b.canonical as "canonical"
         FROM "Blocks" b
         WHERE b.hash = ANY($1::text[])`,
       [hashes],
@@ -934,20 +937,61 @@ export default class BlockDbRepository implements BlockRepository {
     return Object.assign({}, ...maxHeightsArray);
   }
 
-  async getBlocksWithSameHeight(blockHash: string): Promise<BlockOutput[]> {
+  async getBlocksWithSameHeight(height: number, chainId: string): Promise<BlockOutput[]> {
     const query = `
-      SELECT b2.*
-      FROM "Blocks" b1
-      JOIN "Blocks" b2 ON b1.height = b2.height AND b1."chainId" = b2."chainId"
-      WHERE b1.hash = $1
+      SELECT b.*
+      FROM "Blocks" b
+      WHERE b."height" = $1 AND b."chainId" = $2
     `;
 
-    const { rows } = await rootPgPool.query(query, [blockHash]);
+    const { rows } = await rootPgPool.query(query, [height, chainId]);
 
     return rows.map(row => blockValidator.validate(row));
   }
 
-  updateCanonicalStatus(params: UpdateCanonicalStatusParams) {
-    return Promise.resolve();
+  async getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]> {
+    const query = `
+      SELECT b.*
+      FROM "Blocks" b
+      WHERE b.height > $1 AND b."chainId" = $2;
+    `;
+
+    const { rows } = await rootPgPool.query(query, [height, chainId]);
+
+    return rows.map(row => blockValidator.validate(row));
+  }
+
+  async updateCanonicalStatus(params: UpdateCanonicalStatusParams) {
+    const canonicalHashes = params.blocks
+      .filter(change => change.canonical)
+      .map(change => change.hash);
+    const nonCanonicalHashes = params.blocks
+      .filter(change => !change.canonical)
+      .map(change => change.hash);
+
+    await rootPgPool.query('BEGIN');
+    try {
+      if (canonicalHashes.length > 0) {
+        const canonicalQuery = `
+          UPDATE "Blocks"
+          SET "canonical" = true
+          WHERE hash = ANY($1)
+        `;
+        await rootPgPool.query(canonicalQuery, [canonicalHashes]);
+      }
+
+      if (nonCanonicalHashes.length > 0) {
+        const nonCanonicalQuery = `
+          UPDATE "Blocks"
+          SET "canonical" = false
+          WHERE hash = ANY($1)
+        `;
+        await rootPgPool.query(nonCanonicalQuery, [nonCanonicalHashes]);
+      }
+      await rootPgPool.query('COMMIT');
+    } catch (error) {
+      await rootPgPool.query('ROLLBACK');
+      throw error;
+    }
   }
 }

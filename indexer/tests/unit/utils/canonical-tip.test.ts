@@ -23,11 +23,10 @@ class InMemoryBlockRepository implements Partial<BlockRepository> {
     return block ?? null;
   }
 
-  async getBlocksWithSameHeight(hash: string): Promise<BlockOutput[]> {
-    const block = this.blocks.get(hash);
-    if (!block) return [];
-
-    return Array.from(this.blocks.values()).filter(b => b.height === block.height);
+  async getBlocksWithSameHeight(height: number, chainId: string): Promise<BlockOutput[]> {
+    return Array.from(this.blocks.values()).filter(
+      b => b.height === height && b.chainId === chainId,
+    );
   }
 
   getBlockChain(): string {
@@ -67,7 +66,13 @@ class InMemoryBlockRepository implements Partial<BlockRepository> {
     blocks.forEach(({ hash, canonical }) => {
       const block = this.blocks.get(hash);
       if (block) {
-        block.canonical = canonical;
+        // Create a new block object with the updated canonical status
+        const updatedBlock = {
+          ...block,
+          canonical: canonical,
+        };
+        // Replace the old block with the new one
+        this.blocks.set(hash, updatedBlock);
       }
     });
   }
@@ -145,13 +150,13 @@ describe('markCanonicalTip', () => {
       blockRepository: repository as unknown as BlockRepository,
     });
 
-    // Apply changes to our in-memory repository
-    for (const change of changes) {
-      const block = await repository.getBlockByHash(change.block.hash);
-      if (block) {
-        block.canonical = change.canonical;
-      }
-    }
+    // // Apply changes to our in-memory repository
+    // for (const change of changes) {
+    //   const block = await repository.getBlockByHash(change.block.hash);
+    //   if (block) {
+    //     block.canonical = change.canonical;
+    //   }
+    // }
 
     // Final state
     console.log('Final state:', repository.getBlockChain());
@@ -306,13 +311,13 @@ describe('markCanonicalTip', () => {
       blockRepository: repository as unknown as BlockRepository,
     });
 
-    // Apply changes for L using updateCanonicalStatus
-    await repository.updateCanonicalStatus({
-      blocks: changesForL.map(change => ({
-        hash: change.block.hash,
-        canonical: change.canonical,
-      })),
-    });
+    // // Apply changes for L using updateCanonicalStatus
+    // await repository.updateCanonicalStatus({
+    //   blocks: changesForL.map(change => ({
+    //     hash: change.block.hash,
+    //     canonical: change.canonical,
+    //   })),
+    // });
 
     // State after marking L
     console.log('State after marking L as canonical:', repository.getBlockChain());
@@ -355,13 +360,13 @@ describe('markCanonicalTip', () => {
       blockRepository: repository as unknown as BlockRepository,
     });
 
-    // Apply changes for G using updateCanonicalStatus
-    await repository.updateCanonicalStatus({
-      blocks: changesForG.map(change => ({
-        hash: change.block.hash,
-        canonical: change.canonical,
-      })),
-    });
+    // // Apply changes for G using updateCanonicalStatus
+    // await repository.updateCanonicalStatus({
+    //   blocks: changesForG.map(change => ({
+    //     hash: change.block.hash,
+    //     canonical: change.canonical,
+    //   })),
+    // });
 
     // Final state after marking G
     console.log('Final state after marking G as canonical:', repository.getBlockChain());
@@ -467,13 +472,13 @@ describe('markCanonicalTip', () => {
       blockRepository: repository as unknown as BlockRepository,
     });
 
-    // Apply first changes
-    await repository.updateCanonicalStatus({
-      blocks: firstChanges.map(change => ({
-        hash: change.block.hash,
-        canonical: change.canonical,
-      })),
-    });
+    // // Apply first changes
+    // await repository.updateCanonicalStatus({
+    //   blocks: firstChanges.map(change => ({
+    //     hash: change.block.hash,
+    //     canonical: change.canonical,
+    //   })),
+    // });
 
     // State after first marking
     console.log('State after first marking D as canonical:', repository.getBlockChain());
@@ -504,13 +509,13 @@ describe('markCanonicalTip', () => {
       blockRepository: repository as unknown as BlockRepository,
     });
 
-    // Apply second changes
-    await repository.updateCanonicalStatus({
-      blocks: secondChanges.map(change => ({
-        hash: change.block.hash,
-        canonical: change.canonical,
-      })),
-    });
+    // // Apply second changes
+    // await repository.updateCanonicalStatus({
+    //   blocks: secondChanges.map(change => ({
+    //     hash: change.block.hash,
+    //     canonical: change.canonical,
+    //   })),
+    // });
 
     // State after second marking
     console.log('State after second marking D as canonical:', repository.getBlockChain());

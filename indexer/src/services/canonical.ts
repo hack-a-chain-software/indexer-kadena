@@ -1,100 +1,92 @@
 import { rootPgPool } from '@/config/database';
 
+const HEIGHTS_PER_BATCH = 50; // Process 50 heights at a time
+const NUM_WORKERS = 4;
+const MAX_RETRIES = 3;
+const START_HEIGHT = 1;
+const END_HEIGHT = 5350000;
+
+async function updateRangeWithRetry(
+  startHeight: number,
+  endHeight: number,
+  retries = MAX_RETRIES,
+): Promise<number> {
+  try {
+    const result = await rootPgPool.query(
+      `
+        UPDATE "Blocks" 
+        SET canonical = true 
+        WHERE height > $1 AND height <= $2 
+        AND (canonical IS NULL OR canonical = false)
+        RETURNING id
+      `,
+      [startHeight, endHeight],
+    );
+    return result.rowCount || 0;
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, (MAX_RETRIES - retries + 1) * 1000));
+      return updateRangeWithRetry(startHeight, endHeight, retries - 1);
+    }
+    throw error;
+  }
+}
+
 export async function updateCanonicalInBatches() {
-  const batchSize = 100;
-  const maxHeight = 5350000;
-  let currentMinHeight = 0;
+  let currentMinHeight = START_HEIGHT;
   const startTime = Date.now();
+  const client = await rootPgPool.connect();
 
   try {
-    await rootPgPool.connect();
     console.log('Starting canonical update...');
+    console.log(`Processing ${HEIGHTS_PER_BATCH} heights per batch`);
 
-    while (currentMinHeight < maxHeight) {
+    while (currentMinHeight < END_HEIGHT) {
       const batchStartTime = Date.now();
-      const currentMaxHeight = Math.min(currentMinHeight + batchSize, maxHeight);
 
-      console.log(`Processing heights ${currentMinHeight + 1} to ${currentMaxHeight}...`);
+      const ranges: { start: number; end: number }[] = [];
+      for (let i = 0; i < NUM_WORKERS; i++) {
+        const rangeStart = currentMinHeight + i * HEIGHTS_PER_BATCH;
+        const rangeEnd = Math.min(rangeStart + HEIGHTS_PER_BATCH, END_HEIGHT);
+        if (rangeStart < END_HEIGHT) {
+          ranges.push({ start: rangeStart, end: rangeEnd });
+        }
+      }
 
-      // Update in transaction
-      await rootPgPool.query('BEGIN');
-
-      // Update Blocks
-      const blocksResult = await rootPgPool.query(
-        `
-          UPDATE "Blocks" 
-          SET canonical = true 
-          WHERE height > $1 AND height <= $2 
-        `,
-        [currentMinHeight, currentMaxHeight],
+      const results = await Promise.all(
+        ranges.map(({ start, end }) => updateRangeWithRetry(start, end)),
       );
 
-      // Update Transactions
-      const transactionsResult = await rootPgPool.query(
-        `
-          UPDATE "Transactions" 
-          SET canonical = true 
-          WHERE "blockId" IN (
-            SELECT id FROM "Blocks" 
-            WHERE height > $1 AND height <= $2
-          )
-        `,
-        [currentMinHeight, currentMaxHeight],
-      );
-
-      // Update Transfers
-      const transfersResult = await rootPgPool.query(
-        `
-          UPDATE "Transfers"
-          SET canonical = true
-          WHERE "transactionId" IN (
-            SELECT t.id FROM "Transactions" t
-            JOIN "Blocks" b ON t."blockId" = b.id
-            WHERE b.height > $1 AND b.height <= $2
-          )
-          `,
-        [currentMinHeight, currentMaxHeight],
-      );
-
-      // Update Events
-      const eventsResult = await rootPgPool.query(
-        `
-          UPDATE "Events"
-          SET canonical = true
-          WHERE "transactionId" IN (
-            SELECT t.id FROM "Transactions" t
-            JOIN "Blocks" b ON t."blockId" = b.id
-            WHERE b.height > $1 AND b.height <= $2
-          )
-          `,
-        [currentMinHeight, currentMaxHeight],
-      );
-
-      await rootPgPool.query('COMMIT');
-
+      const totalUpdated = results.reduce((sum, count) => sum + count, 0);
       const batchDuration = Date.now() - batchStartTime;
       const totalElapsed = Date.now() - startTime;
-      const batchNumber = Math.floor(currentMaxHeight / batchSize);
-      const totalBatches = Math.ceil(maxHeight / batchSize);
 
       console.log(
-        `✓ Batch ${batchNumber}/${totalBatches} complete (${batchDuration}ms): ${blocksResult.rowCount} blocks, ${transactionsResult.rowCount} transactions, ${transfersResult.rowCount} transfers, ${eventsResult.rowCount} events | Total elapsed: ${Math.round(totalElapsed / 1000)}s`,
+        `✓ Processed heights ${currentMinHeight + 1} to ${ranges[ranges.length - 1].end} ` +
+          `(${batchDuration}ms): ${totalUpdated} blocks updated`,
       );
 
-      currentMinHeight = currentMaxHeight;
+      if (totalElapsed > 0) {
+        const heightsProcessed = currentMinHeight - START_HEIGHT;
+        const heightsPerSecond = Math.round(heightsProcessed / (totalElapsed / 1000));
+        console.log(`Overall throughput: ${heightsPerSecond} heights/second`);
+      }
 
-      // Small delay
+      currentMinHeight = ranges[ranges.length - 1].end;
+
       await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     const totalDuration = Date.now() - startTime;
+    const totalHeightsProcessed = END_HEIGHT - START_HEIGHT;
     console.log(
-      `✅ Canonical update completed! Total time: ${Math.round(totalDuration / 1000)}s (${Math.round(totalDuration / 60000)}m)`,
+      `✅ Canonical update completed! ` +
+        `Processed ${totalHeightsProcessed} heights in ${Math.round(totalDuration / 1000)}s ` +
+        `(${Math.round(totalDuration / 60000)}m)`,
     );
   } catch (error) {
-    await rootPgPool.query('ROLLBACK');
     console.error('❌ Error:', error);
   } finally {
-    await rootPgPool.end();
+    client.release();
   }
 }

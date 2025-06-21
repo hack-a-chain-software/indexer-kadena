@@ -25,6 +25,7 @@ import { backfillPairEvents } from './services/pair';
 import { setupAssociations } from './models/setup-associations';
 import { PriceUpdaterService } from '@/services/price/price-updater.service';
 import { updateCanonicalInBatches } from '@/services/canonical';
+import defineCanonical, { defineCanonicalManually } from '@/services/define-canonical';
 
 /**
  * Command-line interface configuration using Commander.
@@ -37,6 +38,7 @@ program
   .option('-f, --guards', 'Backfill the guards')
   .option('-m, --missing', 'Missing blocks')
   .option('-z, --database', 'Init the database')
+  .option('-o, --canonicalTip', 'Update canonical tip')
   .option('-p, --backfillPairs', 'Backfill the pairs');
 
 program.parse(process.argv);
@@ -77,6 +79,9 @@ async function main() {
     } else if (options.canonical) {
       await updateCanonicalInBatches();
       await closeDatabase();
+      process.exit(0);
+    } else if (options.canonicalTip) {
+      await defineCanonicalManually({ chainId: '15' });
       process.exit(0);
     } else if (options.missing) {
       await startMissingBlocks();

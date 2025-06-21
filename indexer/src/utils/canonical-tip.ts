@@ -3,6 +3,7 @@ import BlockRepository from '@/kadena-server/repository/application/block-reposi
 interface Block {
   hash: string;
   height: number;
+  chainId: string;
   parentHash: string;
   canonical: boolean;
 }
@@ -13,6 +14,8 @@ interface MarkCanonicalTipParams {
   blocksWithSameHeightOfTipBlock: Block[];
   blockRepository: BlockRepository;
 }
+
+const TARGET_HEIGHT = 5350000;
 
 export async function markCanonicalTip({
   tipBlock,
@@ -27,20 +30,46 @@ export async function markCanonicalTip({
     changes.push({ block, canonical: false });
   }
 
+  await blockRepository.updateCanonicalStatus({
+    blocks: changes.map(change => ({
+      hash: change.block.hash,
+      canonical: change.canonical,
+    })),
+  });
+
+  changes.length = 0;
+
   // Process the tip block and its ancestors iteratively
   let currentBlock = tipBlock;
   let currentSameHeightBlocks = blocksWithSameHeightOfTipBlock;
+  let iteration = 0;
+
+  // Calculate total height range to process
+  const startHeight = currentBlock.height;
+  const heightDifference = startHeight - TARGET_HEIGHT;
 
   while (currentBlock) {
+    const start = Date.now();
+    iteration++;
+
     // Mark all blocks with same height as non-canonical except the current block
     for (const block of currentSameHeightBlocks) {
-      if (block !== currentBlock) {
+      if (block.hash !== currentBlock.hash) {
         changes.push({ block, canonical: false });
       }
     }
 
     // Mark the current block as canonical
     changes.push({ block: currentBlock, canonical: true });
+
+    await blockRepository.updateCanonicalStatus({
+      blocks: changes.map(change => ({
+        hash: change.block.hash,
+        canonical: change.canonical,
+      })),
+    });
+
+    changes.length = 0;
 
     // Get parent block to check its canonical status
     const parentBlock = await blockRepository.getBlockParent(currentBlock.parentHash);
@@ -50,12 +79,28 @@ export async function markCanonicalTip({
 
     // Get blocks at the same height as the parent for the next iteration
     const blocksWithSameHeight = await blockRepository.getBlocksWithSameHeight(
-      currentBlock.parentHash,
+      currentBlock.height - 1,
+      currentBlock.chainId,
     );
 
     // Move to parent block and update same height blocks for next iteration
     currentBlock = parentBlock;
     currentSameHeightBlocks = blocksWithSameHeight;
+
+    await blockRepository.updateCanonicalStatus({
+      blocks: changes.map(change => ({
+        hash: change.block.hash,
+        canonical: change.canonical,
+      })),
+    });
+
+    changes.length = 0;
+
+    // Calculate and show progress
+    const currentProgress = ((startHeight - currentBlock.height) / heightDifference) * 100;
+    console.log(
+      `Progress: ${currentProgress.toFixed(2)}% (Height: ${currentBlock.height}) (${Date.now() - start}ms)`,
+    );
   }
 
   return changes;

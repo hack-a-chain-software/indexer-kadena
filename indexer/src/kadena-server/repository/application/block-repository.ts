@@ -81,7 +81,8 @@ export default interface BlockRepository {
     id?: string,
   ): Promise<BlockOutput[]>;
 
-  getBlocksWithSameHeight(blockHash: string): Promise<BlockOutput[]>;
+  getBlocksWithSameHeight(height: number, chainId: string): Promise<BlockOutput[]>;
+  getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]>;
   updateCanonicalStatus(params: UpdateCanonicalStatusParams): Promise<void>;
 
   // dataloader
