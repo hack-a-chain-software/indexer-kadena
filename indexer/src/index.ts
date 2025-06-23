@@ -81,7 +81,7 @@ async function main() {
       await closeDatabase();
       process.exit(0);
     } else if (options.canonicalTip) {
-      await defineCanonicalManually({ chainId: '15' });
+      await defineCanonicalManually({ chainId: process.env.CHAIN_ID_CANONICAL ?? '1' });
       process.exit(0);
     } else if (options.missing) {
       await startMissingBlocks();

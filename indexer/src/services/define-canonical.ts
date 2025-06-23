@@ -42,6 +42,17 @@ export async function defineCanonicalManually({ chainId }: { chainId: string }) 
   await defineCanonical({ blockHash: tipBlock.hash });
 }
 
+export async function defineCanonicalInStreaming(blockHash: string) {
+  const canonicalTipHash = await blockRepository.getBlockNParent(HEIGHT_CANONICAL_DEPTH, blockHash);
+  if (!canonicalTipHash) {
+    console.log('[ERROR][DATA][DATA_CORRUPT] Error defining canonical in streaming:', blockHash);
+    return;
+  }
+  await defineCanonical({
+    blockHash: canonicalTipHash,
+  });
+}
+
 export default async function defineCanonical({ blockHash }: { blockHash: string }) {
   try {
     const tipBlock = await blockRepository.getBlockByHash(blockHash);

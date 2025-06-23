@@ -23,9 +23,8 @@ import StreamingError from '@/models/streaming-error';
 import { backfillGuards } from './guards';
 import { Transaction } from 'sequelize';
 import { PriceUpdaterService } from './price/price-updater.service';
-import { markCanonicalTip } from '@/utils/canonical-tip';
-import BlockDbRepository from '@/kadena-server/repository/infra/repository/block-db-repository';
-import defineCanonical from '@/services/define-canonical';
+import { defineCanonicalInStreaming } from '@/services/define-canonical';
+import { checkLatestBlock } from '@/services/missing';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
@@ -46,22 +45,19 @@ const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
  * TODO: [OPTIMIZATION] Implement reconnection logic with exponential backoff
  * for better resilience against network failures.
  */
+
 export async function startStreaming() {
   console.info('[INFO][WORKER][BIZ_FLOW] Starting blockchain streaming service...');
+
+  const nextBlocksToProcess: any[] = [];
+  const blocksRecentlyProcessed = new Set<string>();
+  const chainIdsAlreadySynced = new Set<string>();
 
   // Initialize price updater
   PriceUpdaterService.getInstance();
 
-  const blocksAlreadyReceived = new Set<string>();
-
   // Initialize EventSource connection to the blockchain node
   const eventSource = new EventSource(`${SYNC_BASE_URL}/${SYNC_NETWORK}/block/updates`);
-
-  // Handle connection errors
-  eventSource.onerror = (error: any) => {
-    console.error('[ERROR][NET][CONN_LOST] EventSource connection error:', error);
-    // TODO: [OPTIMIZATION] Add reconnection logic with exponential backoff here
-  };
 
   /**
    * Event handler for incoming blocks.
@@ -69,18 +65,26 @@ export async function startStreaming() {
    * Uses a transaction to ensure data consistency.
    */
   eventSource.addEventListener('BlockHeader', async (event: any) => {
-    try {
-      // Parse the block data from the event
-      const block = JSON.parse(event.data);
+    const block = JSON.parse(event.data);
+    nextBlocksToProcess.push(block);
+  });
 
-      // Skip processing if we've already seen this block
-      if (blocksAlreadyReceived.has(block.header.hash)) {
+  // Handle connection errors
+  eventSource.onerror = (error: any) => {
+    console.error('[ERROR][NET][CONN_LOST] EventSource connection error:', error);
+    // TODO: [OPTIMIZATION] Add reconnection logic with exponential backoff here
+  };
+
+  const processBlock = async (block: any) => {
+    const blockIdentifier = block.header.hash;
+    try {
+      if (blocksRecentlyProcessed.has(blockIdentifier)) {
+        await defineCanonicalInStreaming(blockIdentifier);
         return;
       }
 
       // Process the block payload (transactions, miner data, etc.)
       const payload = processPayload(block.payloadWithOutputs);
-      blocksAlreadyReceived.add(block.header.hash);
 
       // Create a database transaction for atomic operations
       const tx = await sequelize.transaction();
@@ -98,31 +102,78 @@ export async function startStreaming() {
         return;
       }
 
+      if (!chainIdsAlreadySynced.has(block.header.chainId)) {
+        chainIdsAlreadySynced.add(block.header.chainId);
+        await checkLatestBlock({
+          chainId: block.header.chainId,
+          lastHeight: block.header.height,
+          tx,
+        });
+      }
+
       // Commit the transaction if everything succeeds
       await tx.commit();
+
+      await defineCanonicalInStreaming(block.header.hash);
+      blocksRecentlyProcessed.add(blockIdentifier);
     } catch (error) {
       console.error('[ERROR][DATA][DATA_CORRUPT] Failed to process block event:', error);
       // TODO: [OPTIMIZATION] Add better error handling and recovery logic
     }
-  });
+  };
 
-  /**
-   * Periodic cache cleanup to prevent memory leaks.
-   * Clears the set of processed blocks every 10 minutes.
-   */
-  setInterval(
-    () => {
-      console.info('[INFO][CACHE][METRIC] Clearing blocks cache. Freeing memory for new blocks.');
-      blocksAlreadyReceived.clear();
-    },
-    1000 * 60 * 10, // 10 minutes
-  );
+  const processBlocks = async () => {
+    const blocksToProcess: any[] = [];
+    while (nextBlocksToProcess.length > 0) {
+      const block = nextBlocksToProcess.shift();
+      blocksToProcess.push(block);
+    }
+
+    // Create a map of hash -> latest index
+    const lastIndexMap = new Map();
+    blocksToProcess.forEach((block, index) => {
+      lastIndexMap.set(block.header.hash, index);
+    });
+
+    // Filter keeping only blocks at their last index (don't need to process the same block twice)
+    const uniqueBlocks = blocksToProcess.filter(
+      (block, index) => lastIndexMap.get(block.header.hash) === index,
+    );
+
+    // Group blocks by chainId while preserving original order
+    const blocksByChain = uniqueBlocks.reduce((acc, block) => {
+      const chainId = block.header.chainId;
+      if (!acc.has(chainId)) {
+        acc.set(chainId, []);
+      }
+      acc.get(chainId).push(block);
+      return acc;
+    }, new Map<number, any[]>());
+
+    // Process each chain's blocks in parallel, but maintain original order within each chain
+    const chainPromises = Array.from<[number, any[]], Promise<void>>(
+      blocksByChain.entries(),
+      async ([, blocks]) => {
+        for (const block of blocks) {
+          await processBlock(block);
+        }
+      },
+    );
+
+    // Wait for all chains to finish processing
+    await Promise.all(chainPromises);
+    blocksToProcess.length = 0;
+
+    setTimeout(processBlocks, 1000);
+  };
+
+  processBlocks();
 
   // Run guard backfilling immediately on startup
   backfillGuards();
 
   // Schedule periodic guard backfilling every 12 hours
-  setInterval(backfillGuards, 1000 * 60 * 60 * 12); // every 12 hours
+  setInterval(backfillGuards, 1000 * 60 * 60 * 12);
 }
 
 /**

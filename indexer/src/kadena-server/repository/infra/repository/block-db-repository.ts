@@ -60,7 +60,7 @@ export default class BlockDbRepository implements BlockRepository {
     });
 
     if (!block) {
-      throw new Error('Block not found.');
+      throw new Error(`Block not found: ${hash}`);
     }
 
     return blockValidator.mapFromSequelize(block);
@@ -947,6 +947,28 @@ export default class BlockDbRepository implements BlockRepository {
     const { rows } = await rootPgPool.query(query, [height, chainId]);
 
     return rows.map(row => blockValidator.validate(row));
+  }
+
+  async getBlockNParent(depth: number, hash: string): Promise<string | undefined> {
+    const query = `
+      WITH RECURSIVE BlockAncestors AS (
+        SELECT hash, parent, 1 AS depth, height
+        FROM "Blocks"
+        WHERE hash = $1
+        UNION ALL
+        SELECT b.hash, b.parent, d.depth + 1 AS depth, b.height
+        FROM BlockAncestors d
+        JOIN "Blocks" b ON d.parent = b.hash
+        WHERE d.depth < $2
+      )
+      SELECT parent as hash, depth
+      FROM BlockAncestors
+      ORDER BY depth DESC
+      LIMIT 1;
+    `;
+    const { rows } = await rootPgPool.query(query, [hash, depth]);
+
+    return rows?.[0]?.hash;
   }
 
   async getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]> {

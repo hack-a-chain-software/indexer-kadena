@@ -1,9 +1,71 @@
 import { rootPgPool, sequelize } from '@/config/database';
 import { getRequiredEnvString } from '@/utils/helpers';
 import { processPayload, saveBlock } from './streaming';
+import { Transaction } from 'sequelize';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const NETWORK_ID = getRequiredEnvString('SYNC_NETWORK');
+
+export async function checkLatestBlock({
+  chainId,
+  lastHeight,
+  tx,
+}: {
+  chainId: number;
+  lastHeight: number;
+  tx: Transaction;
+}): Promise<void> {
+  console.log('Syncing blocks before canonical tip processing:', chainId);
+  const cutUrl = `${SYNC_BASE_URL}/${NETWORK_ID}/cut`;
+  const cutRes = await fetch(cutUrl, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const cutData = await cutRes.json();
+
+  const chainsAndHashes = Object.keys(cutData.hashes).map(chainId => ({
+    chainId,
+    hash: cutData.hashes[chainId].hash,
+  }));
+
+  const dbQuery = `
+    SELECT MAX(height) as height
+    FROM "Blocks"
+    WHERE "chainId" = $1
+  `;
+
+  const { rows } = await rootPgPool.query(dbQuery, [chainId]);
+
+  const fromHeight = rows[0].height + 1;
+  const toHeight = lastHeight - 1;
+
+  const url = `${SYNC_BASE_URL}/${NETWORK_ID}/chain/${chainId}/block/branch?minheight=${fromHeight}&maxheight=${toHeight}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      upper: [chainsAndHashes[chainId].hash],
+    }),
+  });
+
+  const data = await res.json();
+
+  const promises = data.items.map(async (item: any) => {
+    const payload = processPayload(item.payloadWithOutputs);
+    return saveBlock({ header: item.header, payload }, tx);
+  });
+
+  await Promise.all(promises);
+
+  console.log('Missing blocks synced:', chainId, fromHeight, toHeight);
+}
 
 export async function startMissingBlocks() {
   const url = `${SYNC_BASE_URL}/${NETWORK_ID}/cut`;
@@ -34,7 +96,7 @@ export async function startMissingBlocks() {
       AND b1."chainwebVersion" = b2."chainwebVersion"
       AND b2.height > b1.height
     WHERE b1."chainId" = $1
-    AND b1.height > 5000000 AND b2.height > 5000000
+    AND b1.height > 5500000 AND b2.height > 5500000
     AND NOT EXISTS (
       SELECT 1
       FROM "Blocks" b3
@@ -47,6 +109,7 @@ export async function startMissingBlocks() {
   `;
 
   for (let i = 0; i < chainsAndHashes.length; i += 1) {
+    console.log('Processing chain:', chainsAndHashes[i].chainId);
     const chainAndHash = chainsAndHashes[i];
     const { rows } = await rootPgPool.query(query, [chainAndHash.chainId]);
 
