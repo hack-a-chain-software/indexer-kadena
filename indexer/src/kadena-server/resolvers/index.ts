@@ -91,6 +91,7 @@ import { poolQueryResolver } from './query/pool-query-resolver';
 import { poolTransactionsQueryResolver } from './query/pool-transactions-query-resolver';
 import { liquidityPositionsQueryResolver } from './query/liquidity-positions-query-resolver';
 import { dexMetricsQueryResolver } from './query/dex-metrics-resolver';
+import { analyticsResolver } from './query/analytics-resolver';
 
 /**
  * Complete resolver map for the GraphQL API
@@ -146,6 +147,9 @@ export const resolvers: Resolvers<ResolverContext> = {
     poolTransactions: poolTransactionsQueryResolver,
     liquidityPositions: liquidityPositionsQueryResolver,
     dexMetrics: dexMetricsQueryResolver,
+    eventTypeAnalytics: analyticsResolver.eventTypeAnalytics,
+    transactionFeeAnalytics: analyticsResolver.transactionFeeAnalytics,
+    networkActivityAnalytics: analyticsResolver.networkActivityAnalytics,
   },
   Block: {
     parent: parentBlockResolver, // data loader set.
