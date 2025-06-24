@@ -198,13 +198,14 @@ export async function processTransaction(
     );
 
     const events = await Promise.all(eventsAttributes);
-    const swapEvents = events.filter(event => event.name === 'SWAP');
-    console.log('swapEvents', JSON.stringify(swapEvents, null, 2));
-    const addLiquidityEvents = events.filter(event => event.name === 'ADD_LIQUIDITY');
-    console.log('addLiquidityEvents', JSON.stringify(addLiquidityEvents, null, 2));
-    const mintEvents = events.filter(event => event.name === 'MINT_EVENT');
-    console.log('mintEvents', JSON.stringify(mintEvents, null, 2));
-    console.log('------------------------------------- end -------------------------------');
+    // Note: Should not summit debug to the 'main' branch
+    // const swapEvents = events.filter(event => event.name === 'SWAP');
+    // console.log('swapEvents', JSON.stringify(swapEvents, null, 2));
+    // const addLiquidityEvents = events.filter(event => event.name === 'ADD_LIQUIDITY');
+    // console.log('addLiquidityEvents', JSON.stringify(addLiquidityEvents, null, 2));
+    // const mintEvents = events.filter(event => event.name === 'MINT_EVENT');
+    // console.log('mintEvents', JSON.stringify(mintEvents, null, 2));
+    // console.log('------------------------------------- end -------------------------------');
     const eventsWithTransactionId = events.map(event => ({
       ...event,
       transactionId,

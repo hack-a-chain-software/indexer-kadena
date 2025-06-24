@@ -144,15 +144,18 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 	// 	counters.Guards += len(guards)
 	// }
 
+	log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
+
+	commitStartTime := time.Now()
 	if err := tx.Commit(context.Background()); err != nil {
 		return Counters{}, DataSizeTracker{}, fmt.Errorf("committing transaction: %w", err)
 	}
+	log.Printf("DB commit took %fs\n", time.Since(commitStartTime).Seconds())
 
 	dataSizeTracker.TransactionsKB /= 1024
 	dataSizeTracker.EventsKB /= 1024
 	dataSizeTracker.TransfersKB /= 1024
 	dataSizeTracker.SignersKB /= 1024
 
-	log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
 	return counters, dataSizeTracker, nil
 }

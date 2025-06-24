@@ -3,7 +3,7 @@ version: '3.8'
 services:
   indexer-db:
     image: postgres
-    container_name: kad-indexer-postgres
+    container_name: postgres-indexer
     environment:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -12,6 +12,24 @@ services:
       - '5432:5432'
     volumes:
       - ${PWD}/indexer/postgres:/var/lib/postgresql/data
+    command:
+      - 'postgres'
+      - '-c'
+      - 'shared_buffers=8GB'
+      - '-c'
+      - 'effective_cache_size=24GB'
+      - '-c'
+      - 'maintenance_work_mem=2GB'
+      - '-c'
+      - 'work_mem=64MB'
+      - '-c'
+      - 'max_wal_size=16GB'
+      - '-c'
+      - 'random_page_cost=1.1'
+      - '-c'
+      - 'effective_io_concurrency=200'
+      - '-c'
+      - 'synchronous_commit=off'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${DB_USERNAME}']
       interval: 10s

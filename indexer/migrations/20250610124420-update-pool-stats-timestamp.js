@@ -29,12 +29,6 @@ module.exports = {
       type: Sequelize.DATEONLY,
       allowNull: false,
     });
-
-    // Create unique index
-    await queryInterface.addIndex('PoolStats', ['pairId', 'timestamp'], {
-      unique: true,
-      name: 'pool_stats_pairid_timestamp_idx',
-    });
   },
 
   async down(queryInterface, Sequelize) {
