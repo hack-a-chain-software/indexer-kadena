@@ -197,7 +197,7 @@ This command will execute the integration tests located in the `tests/integratio
 File tests are executed using the same environment as the integration tests. To run a specific integration test (eg. events), use the following command:
 
 ```bash
-yarn test:file tests/integration/events.query.test.ts
+yarn test:file tests/integration/queries/events.query.test.ts
 ```
 
 ### 6.4. Smoke Tests
