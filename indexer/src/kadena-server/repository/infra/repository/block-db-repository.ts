@@ -14,9 +14,9 @@
  * - Optimized batch retrieval through DataLoader patterns
  */
 
-import { FindOptions, Op, QueryTypes, Transaction } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import { rootPgPool, sequelize } from '../../../../config/database';
-import BlockModel, { BlockAttributes } from '../../../../models/block';
+import BlockModel from '../../../../models/block';
 import BlockRepository, {
   BlockOutput,
   GetBlocksBetweenHeightsParams,
@@ -54,7 +54,7 @@ export default class BlockDbRepository implements BlockRepository {
    * @returns Promise resolving to the block data if found
    * @throws Error if the block is not found
    */
-  async getBlockByHash(hash: string) {
+  async getBlockByHash(hash: string): Promise<BlockOutput | null> {
     const block = await BlockModel.findOne({
       where: { hash },
     });
@@ -62,24 +62,6 @@ export default class BlockDbRepository implements BlockRepository {
     if (!block) {
       throw new Error(`Block not found: ${hash}`);
     }
-
-    return blockValidator.mapFromSequelize(block);
-  }
-
-  /**
-   * Retrieves the parent block of a given block
-   *
-   * This method fetches the parent block of a given block by its hash.
-   *
-   * @param parentHash - The hash of the parent block to look up
-   * @returns Promise resolving to the parent block data if found, or null if not found
-   */
-  async getBlockParent(parentHash: string): Promise<BlockOutput | null> {
-    const block = await BlockModel.findOne({
-      where: { hash: parentHash },
-    });
-
-    if (!block) return null;
 
     return blockValidator.mapFromSequelize(block);
   }

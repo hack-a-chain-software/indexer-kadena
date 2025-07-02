@@ -24,7 +24,11 @@ import { backfillGuards } from './guards';
 import { Transaction } from 'sequelize';
 import { PriceUpdaterService } from './price/price-updater.service';
 import { defineCanonicalInStreaming } from '@/services/define-canonical';
-import { checkLatestBlock, checkMissingBlocksSize } from '@/services/missing';
+import {
+  syncChain,
+  startMissingBlocks,
+  startMissingBlocksBeforeStreamingProcess,
+} from '@/services/missing';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
@@ -49,7 +53,7 @@ const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
 export async function startStreaming() {
   console.info('[INFO][WORKER][BIZ_FLOW] Starting blockchain streaming service...');
 
-  await checkMissingBlocksSize();
+  await startMissingBlocksBeforeStreamingProcess();
 
   const nextBlocksToProcess: any[] = [];
   const blocksRecentlyProcessed = new Set<string>();
@@ -106,7 +110,7 @@ export async function startStreaming() {
 
       if (!chainIdsAlreadySynced.has(block.header.chainId)) {
         chainIdsAlreadySynced.add(block.header.chainId);
-        await checkLatestBlock({
+        await syncChain({
           chainId: block.header.chainId,
           lastHeight: block.header.height,
           tx,
@@ -184,6 +188,9 @@ export async function startStreaming() {
 
   // Schedule periodic guard backfilling every 12 hours
   setInterval(backfillGuards, 1000 * 60 * 60 * 12);
+
+  // Schedule periodic missing blocks sync every 1 hour
+  setInterval(startMissingBlocks, 1000 * 60 * 60 * 1);
 }
 
 /**
@@ -244,6 +251,7 @@ export function processPayload(payload: any) {
 export async function saveBlock(parsedData: any, tx?: Transaction): Promise<void> {
   const headerData = parsedData.header;
   const payloadData = parsedData.payload;
+  const canonical = parsedData.canonical ?? false;
   const transactions = payloadData.transactions || [];
 
   try {
@@ -267,6 +275,7 @@ export async function saveBlock(parsedData: any, tx?: Transaction): Promise<void
       outputsHash: payloadData.outputsHash,
       coinbase: payloadData.coinbase,
       transactionsCount: transactions.length,
+      canonical,
     } as BlockAttributes;
 
     // Create the block in the database

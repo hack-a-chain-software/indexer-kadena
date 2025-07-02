@@ -32,5 +32,9 @@ export const blockTransferResolver: TransferResolvers<ResolverContext>['block'] 
   const { blockHash } = schema.parse(parent);
   const output = await context.blockRepository.getBlockByHash(blockHash);
 
+  if (!output) {
+    throw new Error('Block transfer not found.');
+  }
+
   return buildBlockOutput(output);
 };

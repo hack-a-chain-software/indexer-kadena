@@ -17,4 +17,4 @@ EXPOSE 3001
 
 ARG INDEXER_MODE_PARAM
 ENV INDEXER_MODE=${INDEXER_MODE_PARAM}
-CMD ["sh", "-c", "node -r module-alias/register dist/index.js --canonicalTip"]
+CMD ["sh", "-c", "node -r module-alias/register dist/index.js $INDEXER_MODE"]

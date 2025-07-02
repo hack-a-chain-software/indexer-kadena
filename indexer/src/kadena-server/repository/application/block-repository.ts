@@ -42,8 +42,7 @@ export type FungibleChainAccountOutput = Omit<
 >;
 
 export default interface BlockRepository {
-  getBlockByHash(hash: string): Promise<BlockOutput>;
-  getBlockParent(hash: string): Promise<BlockOutput | null>;
+  getBlockByHash(hash: string): Promise<BlockOutput | null>;
   getBlocksFromDepth(params: GetBlocksFromDepthParams): Promise<{
     pageInfo: PageInfo;
     edges: ConnectionEdge<BlockOutput>[];
@@ -82,7 +81,6 @@ export default interface BlockRepository {
   ): Promise<BlockOutput[]>;
 
   getBlockNParent(depth: number, hash: string): Promise<string | undefined>;
-
   getBlocksWithSameHeight(height: number, chainId: string): Promise<BlockOutput[]>;
   getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]>;
   updateCanonicalStatus(params: UpdateCanonicalStatusParams): Promise<void>;

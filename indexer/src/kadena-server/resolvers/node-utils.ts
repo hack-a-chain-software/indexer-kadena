@@ -59,6 +59,9 @@ export const getNode = async (context: ResolverContext, id: string) => {
   if (type === 'Block') {
     // Resolve Block node - only requires the block hash as a parameter
     const output = await context.blockRepository.getBlockByHash(params);
+    if (!output) {
+      throw new Error('Block not found.');
+    }
     return buildBlockOutput(output);
   }
 

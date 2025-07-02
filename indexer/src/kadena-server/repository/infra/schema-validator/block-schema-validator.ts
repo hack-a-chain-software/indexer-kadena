@@ -89,7 +89,7 @@ const validate = (row: any): BlockOutput => {
     target: res.target,
     weight: res.weight,
     chainId: res.chainId,
-    canonical: res.canonical === null ? true : res.canonical,
+    canonical: res.canonical === null ? true : res.canonical ?? false,
     difficulty: Number(calculateBlockDifficulty(res.target)),
     neighbors: Object.entries(res.adjacents).map(([chainId, hash]) => ({
       chainId,
@@ -125,7 +125,7 @@ const mapFromSequelize = (blockModel: BlockAttributes): BlockOutput => {
     payloadHash: blockModel.payloadHash,
     weight: blockModel.weight,
     target: blockModel.target,
-    canonical: blockModel.canonical ?? false, //blockModel.canonical === null ? true : (blockModel.canonical ?? false),
+    canonical: blockModel.canonical === null ? true : blockModel.canonical ?? false,
     neighbors: Object.entries(blockModel.adjacents).map(([chainId, hash]) => ({
       chainId,
       hash,
