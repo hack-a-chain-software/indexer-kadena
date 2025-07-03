@@ -91,6 +91,12 @@ type Subscription {
   Listen for a transaction by request key.
   """
   transaction(chainId: String, requestKey: String!): Transaction
+
+  """
+  Listen for transactions by chain ID and minimum confirmation depth.
+  """
+  transactions(quantity: Int = 20): [Transaction!]
+
   """
   Listen for events by qualifiedName (e.g. `coin.TRANSFER`).
          
@@ -349,7 +355,15 @@ type Query {
   """
   Retrieve a specific pool by its ID.
   """
-  pool(id: ID!, timeFrame: TimeFrame, type: PoolTransactionType, first: Int, after: String, last: Int, before: String): Pool @complexity(value: 1)
+  pool(
+    id: ID!
+    timeFrame: TimeFrame
+    type: PoolTransactionType
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): Pool @complexity(value: 1)
 
   poolTransactions(
     pairId: String!
