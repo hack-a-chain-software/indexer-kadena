@@ -63,7 +63,7 @@ export default class TransactionDbRepository implements TransactionRepository {
     });
 
     const hasNoParamsSet = Object.values(rest).every(v => !v);
-    if (!hasNoParamsSet) {
+    if (hasNoParamsSet) {
       const { query, queryParams } = this.queryBuilder.buildAllTransactionsQuery({
         limit,
         order,

@@ -111,7 +111,10 @@ export class PairService {
    * Creates tokens if they don't exist and then creates a pair
    * @param pairs Array of pair creation parameters
    */
-  static async createPairs(pairs: CreatePairParams[]): Promise<void> {
+  static async createPairs(
+    pairs: CreatePairParams[],
+    transaction?: SequelizeTransaction | null | undefined,
+  ): Promise<void> {
     if (!pairs || pairs.length === 0) {
       return;
     }
@@ -134,7 +137,7 @@ export class PairService {
         `Progress: ${progressPercentage}% (Create Pairs Batch ${batchIndex + 1}/${batches.length})`,
       );
 
-      const tx = await sequelize.transaction();
+      const tx = transaction || (await sequelize.transaction());
       try {
         await Promise.all(
           batch.map(async pair => {
@@ -160,9 +163,13 @@ export class PairService {
             }
           }),
         );
-        await tx.commit();
+        if (!transaction) {
+          await tx.commit();
+        }
       } catch (error) {
-        await tx.rollback();
+        if (transaction) {
+          await tx.rollback();
+        }
         console.error(`Error processing batch ${batchIndex + 1}/${batches.length}:`, error);
       }
     }
@@ -209,6 +216,7 @@ export class PairService {
       chainId: number;
       transactionId: number;
     }>,
+    transaction?: SequelizeTransaction | null | undefined,
   ): Promise<void> {
     // Process events in smaller batches to avoid connection pool exhaustion
     const BATCH_SIZE = 10;
@@ -229,7 +237,7 @@ export class PairService {
         `Progress: ${progressPercentage}% (Update Pairs Batch ${batchIndex + 1}/${batches.length})`,
       );
 
-      const tx = await sequelize.transaction();
+      const tx = transaction || (await sequelize.transaction());
       try {
         // Pre-fetch all pairs for this batch to reduce database queries
         const pairKeys = batch.map(event => {
@@ -390,9 +398,13 @@ export class PairService {
             throw error;
           }
         }
-        await tx.commit();
+        if (!transaction) {
+          await tx.commit();
+        }
       } catch (error) {
-        await tx.rollback();
+        if (transaction) {
+          await tx.rollback();
+        }
         console.error(`Error processing batch ${batchIndex + 1}/${batches.length}:`, error);
       }
     }
@@ -575,6 +587,7 @@ export class PairService {
       transactionId: number;
       requestkey: string;
     }>,
+    transaction?: SequelizeTransaction | null | undefined,
   ): Promise<void> {
     if (!swapEvents || swapEvents.length === 0) {
       return;
@@ -599,7 +612,7 @@ export class PairService {
         `Progress: ${progressPercentage}% (Process Swaps Batch ${batchIndex + 1}/${batches.length})`,
       );
 
-      const tx = await sequelize.transaction();
+      const tx = transaction || (await sequelize.transaction());
       try {
         // Process each event in the batch sequentially
         for (const event of batch) {
@@ -637,11 +650,9 @@ export class PairService {
 
             // Calculate fee amount using the formula: fee_amount = in * (FEE / (1 - FEE))
             const feeAmount = Number(amountInStr) * (FEE / (1 - FEE));
-            console.log({ feeAmount, amountInStr, FEE });
             const feeUsd = tokenInPrice
               ? this.formatTo8Decimals(feeAmount * tokenInPrice)
               : '0.00000000';
-            console.log({ feeUsd });
 
             const transaction = await Transaction.findOne({
               where: {
@@ -658,8 +669,8 @@ export class PairService {
                 requestkey: event.requestkey,
                 type: TransactionType.SWAP,
                 maker: sender,
-                timestamp: transaction?.creationtime
-                  ? new Date(Number(transaction.creationtime) * 1000)
+                timestamp: transaction?.dataValues.creationtime
+                  ? new Date(Number(transaction.dataValues.creationtime) * 1000)
                   : new Date(),
                 amount0In: pair.token0Id === tokenIn.id ? amountInStr : '0',
                 amount1In: pair.token1Id === tokenIn.id ? amountInStr : '0',
@@ -678,9 +689,13 @@ export class PairService {
             throw error;
           }
         }
-        await tx.commit();
+        if (!transaction) {
+          await tx.commit();
+        }
       } catch (error) {
-        await tx.rollback();
+        if (transaction) {
+          await tx.rollback();
+        }
         console.error(`Error processing batch ${batchIndex + 1}/${batches.length}:`, error);
       }
     }
@@ -702,6 +717,7 @@ export class PairService {
       transactionId: number;
       requestkey: string;
     }>,
+    transaction?: SequelizeTransaction | null | undefined,
   ): Promise<void> {
     if (!liquidityEvents || liquidityEvents.length === 0) {
       return;
@@ -727,7 +743,7 @@ export class PairService {
         `Progress: ${progressPercentage}% (Process Liquidity Events Batch ${batchIndex + 1}/${batches.length})`,
       );
 
-      const tx = await sequelize.transaction();
+      const tx = transaction || (await sequelize.transaction());
       try {
         // Process each event in the batch sequentially
         for (const event of batch) {
@@ -770,8 +786,6 @@ export class PairService {
               this.getTokenPriceInUSD(token1, tx, pair.address),
             ]);
 
-            console.log({ token0Price, token1Price });
-
             // Calculate USD value
             const amountUsd = this.formatTo8Decimals(
               (token0Price ? Number(amount0Str) * token0Price : 0) +
@@ -784,7 +798,6 @@ export class PairService {
             } else {
               totalSupply = Number(pair.totalSupply) - Number(liquidity);
             }
-
             await pair.update(
               {
                 totalSupply: totalSupply.toString(),
@@ -809,8 +822,8 @@ export class PairService {
                     ? TransactionType.ADD_LIQUIDITY
                     : TransactionType.REMOVE_LIQUIDITY,
                 maker: sender,
-                timestamp: transaction?.creationtime
-                  ? new Date(Number(transaction.creationtime) * 1000)
+                timestamp: transaction?.dataValues.creationtime
+                  ? new Date(Number(transaction.dataValues.creationtime) * 1000)
                   : new Date(),
                 amount0In:
                   event.name === 'ADD_LIQUIDITY'
@@ -1052,10 +1065,10 @@ export class PairService {
       transactionId: number;
       requestkey: string;
     }>,
+    transaction?: SequelizeTransaction | null | undefined,
   ): Promise<void> {
-    const transaction = await sequelize.transaction();
+    const tx = transaction || (await sequelize.transaction());
     for (const event of exchangeTokenEvents) {
-      console.log('event', JSON.stringify(event, null, 2));
       try {
         switch (event.name) {
           case 'TRANSFER_EVENT': {
@@ -1075,7 +1088,7 @@ export class PairService {
                   ? event.moduleName.split('-tokens')[0]
                   : event.moduleName, // convert ns.sushi-exchange-tokens to ns.sushi-exchange
               },
-              transaction,
+              transaction: tx,
             });
 
             if (!pair) {
@@ -1087,11 +1100,11 @@ export class PairService {
             const [senderBalance, receiverBalance] = await Promise.all([
               LiquidityBalance.findOne({
                 where: { walletAddress: sender, pairId: pair.id },
-                // transaction,
+                transaction: tx,
               }),
               LiquidityBalance.findOne({
                 where: { walletAddress: receiver, pairId: pair.id },
-                // transaction,
+                transaction: tx,
               }),
             ]);
 
@@ -1103,7 +1116,7 @@ export class PairService {
                 {
                   liquidity: newLiquidity.toString(),
                 },
-                // { transaction },
+                { transaction: tx },
               );
             } else {
               await LiquidityBalance.create(
@@ -1112,7 +1125,7 @@ export class PairService {
                   pairId: pair.id,
                   liquidity: (-Number(amountStr)).toString(),
                 },
-                // { transaction },
+                { transaction: tx },
               );
             }
 
@@ -1124,7 +1137,7 @@ export class PairService {
                 {
                   liquidity: newLiquidity.toString(),
                 },
-                // { transaction },
+                { transaction: tx },
               );
             } else {
               await LiquidityBalance.create(
@@ -1133,7 +1146,7 @@ export class PairService {
                   pairId: pair.id,
                   liquidity: amountStr,
                 },
-                // { transaction },
+                { transaction: tx },
               );
             }
             break;
@@ -1155,7 +1168,7 @@ export class PairService {
                   ? event.moduleName.split('-tokens')[0]
                   : event.moduleName,
               },
-              // transaction,
+              transaction: tx,
             });
 
             if (!pair) {
@@ -1166,7 +1179,7 @@ export class PairService {
             // Find or create the account's liquidity balance
             const balance = await LiquidityBalance.findOne({
               where: { walletAddress: account, pairId: pair.id },
-              // transaction,
+              transaction: tx,
             });
 
             if (balance) {
@@ -1176,7 +1189,7 @@ export class PairService {
                 {
                   liquidity: newLiquidity.toString(),
                 },
-                // { transaction },
+                { transaction: tx },
               );
             } else {
               await LiquidityBalance.create(
@@ -1185,7 +1198,7 @@ export class PairService {
                   pairId: pair.id,
                   liquidity: (-Number(amountStr)).toString(),
                 },
-                // { transaction },
+                { transaction: tx },
               );
             }
             break;
@@ -1206,7 +1219,7 @@ export class PairService {
                   ? event.moduleName.split('-tokens')[0]
                   : event.moduleName, // convert ns.sushi-exchange-tokens to ns.sushi-exchange
               },
-              // transaction,
+              transaction: tx,
             });
 
             if (!pair) {
@@ -1217,7 +1230,7 @@ export class PairService {
             // Find or create the account's liquidity balance
             const balance = await LiquidityBalance.findOne({
               where: { walletAddress: account, pairId: pair.id },
-              // transaction,
+              transaction: tx,
             });
             if (balance) {
               const currentLiquidity = Number(balance.liquidity);
@@ -1226,7 +1239,7 @@ export class PairService {
                 {
                   liquidity: newLiquidity.toString(),
                 },
-                // { transaction },
+                { transaction: tx },
               );
             } else {
               await LiquidityBalance.create(
@@ -1235,7 +1248,7 @@ export class PairService {
                   pairId: pair.id,
                   liquidity: amountStr,
                 },
-                // { transaction },
+                { transaction: tx },
               );
             }
             break;
