@@ -45,7 +45,7 @@ async function* iteratorFn(
       yield newBlocks.map(b => buildBlockOutput(b));
     }
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
   }
 }
 
