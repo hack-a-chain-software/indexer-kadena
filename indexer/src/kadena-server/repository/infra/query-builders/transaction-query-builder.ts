@@ -288,15 +288,14 @@ export default class TransactionQueryBuilder {
     before?: string | null;
     order: string;
     limit: number;
-    lastId?: string | null;
   }) {
     let whereCondition = '';
     let queryParams: (string | number)[] = [params.limit];
 
     if (!params.after && !params.before) {
       const currentTime = Date.now() - 100000;
-      whereCondition = ` WHERE t.creationtime > $1`;
       queryParams.push(currentTime);
+      whereCondition = ` WHERE t.creationtime > $2`;
     }
     if (params.after) {
       queryParams.push(params.after);
