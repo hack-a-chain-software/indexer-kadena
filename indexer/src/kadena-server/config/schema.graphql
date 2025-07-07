@@ -613,6 +613,7 @@ type Block implements Node {
   payloadHash: String!
   weight: String!
   target: String!
+  coinbase: String!
   neighbors: [BlockNeighbor!]! @complexity(value: 5, multipliers: ["length"])
   """
   The proof of work hash.

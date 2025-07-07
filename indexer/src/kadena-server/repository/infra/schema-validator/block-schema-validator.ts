@@ -40,6 +40,7 @@ const schema = zod.object({
   target: zod.string(),
   adjacents: zod.record(zod.any()),
   parent: zod.string(),
+  coinbase: zod.any(),
 });
 
 /**
@@ -86,6 +87,7 @@ const validate = (row: any): BlockOutput => {
     nonce: res.nonce,
     payloadHash: res.payloadHash,
     target: res.target,
+    coinbase: JSON.stringify(res.coinbase),
     weight: res.weight,
     chainId: res.chainId,
     difficulty: Number(calculateBlockDifficulty(res.target)),
@@ -123,6 +125,7 @@ const mapFromSequelize = (blockModel: BlockAttributes): BlockOutput => {
     payloadHash: blockModel.payloadHash,
     weight: blockModel.weight,
     target: blockModel.target,
+    coinbase: JSON.stringify(blockModel.coinbase),
     neighbors: Object.entries(blockModel.adjacents).map(([chainId, hash]) => ({
       chainId,
       hash,

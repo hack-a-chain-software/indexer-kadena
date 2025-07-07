@@ -312,6 +312,7 @@ export default class BlockDbRepository implements BlockRepository {
         b."payloadHash" as "payloadHash",
         b.weight as "weight",
         b.target as "target",
+        b.coinbase as "coinbase",
         b.adjacents as "adjacents",
         b.parent as "parent"
       FROM "Blocks" b
@@ -590,6 +591,7 @@ export default class BlockDbRepository implements BlockRepository {
         b."payloadHash" as "payloadHash",
         b.weight as "weight",
         b.target as "target",
+        b.coinbase as "coinbase",
         b.adjacents as "adjacents",
         b.parent as "parent",
         t.id as "transactionId"
@@ -637,6 +639,7 @@ export default class BlockDbRepository implements BlockRepository {
         b."payloadHash" as "payloadHash",
         b.weight as "weight",
         b.target as "target",
+        b.coinbase as "coinbase",
         b.adjacents as "adjacents",
         b.parent as "parent"
         FROM "Blocks" b

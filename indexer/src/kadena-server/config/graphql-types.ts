@@ -31,6 +31,7 @@ export type Scalars = {
 export type Block = Node & {
   __typename?: 'Block';
   chainId: Scalars['BigInt']['output'];
+  coinbase: Scalars['String']['output'];
   creationTime: Scalars['DateTime']['output'];
   /** The difficulty of the block. */
   difficulty: Scalars['BigInt']['output'];
@@ -1983,6 +1984,7 @@ export type BlockResolvers<
   ParentType extends ResolversParentTypes['Block'] = ResolversParentTypes['Block'],
 > = {
   chainId?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  coinbase?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   creationTime?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   difficulty?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   epoch?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
