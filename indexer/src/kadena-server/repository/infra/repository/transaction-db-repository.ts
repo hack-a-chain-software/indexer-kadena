@@ -52,7 +52,7 @@ export default class TransactionDbRepository implements TransactionRepository {
    * @returns Promise resolving to paginated transaction results
    */
   async getTransactions(params: GetTransactionsParams) {
-    const { after: afterEncoded, before: beforeEncoded, first, last, minimumDepth } = params;
+    const { after: afterEncoded, before: beforeEncoded, first, last, ...rest } = params;
 
     // Process pagination parameters
     const { limit, order, after, before } = getPaginationParams({
@@ -62,8 +62,41 @@ export default class TransactionDbRepository implements TransactionRepository {
       last,
     });
 
+    const hasNoParamsSet = Object.values(rest).every(v => !v);
+    if (!hasNoParamsSet) {
+      const { query, queryParams } = this.queryBuilder.buildAllTransactionsQuery({
+        limit,
+        order,
+        after,
+        before,
+      });
+
+      // Execute the query with the constructed parameters
+      const { rows } = await rootPgPool.query(query, queryParams);
+
+      // Transform database rows into GraphQL-compatible edges with cursors
+      const edges = rows
+        .map(row => ({
+          cursor: row.creationTime.toString(),
+          node: transactionValidator.validate(row),
+        }))
+        .sort((a, b) => {
+          // Primary sort is already done by DB query (creationTime DESC)
+          // Add secondary sort by id for consistent ordering when creationTimes are equal
+          const aNode = a.node as unknown as { id: string };
+          const bNode = b.node as unknown as { id: string };
+          if (a.cursor === b.cursor) {
+            return aNode.id > bNode.id ? 1 : -1;
+          }
+          return 0; // Maintain existing order from DB for different creationTimes
+        });
+
+      const pageInfo = getPageInfo({ edges, order, limit, after, before });
+      return pageInfo;
+    }
+
     // If no minimumDepth is specified, we can use the normal query approach
-    if (!minimumDepth) {
+    if (!rest.minimumDepth) {
       // Build and execute the query using the query builder
       const { query, queryParams } = this.queryBuilder.buildTransactionsQuery({
         ...params,
@@ -128,12 +161,12 @@ export default class TransactionDbRepository implements TransactionRepository {
       const blockHashToDepth = await blockRepository.createBlockDepthMap(
         blockHashes.map(hash => ({ hash })),
         'hash',
-        minimumDepth,
+        rest.minimumDepth,
       );
 
       // Filter transactions by block depth
       const filteredBatch = transactionBatch.filter(
-        tx => blockHashToDepth[tx.blockHash] >= minimumDepth,
+        tx => blockHashToDepth[tx.blockHash] >= (rest.minimumDepth ?? 0),
       );
 
       allFilteredTransactions = [...allFilteredTransactions, ...filteredBatch];
@@ -163,6 +196,42 @@ export default class TransactionDbRepository implements TransactionRepository {
       });
 
     return getPageInfo({ edges, order, limit, after, before });
+  }
+
+  async getLastTransactions(quantity = 20) {
+    const query = `
+      SELECT 
+        t.id as id,
+        t.hash as "hashTransaction",
+        td.nonce as "nonceTransaction",
+        td.sigs as sigs,
+        td.continuation as continuation,
+        t.num_events as "eventCount",
+        td.pactid as "pactId",
+        td.proof as proof,
+        td.rollback as rollback,
+        t.txid AS txid,
+        b.height as "height",
+        b."hash" as "blockHash",
+        b."chainId" as "chainId",
+        td.gas as "gas",
+        td.step as step,
+        td.data as data,
+        td.code as code,
+        t.logs as "logs",
+        t.result as "result",
+        t.requestkey as "requestKey"
+      FROM "Transactions" t
+      JOIN "Blocks" b on t."blockId" = b.id
+      LEFT JOIN "TransactionDetails" td on t.id = td."transactionId"
+      WHERE t.id <= (SELECT MAX(id) FROM "Transactions")
+      ORDER BY id DESC
+      LIMIT $1
+    `;
+
+    const { rows } = await rootPgPool.query(query, [quantity]);
+    const lastTransactions = rows.map(row => transactionValidator.validate(row));
+    return lastTransactions;
   }
 
   /**

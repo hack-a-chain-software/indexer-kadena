@@ -31,6 +31,7 @@ export type Scalars = {
 export type Block = Node & {
   __typename?: 'Block';
   chainId: Scalars['BigInt']['output'];
+  coinbase: Scalars['String']['output'];
   creationTime: Scalars['DateTime']['output'];
   /** The difficulty of the block. */
   difficulty: Scalars['BigInt']['output'];
@@ -1091,6 +1092,8 @@ export type Subscription = {
   newBlocksFromDepth?: Maybe<Array<Block>>;
   /** Listen for a transaction by request key. */
   transaction?: Maybe<Transaction>;
+  /** Listen for transactions by chain ID and minimum confirmation depth. */
+  transactions?: Maybe<Array<Transaction>>;
 };
 
 export type SubscriptionEventsArgs = {
@@ -1112,6 +1115,10 @@ export type SubscriptionNewBlocksFromDepthArgs = {
 export type SubscriptionTransactionArgs = {
   chainId?: InputMaybe<Scalars['String']['input']>;
   requestKey: Scalars['String']['input'];
+};
+
+export type SubscriptionTransactionsArgs = {
+  quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
 /** Time frame for chart data */
@@ -1977,6 +1984,7 @@ export type BlockResolvers<
   ParentType extends ResolversParentTypes['Block'] = ResolversParentTypes['Block'],
 > = {
   chainId?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  coinbase?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   creationTime?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   difficulty?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   epoch?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
@@ -3112,6 +3120,13 @@ export type SubscriptionResolvers<
     ParentType,
     ContextType,
     RequireFields<SubscriptionTransactionArgs, 'requestKey'>
+  >;
+  transactions?: SubscriptionResolver<
+    Maybe<Array<ResolversTypes['Transaction']>>,
+    'transactions',
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionTransactionsArgs, 'quantity'>
   >;
 };
 

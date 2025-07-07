@@ -282,4 +282,62 @@ export default class TransactionQueryBuilder {
 
     return { query, queryParams };
   }
+
+  buildAllTransactionsQuery(params: {
+    after?: string | null;
+    before?: string | null;
+    order: string;
+    limit: number;
+    lastId?: string | null;
+  }) {
+    let whereCondition = '';
+    let queryParams: (string | number)[] = [params.limit];
+
+    if (!params.after && !params.before) {
+      const currentTime = Date.now() - 100000;
+      whereCondition = ` WHERE t.creationtime > $1`;
+      queryParams.push(currentTime);
+    }
+    if (params.after) {
+      queryParams.push(params.after);
+      whereCondition = ` WHERE t.creationtime < $2`;
+    }
+    if (params.before) {
+      queryParams.push(params.before);
+      whereCondition = ` WHERE t.creationtime > $2`;
+    }
+
+    let query = `
+      SELECT
+        t.id AS id,
+        t.creationtime AS "creationTime",
+        t.hash AS "hashTransaction",
+        td.nonce AS "nonceTransaction",
+        td.sigs AS sigs,
+        td.continuation AS continuation,
+        t.num_events AS "eventCount",
+        td.pactid AS "pactId",
+        td.proof AS proof,
+        td.rollback AS rollback,
+        t.txid AS txid,
+        b.height AS "height",
+        b."hash" AS "blockHash",
+        b."chainId" AS "chainId",
+        td.gas AS "gas",
+        td.step AS step,
+        td.data AS data,
+        td.code AS code,
+        t.logs AS "logs",
+        t.result AS "result",
+        t.requestkey AS "requestKey"
+      FROM "Transactions" t
+      JOIN "Blocks" b ON b.id = t."blockId"
+      LEFT JOIN "TransactionDetails" td ON t.id = td."transactionId"
+      ${whereCondition}
+      ORDER BY t.creationtime ${params.order}
+      LIMIT $1
+    `;
+
+    return { query, queryParams };
+  }
 }

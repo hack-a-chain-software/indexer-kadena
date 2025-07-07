@@ -133,6 +133,14 @@ export default interface TransactionRepository {
   }>;
 
   /**
+   * Retrieves the last transactions based on specified parameters.
+   *
+   * @param quantity - Quantity of transactions to retrieve
+   * @returns Promise resolving to the last transactions
+   */
+  getLastTransactions(quantity: number): Promise<TransactionOutput[]>;
+
+  /**
    * Counts transactions matching the specified filter parameters.
    *
    * @param params - Filtering parameters

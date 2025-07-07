@@ -32,18 +32,10 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    // Remove unique index
-    await queryInterface.removeIndex('PoolStats', 'pool_stats_pairid_timestamp_idx');
-
     // Convert back to TIMESTAMP WITH TIME ZONE
     await queryInterface.changeColumn('PoolStats', 'timestamp', {
       type: Sequelize.DATE,
       allowNull: false,
-    });
-
-    // Recreate original non-unique index
-    await queryInterface.addIndex('PoolStats', ['pairId', 'timestamp'], {
-      name: 'pool_stats_pairid_timestamp_idx',
     });
   },
 };

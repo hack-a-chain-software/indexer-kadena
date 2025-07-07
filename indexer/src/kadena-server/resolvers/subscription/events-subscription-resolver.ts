@@ -50,7 +50,7 @@ async function* iteratorFn(
       yield newEvents.map(e => buildEventOutput(e));
     }
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
   }
 }
 

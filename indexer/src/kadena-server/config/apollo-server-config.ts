@@ -41,7 +41,7 @@ import DexMetricsDbRepository from '../repository/infra/repository/dex-metrics-d
 import { TokenPriceRepository } from '../repository/application/token-price-repository';
 import TokenPriceDbRepository from '../repository/infra/repository/token-price-db-repository';
 
-export const DEFAULT_PROTOCOL = 'n_82274f03ce7df5c0ea6c3d5766b535a7a748a552.sushi-exchange';
+export const DEFAULT_PROTOCOL = 'n_bd19ba92f0449d4422e620740759c9e94cacdb37.sushi-exchange';
 
 /**
  * Resolver context type definition for the GraphQL API
