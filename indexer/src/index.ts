@@ -19,11 +19,10 @@ import { closeDatabase } from './config/database';
 import { initializeDatabase } from './config/init';
 import { startGraphqlServer } from './kadena-server/server';
 import { backfillBalances } from './services/balances';
-import { startMissingBlocks } from './services/missing';
 import { startStreaming } from './services/streaming';
 import { backfillPairEvents } from './services/pair';
 import { setupAssociations } from './models/setup-associations';
-import { PriceUpdaterService } from './services/price/price-updater.service';
+import { PriceUpdaterService } from '@/services/price/price-updater.service';
 
 /**
  * Command-line interface configuration using Commander.
@@ -33,7 +32,6 @@ program
   .option('-s, --streaming', 'Start streaming blockchain data')
   .option('-t, --graphql', 'Start GraphQL server based on kadena schema')
   .option('-f, --guards', 'Backfill the guards')
-  .option('-m, --missing', 'Missing blocks')
   .option('-z, --database', 'Init the database')
   .option('-p, --backfillPairs', 'Backfill the pairs');
 
@@ -58,7 +56,7 @@ const options = program.opts();
 async function main() {
   try {
     setupAssociations();
-    await PriceUpdaterService.getInstance();
+    PriceUpdaterService.getInstance();
 
     if (options.database) {
       await initializeDatabase();
@@ -72,20 +70,16 @@ async function main() {
       await backfillBalances();
       await closeDatabase();
       process.exit(0);
-    } else if (options.missing) {
-      await startMissingBlocks();
-      process.exit(0);
     } else if (options.graphql) {
       await startGraphqlServer();
     } else if (options.backfillPairs) {
-      PriceUpdaterService.getInstance();
       await backfillPairEvents();
     } else {
       console.info('[INFO][BIZ][BIZ_FLOW] No specific task requested.');
     }
   } catch (error) {
     console.error('[ERROR][INFRA][INFRA_CONFIG] Initialization failed:', error);
-    // TODO: [OPTIMIZATION] Implement more detailed error logging and possibly retry mechanisms
+    process.exit(1);
   }
 }
 

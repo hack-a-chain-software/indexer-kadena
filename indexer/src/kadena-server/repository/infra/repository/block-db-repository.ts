@@ -14,15 +14,16 @@
  * - Optimized batch retrieval through DataLoader patterns
  */
 
-import { FindOptions, Op, QueryTypes } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import { rootPgPool, sequelize } from '../../../../config/database';
-import BlockModel, { BlockAttributes } from '../../../../models/block';
+import BlockModel from '../../../../models/block';
 import BlockRepository, {
   BlockOutput,
   GetBlocksBetweenHeightsParams,
   GetBlocksFromDepthParams,
   GetCompletedBlocksParams,
   GetLatestBlocksParams,
+  UpdateCanonicalStatusParams,
 } from '../../application/block-repository';
 import { getPageInfo, getPaginationParams } from '../../pagination';
 import { blockValidator } from '../schema-validator/block-schema-validator';
@@ -53,14 +54,12 @@ export default class BlockDbRepository implements BlockRepository {
    * @returns Promise resolving to the block data if found
    * @throws Error if the block is not found
    */
-  async getBlockByHash(hash: string) {
+  async getBlockByHash(hash: string): Promise<BlockOutput | null> {
     const block = await BlockModel.findOne({
       where: { hash },
     });
 
-    if (!block) {
-      throw new Error('Block not found.');
-    }
+    if (!block) return null;
 
     return blockValidator.mapFromSequelize(block);
   }
@@ -314,7 +313,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.target as "target",
         b.coinbase as "coinbase",
         b.adjacents as "adjacents",
-        b.parent as "parent"
+        b.parent as "parent",
+        b.canonical as "canonical"
       FROM "Blocks" b
       WHERE b.height >= $2
       ${conditions}
@@ -594,6 +594,7 @@ export default class BlockDbRepository implements BlockRepository {
         b.coinbase as "coinbase",
         b.adjacents as "adjacents",
         b.parent as "parent",
+        b.canonical as "canonical",
         t.id as "transactionId"
         FROM "Blocks" b
         JOIN "Transactions" t ON b.id = t."blockId"
@@ -641,7 +642,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.target as "target",
         b.coinbase as "coinbase",
         b.adjacents as "adjacents",
-        b.parent as "parent"
+        b.parent as "parent",
+        b.canonical as "canonical"
         FROM "Blocks" b
         WHERE b.hash = ANY($1::text[])`,
       [hashes],
@@ -922,5 +924,85 @@ export default class BlockDbRepository implements BlockRepository {
     const maxHeightsArray = await Promise.all(maxHeightsByChainIdPromises);
 
     return Object.assign({}, ...maxHeightsArray);
+  }
+
+  async getBlocksWithSameHeight(height: number, chainId: string): Promise<BlockOutput[]> {
+    const query = `
+      SELECT b.*
+      FROM "Blocks" b
+      WHERE b."height" = $1 AND b."chainId" = $2
+    `;
+
+    const { rows } = await rootPgPool.query(query, [height, chainId]);
+
+    return rows.map(row => blockValidator.validate(row));
+  }
+
+  async getBlockNParent(depth: number, hash: string): Promise<string | undefined> {
+    const query = `
+      WITH RECURSIVE BlockAncestors AS (
+        SELECT hash, parent, 1 AS depth, height
+        FROM "Blocks"
+        WHERE hash = $1
+        UNION ALL
+        SELECT b.hash, b.parent, d.depth + 1 AS depth, b.height
+        FROM BlockAncestors d
+        JOIN "Blocks" b ON d.parent = b.hash
+        WHERE d.depth < $2
+      )
+      SELECT parent as hash, depth
+      FROM BlockAncestors
+      ORDER BY depth DESC
+      LIMIT 1;
+    `;
+    const { rows } = await rootPgPool.query(query, [hash, depth]);
+
+    return rows?.[0]?.hash;
+  }
+
+  async getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]> {
+    const query = `
+      SELECT b.*
+      FROM "Blocks" b
+      WHERE b.height > $1 AND b."chainId" = $2;
+    `;
+
+    const { rows } = await rootPgPool.query(query, [height, chainId]);
+
+    return rows.map(row => blockValidator.validate(row));
+  }
+
+  async updateCanonicalStatus(params: UpdateCanonicalStatusParams) {
+    const canonicalHashes = params.blocks
+      .filter(change => change.canonical)
+      .map(change => change.hash);
+    const nonCanonicalHashes = params.blocks
+      .filter(change => !change.canonical)
+      .map(change => change.hash);
+
+    await rootPgPool.query('BEGIN');
+    try {
+      if (canonicalHashes.length > 0) {
+        const canonicalQuery = `
+          UPDATE "Blocks"
+          SET "canonical" = true
+          WHERE hash = ANY($1)
+        `;
+        await rootPgPool.query(canonicalQuery, [canonicalHashes]);
+      }
+
+      if (nonCanonicalHashes.length > 0) {
+        const nonCanonicalQuery = `
+          UPDATE "Blocks"
+          SET "canonical" = false
+          WHERE hash = ANY($1)
+        `;
+        await rootPgPool.query(nonCanonicalQuery, [nonCanonicalHashes]);
+      }
+      await rootPgPool.query('COMMIT');
+    } catch (error) {
+      await rootPgPool.query('ROLLBACK');
+      throw error;
+    }
   }
 }

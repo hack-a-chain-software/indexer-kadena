@@ -18,7 +18,6 @@
     "format:check": "prettier --check \"**/*.{yml,yaml,json,md,js,ts}\"",
     "prepare": "husky",
     "docker:login": "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 325501467038.dkr.ecr.us-east-1.amazonaws.com",
-    "deploy:missing": "sh deploy.sh missing",
     "deploy:streaming": "sh deploy.sh streaming",
     "deploy:graphql": "sh deploy.sh graphql"
   },
