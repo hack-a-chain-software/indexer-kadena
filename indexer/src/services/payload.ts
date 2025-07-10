@@ -29,6 +29,7 @@ import { getRequiredEnvString } from '@/utils/helpers';
 import TransactionDetails, { TransactionDetailsAttributes } from '@/models/transaction-details';
 import { mapToEventModel } from '@/models/mappers/event-mapper';
 import { processPairCreationEvents } from './pair';
+import { Decimal } from 'decimal.js';
 
 // Constants for array indices in the transaction data structure
 const TRANSACTION_INDEX = 0;
@@ -154,7 +155,7 @@ export async function processTransaction(
     data: cmdData.payload.exec ? cmdData.payload?.exec?.data : {},
     gas: receiptInfo.gas,
     gaslimit: cmdData.meta.gasLimit,
-    gasprice: cmdData.meta.gasPrice,
+    gasprice: new Decimal(cmdData.meta.gasPrice).toFixed(),
     nonce,
     pactid: receiptInfo.continuation?.pactId || null,
     continuation: receiptInfo.continuation || {},
@@ -259,8 +260,44 @@ export async function processTransaction(
         tokenId: t.tokenId ?? '', // Normalize tokenId
       }));
 
+    const marmaladeEvents = eventsWithTransactionId.filter(
+      event =>
+        (event.name === 'MINT' || event.name === 'TRANSFER') &&
+        (event.module === 'marmalade-v2.ledger' || event.module === 'marmalade.ledger'),
+    );
+
+    const marmaladeBalances = marmaladeEvents
+      .map(event => {
+        let account;
+        const eventParams = event.params as any[];
+        const tokenId = eventParams[0] as string;
+
+        if (event.name === 'MINT') {
+          account = eventParams[1] as string;
+        } else {
+          // TRANSFER
+          account = eventParams[2] as string;
+        }
+
+        if (account && tokenId) {
+          return {
+            account,
+            chainId: event.chainId,
+            module: event.module,
+            hasTokenId: true,
+            tokenId: tokenId,
+          };
+        }
+        return null;
+      })
+      .filter((b): b is Exclude<typeof b, null> => b !== null);
+
     // Combine all balances for upsert operation
-    const balances = [...balancesFrom, ...balancesTo];
+    const balances = [...balancesFrom, ...balancesTo, ...marmaladeBalances];
+
+    if (balances.length === 0) {
+      return eventsWithTransactionId;
+    }
 
     // Create values string for SQL insert
     const values = balances
