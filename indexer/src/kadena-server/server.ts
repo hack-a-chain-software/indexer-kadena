@@ -56,7 +56,7 @@ import { createSentryPlugin } from './plugins/sentry-plugin';
  *
  * If a query exceeds this complexity, it will be rejected before execution.
  */
-const MAX_COMPLEXITY = 2500;
+const MAX_COMPLEXITY = 4000;
 
 /**
  * GraphQL schema definition
