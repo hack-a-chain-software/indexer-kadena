@@ -18,6 +18,14 @@ const { Transaction } = require('sequelize');
  */
 const isSslEnabled = process.env.DB_SSL_ENABLED === 'true';
 
+// Determine if the server's certificate should be validated against the local CA bundle.
+// Defaults to true (most secure). This is only overridden if SSL is enabled AND the
+// DB_SSL_REJECT_UNAUTHORIZED variable is explicitly set.
+let rejectUnauthorized = true;
+if (isSslEnabled && typeof process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'undefined') {
+  rejectUnauthorized = process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false';
+}
+
 module.exports = {
   /**
    * Development environment database configuration
@@ -41,9 +49,11 @@ module.exports = {
       dialectOptions: {
         ssl: {
           require: true,
-          rejectUnauthorized: true,
-          // Read CA certificate for SSL connection verification
-          ca: fs.readFileSync(__dirname + '/../src/config/global-bundle.pem').toString(),
+          rejectUnauthorized: rejectUnauthorized,
+          // Only include the CA if we are validating the certificate
+          ...(rejectUnauthorized && {
+            ca: fs.readFileSync(__dirname + '/../src/config/global-bundle.pem').toString(),
+          }),
         },
       },
     }),
