@@ -1,0 +1,11 @@
+FROM golang:1.23.3 AS builder
+WORKDIR /app
+COPY . .
+RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o db-migrator ./db-migrator/db-migrator.go
+
+FROM scratch
+WORKDIR /app
+COPY ./global-bundle.pem ./global-bundle.pem
+COPY --from=builder /app/db-migrator .
+CMD ["./db-migrator"]
