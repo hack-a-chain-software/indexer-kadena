@@ -4,7 +4,10 @@
  * This class encapsulates the complex logic for constructing SQL queries
  * to retrieve transactions from the database with various filtering criteria.
  */
-import { GetTransactionsParams } from '../../../repository/application/transaction-repository';
+import {
+  GetTransactionsCountParams,
+  GetTransactionsParams,
+} from '../../../repository/application/transaction-repository';
 
 export default class TransactionQueryBuilder {
   /**
@@ -94,16 +97,20 @@ export default class TransactionQueryBuilder {
 
     // Add 'after' cursor condition for pagination
     if (after) {
-      transactionParams.push(after);
+      const [creationTime, id] = after.split(':');
+      transactionParams.push(creationTime);
       const op = localOperator(transactionParams.length);
-      conditions += `${op} t.creationtime < $${queryParams.length + transactionParams.length}`;
+      transactionParams.push(id);
+      conditions += `${op} (t.creationtime, t.id) < ($${queryParams.length + transactionParams.length - 1}, $${queryParams.length + transactionParams.length})`;
     }
 
     // Add 'before' cursor condition for pagination
     if (before) {
-      transactionParams.push(before);
+      const [creationTime, id] = before.split(':');
+      transactionParams.push(creationTime);
       const op = localOperator(transactionParams.length);
-      conditions += `${op} t.creationtime > $${queryParams.length + transactionParams.length}`;
+      transactionParams.push(id);
+      conditions += `${op} (t.creationtime, t.id) > ($${queryParams.length + transactionParams.length - 1}, $${queryParams.length + transactionParams.length})`;
     }
 
     // Add request key condition for exact transaction lookup
@@ -151,7 +158,7 @@ export default class TransactionQueryBuilder {
    * @returns Object containing the query string and parameters array
    */
   buildTransactionsQuery(
-    params: GetTransactionsParams & {
+    params: GetTransactionsCountParams & {
       after?: string | null;
       before?: string | null;
       order: string;
@@ -234,9 +241,9 @@ export default class TransactionQueryBuilder {
           t.requestkey AS "requestKey"
         FROM filtered_block b
         JOIN "Transactions" t ON b.id = t."blockId"
-        LEFT JOIN "TransactionDetails" td ON t.id = td."transactionId"
+        ${params.isCoinbase ? 'LEFT ' : ''} JOIN "TransactionDetails" td ON t.id = td."transactionId"
         ${transactionsConditions}
-        ORDER BY t.creationtime ${order}
+        ORDER BY t.creationtime ${order}, t.id ${order}
         LIMIT $1
       `;
     } else {
@@ -246,7 +253,7 @@ export default class TransactionQueryBuilder {
           SELECT t.id, t."blockId", t.hash, t.num_events, t.txid, t.logs, t.result, t.requestkey, t."chainId", t.creationtime
           FROM "Transactions" t
           ${transactionsConditions}
-          ORDER BY t.creationtime ${order}
+          ORDER BY t.creationtime ${order}, t.id ${order}
           LIMIT $1
         )
         SELECT
@@ -275,7 +282,7 @@ export default class TransactionQueryBuilder {
           t.requestkey AS "requestKey"
         FROM filtered_transactions t
         JOIN "Blocks" b ON b.id = t."blockId"
-        LEFT JOIN "TransactionDetails" td ON t.id = td."transactionId"
+        ${params.isCoinbase ? 'LEFT ' : ''} JOIN "TransactionDetails" td ON t.id = td."transactionId"
         ${blocksConditions}
       `;
     }
@@ -288,22 +295,25 @@ export default class TransactionQueryBuilder {
     before?: string | null;
     order: string;
     limit: number;
+    isCoinbase: boolean;
   }) {
     let whereCondition = '';
     let queryParams: (string | number)[] = [params.limit];
 
     if (!params.after && !params.before) {
-      const currentTime = Date.now() - 100000;
-      queryParams.push(currentTime);
-      whereCondition = ` WHERE t.creationtime > $2`;
+      const currentTime = Date.now() - 10000000;
+      queryParams.push(currentTime, 0);
+      whereCondition = ` WHERE t.creationtime > $2 AND t.id > $3`;
     }
     if (params.after) {
-      queryParams.push(params.after);
-      whereCondition = ` WHERE t.creationtime < $2`;
+      const [creationTime, id] = params.after.split(':');
+      queryParams.push(creationTime, id);
+      whereCondition = ` WHERE (t.creationtime, t.id) < ($2, $3)`;
     }
     if (params.before) {
-      queryParams.push(params.before);
-      whereCondition = ` WHERE t.creationtime > $2`;
+      const [creationTime, id] = params.before.split(':');
+      queryParams.push(creationTime, id);
+      whereCondition = ` WHERE (t.creationtime, t.id) > ($2, $3)`;
     }
 
     let query = `
@@ -331,12 +341,11 @@ export default class TransactionQueryBuilder {
         t.requestkey AS "requestKey"
       FROM "Transactions" t
       JOIN "Blocks" b ON b.id = t."blockId"
-      LEFT JOIN "TransactionDetails" td ON t.id = td."transactionId"
+      ${params.isCoinbase ? 'LEFT ' : ''} JOIN "TransactionDetails" td ON t.id = td."transactionId"
       ${whereCondition}
-      ORDER BY t.creationtime ${params.order}
+      ORDER BY t.creationtime ${params.order}, t.id ${params.order}
       LIMIT $1
     `;
-
     return { query, queryParams };
   }
 }

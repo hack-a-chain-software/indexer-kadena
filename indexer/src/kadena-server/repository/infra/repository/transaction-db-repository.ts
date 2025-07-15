@@ -69,27 +69,17 @@ export default class TransactionDbRepository implements TransactionRepository {
         order,
         after,
         before,
+        isCoinbase: !!rest.isCoinbase,
       });
 
       // Execute the query with the constructed parameters
       const { rows } = await rootPgPool.query(query, queryParams);
 
       // Transform database rows into GraphQL-compatible edges with cursors
-      const edges = rows
-        .map(row => ({
-          cursor: row.creationTime.toString(),
-          node: transactionValidator.validate(row),
-        }))
-        .sort((a, b) => {
-          // Primary sort is already done by DB query (creationTime DESC)
-          // Add secondary sort by id for consistent ordering when creationTimes are equal
-          const aNode = a.node as unknown as { id: string };
-          const bNode = b.node as unknown as { id: string };
-          if (a.cursor === b.cursor) {
-            return aNode.id > bNode.id ? 1 : -1;
-          }
-          return 0; // Maintain existing order from DB for different creationTimes
-        });
+      const edges = rows.map(row => ({
+        cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
+        node: transactionValidator.validate(row),
+      }));
 
       const pageInfo = getPageInfo({ edges, order, limit, after, before });
       return pageInfo;
@@ -110,21 +100,10 @@ export default class TransactionDbRepository implements TransactionRepository {
       const { rows } = await rootPgPool.query(query, queryParams);
 
       // Transform database rows into GraphQL-compatible edges with cursors
-      const edges = rows
-        .map(row => ({
-          cursor: row.creationTime.toString(),
-          node: transactionValidator.validate(row),
-        }))
-        .sort((a, b) => {
-          // Primary sort is already done by DB query (creationTime DESC)
-          // Add secondary sort by id for consistent ordering when creationTimes are equal
-          const aNode = a.node as unknown as { id: string };
-          const bNode = b.node as unknown as { id: string };
-          if (a.cursor === b.cursor) {
-            return aNode.id > bNode.id ? 1 : -1;
-          }
-          return 0; // Maintain existing order from DB for different creationTimes
-        });
+      const edges = rows.map(row => ({
+        cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
+        node: transactionValidator.validate(row),
+      }));
 
       const pageInfo = getPageInfo({ edges, order, limit, after, before });
       return pageInfo;
@@ -174,26 +153,15 @@ export default class TransactionDbRepository implements TransactionRepository {
       // Update cursor for next batch
       if (transactionBatch.length > 0) {
         const lastTransaction = transactionBatch[transactionBatch.length - 1];
-        lastCursor = lastTransaction.creationTime.toString();
+        lastCursor = `${lastTransaction.creationTime.toString()}:${lastTransaction.id.toString()}`;
       }
     }
 
     // Create edges for paginated result and apply sorting
-    const edges = allFilteredTransactions
-      .slice(0, limit)
-      .map(tx => ({
-        cursor: tx.creationTime.toString(),
-        node: transactionValidator.validate(tx),
-      }))
-      .sort((a, b) => {
-        // Apply same sorting as in non-minimumDepth case
-        const aNode = a.node as unknown as { id: string };
-        const bNode = b.node as unknown as { id: string };
-        if (a.cursor === b.cursor) {
-          return aNode.id > bNode.id ? 1 : -1;
-        }
-        return 0;
-      });
+    const edges = allFilteredTransactions.slice(0, limit).map(tx => ({
+      cursor: `${tx.creationTime.toString()}:${tx.id.toString()}`,
+      node: transactionValidator.validate(tx),
+    }));
 
     return getPageInfo({ edges, order, limit, after, before });
   }
@@ -402,13 +370,15 @@ export default class TransactionDbRepository implements TransactionRepository {
     let cursorCondition = '';
 
     if (after) {
-      cursorCondition = `\nWHERE t.creationtime < $3`;
-      queryParams.push(after);
+      const [creationTime, id] = after.split(':');
+      cursorCondition = `\nWHERE (t.creationtime, t.id) < ($3, $4)`;
+      queryParams.push(creationTime, id);
     }
 
     if (before) {
-      cursorCondition = `\nWHERE t.creationtime > $3`;
-      queryParams.push(before);
+      const [creationTime, id] = before.split(':');
+      cursorCondition = `\nWHERE (t.creationtime, t.id) > ($3, $4)`;
+      queryParams.push(creationTime, id);
     }
 
     const query = `
@@ -443,14 +413,14 @@ export default class TransactionDbRepository implements TransactionRepository {
       ) filtered_signers ON t.id = filtered_signers."transactionId"
       LEFT JOIN "TransactionDetails" td on t.id = td."transactionId"
       ${cursorCondition}
-      ORDER BY t.creationtime ${order}
+      ORDER BY t.creationtime ${order}, t.id ${order}
       LIMIT $1;
     `;
 
     const { rows } = await rootPgPool.query(query, queryParams);
 
     const edges = rows.map(row => ({
-      cursor: row.creationTime.toString(),
+      cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
       node: transactionValidator.validate(row),
     }));
 
