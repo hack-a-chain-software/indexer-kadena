@@ -3,7 +3,7 @@
  * This file orchestrates the initialization and execution of various services based on command line arguments.
  * The indexer supports multiple operation modes:
  * - Streaming blockchain data
- * - Running GraphQL servers (both Postgraphile and Kadena schema based)
+ * - Running GraphQL server
  * - Backfilling guards
  * - Processing missing blocks
  * - Database initialization
@@ -44,9 +44,8 @@ const options = program.opts();
  * The function handles different operational modes:
  * - Database initialization
  * - Blockchain data streaming
- * - Guard backfilling
- * - Missing blocks processing
- * - GraphQL server initialization (both Postgraphile and Kadena schema versions)
+ * - Token Pairs backfilling
+ * - GraphQL server initialization
  *
  * TODO: [OPTIMIZATION] Consider implementing a more modular approach for service initialization
  * that would allow easier addition of new services without modifying this main function.
