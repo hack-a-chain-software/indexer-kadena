@@ -146,36 +146,36 @@ describe('TransactionQueryBuilder', () => {
       it('should build a query with after parameter', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
-          after: '1633046400000',
+          after: '1633046400000:11',
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
-        expect(query).toContain('WHERE t.creationtime < $2');
-        expect(queryParams).toEqual([10, '1633046400000']);
+        expect(query).toContain('WHERE (t.creationtime, t.id) < ($2, $3)');
+        expect(queryParams).toEqual([10, '1633046400000', '11']);
       });
 
       it('should build a query with before parameter', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
-          before: '1633046400000',
+          before: '1633046400000:11',
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
-        expect(query).toContain('WHERE t.creationtime > $2');
-        expect(queryParams).toEqual([10, '1633046400000']);
+        expect(query).toContain('WHERE (t.creationtime, t.id) > ($2, $3)');
+        expect(queryParams).toEqual([10, '1633046400000', '11']);
       });
 
       it('should build a query with both after and before parameters', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
-          after: '1633046400000',
-          before: '1633132800000',
+          after: '1633046400000:11',
+          before: '1633132800000:12',
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
-        expect(query).toContain('WHERE t.creationtime < $2');
-        expect(query).toContain('AND t.creationtime > $3');
-        expect(queryParams).toEqual([10, '1633046400000', '1633132800000']);
+        expect(query).toContain('WHERE (t.creationtime, t.id) < ($2, $3)');
+        expect(query).toContain('AND (t.creationtime, t.id) > ($4, $5)');
+        expect(queryParams).toEqual([10, '1633046400000', '11', '1633132800000', '12']);
       });
     });
 
@@ -185,14 +185,14 @@ describe('TransactionQueryBuilder', () => {
           ...baseParams,
           blockHash: 'test-block-hash',
           accountName: 'test-account',
-          after: '1633046400000',
+          after: '1633046400000:11',
         });
 
         expect(query).toContain('WITH filtered_block AS');
         expect(query).toContain('WHERE b.hash = $2');
         expect(query).toContain('WHERE t.sender = $3');
-        expect(query).toContain('AND t.creationtime < $4');
-        expect(queryParams).toEqual([10, 'test-block-hash', 'test-account', '1633046400000']);
+        expect(query).toContain('AND (t.creationtime, t.id) < ($4, $5)');
+        expect(queryParams).toEqual([10, 'test-block-hash', 'test-account', '1633046400000', '11']);
       });
 
       it('should build a query combining multiple transaction filters with transaction-first approach', () => {
@@ -200,14 +200,20 @@ describe('TransactionQueryBuilder', () => {
           ...baseParams,
           accountName: 'test-account',
           requestKey: 'test-request-key',
-          after: '1633046400000',
+          after: '1633046400000:11',
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
         expect(query).toContain('WHERE t.sender = $2');
-        expect(query).toContain('AND t.creationtime < $3');
-        expect(query).toContain('AND t."requestkey" = $4');
-        expect(queryParams).toEqual([10, 'test-account', '1633046400000', 'test-request-key']);
+        expect(query).toContain('AND (t.creationtime, t.id) < ($3, $4)');
+        expect(query).toContain('AND t."requestkey" = $5');
+        expect(queryParams).toEqual([
+          10,
+          'test-account',
+          '1633046400000',
+          '11',
+          'test-request-key',
+        ]);
       });
 
       it('should build a complex query with both types of filters', () => {
@@ -217,8 +223,8 @@ describe('TransactionQueryBuilder', () => {
           chainId: '5',
           minHeight: 1000,
           accountName: 'test-account',
-          after: '1633046400000',
-          before: '1633132800000',
+          after: '1633046400000:11',
+          before: '1633132800000:11',
         });
 
         expect(query).toContain('WITH filtered_block AS');
@@ -228,8 +234,8 @@ describe('TransactionQueryBuilder', () => {
 
         // Transaction conditions appear later in the query
         expect(query).toContain('WHERE t.sender = $5');
-        expect(query).toContain('AND t.creationtime < $6');
-        expect(query).toContain('AND t.creationtime > $7');
+        expect(query).toContain('AND (t.creationtime, t.id) < ($6, $7)');
+        expect(query).toContain('AND (t.creationtime, t.id) > ($8, $9)');
 
         expect(queryParams).toEqual([
           10,
@@ -238,7 +244,9 @@ describe('TransactionQueryBuilder', () => {
           1000,
           'test-account',
           '1633046400000',
+          '11',
           '1633132800000',
+          '11',
         ]);
       });
     });

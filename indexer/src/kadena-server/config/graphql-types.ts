@@ -730,7 +730,7 @@ export type Query = {
   transaction?: Maybe<Transaction>;
   /**
    * Retrieve transactions. Default page size is 20.
-   *  At least one of accountName, fungibleName, blockHash, or requestKey must be provided.
+   * At least one of accountName, fungibleName, blockHash, or requestKey must be provided.
    */
   transactions: QueryTransactionsConnection;
   /** Retrieve all transactions by a given public key. */
@@ -914,6 +914,7 @@ export type QueryTransactionsArgs = {
   chainId?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   fungibleName?: InputMaybe<Scalars['String']['input']>;
+  isCoinbase?: InputMaybe<Scalars['Boolean']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
   maxHeight?: InputMaybe<Scalars['Int']['input']>;
   minHeight?: InputMaybe<Scalars['Int']['input']>;

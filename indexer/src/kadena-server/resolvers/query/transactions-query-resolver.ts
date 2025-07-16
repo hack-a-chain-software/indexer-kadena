@@ -56,6 +56,7 @@ export const transactionsQueryResolver: QueryResolvers<ResolverContext>['transac
     maxHeight,
     minHeight,
     minimumDepth,
+    isCoinbase = false,
   } = args;
 
   // Call the repository layer to retrieve the filtered and paginated transactions
@@ -69,6 +70,7 @@ export const transactionsQueryResolver: QueryResolvers<ResolverContext>['transac
     maxHeight,
     minHeight,
     minimumDepth,
+    isCoinbase,
     first,
     last,
     before,
@@ -100,6 +102,7 @@ export const transactionsQueryResolver: QueryResolvers<ResolverContext>['transac
     maxHeight,
     minHeight,
     minimumDepth,
+    isCoinbase,
     fungibleName,
     requestKey,
   };
