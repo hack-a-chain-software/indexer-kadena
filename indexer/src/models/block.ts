@@ -5,13 +5,10 @@
  * Each block contains metadata about the block itself, references to related blocks,
  * and cryptographic information needed for blockchain verification.
  *
- * The module also exports a PostGraphile plugin that extends the GraphQL schema
- * with custom block queries for API consumers.
  */
 
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/database';
-import { gql, makeExtendSchemaPlugin } from 'postgraphile';
 
 /**
  * Interface defining the attributes of a Block.
@@ -249,122 +246,5 @@ Block.init(
     ],
   },
 );
-
-/**
- * PostGraphile plugin that extends the GraphQL schema with custom Block queries.
- * This allows API consumers to query blocks by height and perform search operations
- * across blocks, transactions, addresses, and tokens.
- *
- * TODO: [OPTIMIZATION] Consider implementing caching mechanisms for frequently used queries
- * to improve API response times.
- */
-export const blockQueryPlugin = makeExtendSchemaPlugin(build => {
-  return {
-    typeDefs: gql`
-      extend type Query {
-        blockByHeight(height: Int!, chainId: Int!): Block
-        searchAll(searchTerm: String!, limit: Int!, heightFilter: Int): SearchAllResult
-      }
-
-      type SearchAllResult {
-        blocks: [Block]
-        transactions: [Transaction]
-        addresses: [Balance]
-        tokens: [Contract]
-      }
-    `,
-    resolvers: {
-      Query: {
-        /**
-         * Resolver to find a block by its height and chain ID.
-         * Uses a direct SQL query for optimal performance.
-         */
-        blockByHeight: async (_query, args, context, resolveInfo) => {
-          const { height, chainId } = args;
-          const { rootPgPool } = context;
-          const { rows } = await rootPgPool.query(
-            `SELECT * FROM public."Blocks" WHERE height = $1 AND "chainId" = $2`,
-            [height, chainId],
-          );
-          return rows[0];
-        },
-
-        /**
-         * Resolver for the searchAll query that searches across multiple entities.
-         * Performs parallel queries for different entity types and combines the results.
-         *
-         * TODO: [OPTIMIZATION] This function performs multiple separate queries that could
-         * potentially be optimized or consolidated for better performance.
-         */
-        searchAll: async (_query, args, context, resolveInfo) => {
-          const { searchTerm, limit, heightFilter } = args;
-          const { rootPgPool } = context;
-
-          // Query to search for blocks by various hash fields
-          const blocksQuery = `
-          SELECT * FROM public."Blocks" WHERE LOWER(hash) = LOWER($1) 
-          UNION ALL
-          SELECT * FROM public."Blocks" WHERE LOWER(parent) = LOWER($1) 
-          UNION ALL
-          SELECT * FROM public."Blocks" WHERE LOWER("payloadHash") = LOWER($1) 
-          UNION ALL
-          SELECT * FROM public."Blocks" WHERE LOWER("transactionsHash") = LOWER($1) 
-          UNION ALL
-          SELECT * FROM public."Blocks" WHERE LOWER("outputsHash") = LOWER($1) 
-          UNION ALL
-          SELECT * FROM public."Blocks" WHERE height = $3
-          LIMIT $2;
-        `;
-
-          // Query to search for transactions by various identifiers
-          const transactionsQuery = `
-          SELECT * FROM public."Transactions" WHERE LOWER(requestkey) = LOWER($1)
-          UNION ALL
-          SELECT * FROM public."Transactions" WHERE LOWER(txid) = LOWER($1)
-          UNION ALL
-          SELECT * FROM public."Transactions" WHERE LOWER(pactid) = LOWER($1)
-          UNION ALL
-          SELECT * FROM public."Transactions" WHERE LOWER(sender) = LOWER($1)
-          LIMIT $2;
-        `;
-
-          // Query to search for accounts/addresses
-          const addressesQuery = `
-          SELECT DISTINCT account, module, qualname, network, -1 as "chainId"
-          FROM public."Balances"
-          WHERE LOWER(account) = LOWER($1)
-          ORDER BY account ASC
-          LIMIT $2
-        `;
-
-          // Query to search for token contracts
-          const tokensQuery = `
-          SELECT DISTINCT network, type, module, precision, -1 as "chainId" 
-          FROM public."Contracts"
-          WHERE (type = 'fungible' OR type = 'poly-fungible')
-            AND LOWER(module) LIKE LOWER($1)
-          LIMIT $2
-        `;
-
-          // Execute all queries in parallel for better performance
-          const [blocks, transactions, addresses, tokens] = await Promise.all([
-            rootPgPool.query(blocksQuery, [`${searchTerm}`, limit, heightFilter]),
-            rootPgPool.query(transactionsQuery, [`${searchTerm}`, limit]),
-            rootPgPool.query(addressesQuery, [`${searchTerm}`, limit]),
-            rootPgPool.query(tokensQuery, [`%${searchTerm}%`, limit]),
-          ]);
-
-          // Combine and return the search results
-          return {
-            blocks: blocks.rows,
-            transactions: transactions.rows,
-            addresses: addresses.rows,
-            tokens: tokens.rows,
-          };
-        },
-      },
-    },
-  };
-});
 
 export default Block;

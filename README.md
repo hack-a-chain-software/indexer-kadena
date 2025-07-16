@@ -4,7 +4,6 @@
 [![Lint](https://github.com/hack-a-chain-software/indexer-kadena/actions/workflows/lint.yml/badge.svg)](https://github.com/hack-a-chain-software/indexer-kadena/actions/workflows/lint.yml)
 
 - [`@kadena-indexer/indexer`](indexer/README.md): The indexer package, which is responsible for scanning and storing blocks for Kadena blockchain.
-- [`@kadena-indexer/terraform`](terraform/README.md): The Terraform configuration for provisioning the infrastructure required to run the indexer and the node.
 - [`@kadena-indexer/backfill`](backfill/README.md): The backfill package, which is responsible for backfilling the indexer data.
 
 ## Requirements
