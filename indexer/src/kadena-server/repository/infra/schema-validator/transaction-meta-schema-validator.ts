@@ -13,6 +13,7 @@
 
 import zod from 'zod';
 import { TransactionMetaOutput } from '../../application/transaction-repository';
+import Decimal from 'decimal.js';
 
 /**
  * Zod schema for validating transaction metadata
@@ -49,7 +50,7 @@ function validate(row: any): TransactionMetaOutput {
     chainId: res.chainId,
     creationTime: new Date(Number(res.creationTime) * 1000),
     gasLimit: res.gasLimit ?? 0,
-    gasPrice: Number(res.gasPrice) ?? 0,
+    gasPrice: new Decimal(res.gasPrice ?? 0).toFixed(),
     sender: res.sender,
     ttl: res.ttl ?? 0,
   };
