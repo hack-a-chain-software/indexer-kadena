@@ -91,22 +91,9 @@ export default class BlockDbRepository implements BlockRepository {
       last,
     });
 
-    const chainIdsToUse = chainIds?.length ? chainIds.map(Number) : await this.getChainIds();
-
     let allFetchedBlocks: any[] = [];
     let lastHeight: number | null = null;
-    let lastChainId: number | null = null;
-
-    if (after) {
-      const [heightStr, chainIdStr] = after.split(':');
-      lastHeight = parseInt(heightStr, 10);
-      lastChainId = parseInt(chainIdStr, 10);
-
-      if (isNaN(lastHeight) || isNaN(lastChainId)) {
-        lastHeight = null;
-        lastChainId = null;
-      }
-    }
+    let lastId: number | null = null;
 
     const batchSize = Math.max(limit * 2, 50); // Fetch more than needed in each batch
     let hasMoreBlocks = true;
@@ -115,10 +102,30 @@ export default class BlockDbRepository implements BlockRepository {
     const baseQueryParams: any[] = [batchSize];
     let baseConditions: string[] = [];
 
+    baseConditions.push(`"height" <= (SELECT MAX(height) - ${minimumDepth} FROM "Blocks")`);
+
     // Add chain ID filtering - only need to do this once since chainIdsToUse doesn't change
-    if (chainIdsToUse.length > 0) {
-      baseQueryParams.push(chainIdsToUse);
+    if (chainIds?.length) {
+      baseQueryParams.push(chainIds);
       baseConditions.push(`"chainId" = ANY($${baseQueryParams.length})`);
+    }
+
+    if (after) {
+      const [heightStr, idStr] = after.split(':');
+      lastHeight = parseInt(heightStr, 10);
+      lastId = parseInt(idStr, 10);
+      if (isNaN(lastHeight) || isNaN(lastId)) {
+        throw new Error('Invalid after cursor');
+      }
+    }
+
+    if (before) {
+      const [heightStr, idStr] = before.split(':');
+      lastHeight = parseInt(heightStr, 10);
+      lastId = parseInt(idStr, 10);
+      if (isNaN(lastHeight) || isNaN(lastId)) {
+        throw new Error('Invalid before cursor');
+      }
     }
 
     // Keep fetching batches until we have enough blocks that meet the depth requirement
@@ -126,51 +133,21 @@ export default class BlockDbRepository implements BlockRepository {
       const queryParams: any[] = [...baseQueryParams];
       let conditions = [...baseConditions];
 
-      if (lastHeight !== null && lastChainId !== null) {
-        queryParams.push(lastHeight);
-        queryParams.push(lastChainId);
-
-        if (order === 'DESC') {
-          // For DESC order, get blocks with lower height or same height but different chain
-          conditions.push(
-            `(height < $${queryParams.length - 1} OR (height = $${queryParams.length - 1} AND "chainId" < $${queryParams.length}))`,
-          );
-        } else {
-          // For ASC order, get blocks with higher height or same height but different chain
-          conditions.push(
-            `(height > $${queryParams.length - 1} OR (height = $${queryParams.length - 1} AND "chainId" > $${queryParams.length}))`,
-          );
-        }
+      if (lastHeight !== null && lastId !== null && after) {
+        queryParams.push(lastHeight, lastId);
+        conditions.push(`(height, id) < ($${queryParams.length - 1}, $${queryParams.length})`);
       }
 
-      if (before) {
-        const [heightStr, chainIdStr] = before.split(':');
-        const beforeHeight = parseInt(heightStr, 10);
-        const beforeChainId = parseInt(chainIdStr, 10);
-
-        if (!isNaN(beforeHeight) && !isNaN(beforeChainId)) {
-          queryParams.push(beforeHeight);
-          queryParams.push(beforeChainId);
-
-          if (order === 'DESC') {
-            // For DESC order with "before", get blocks with higher height
-            conditions.push(
-              `(height > $${queryParams.length - 1} OR (height = $${queryParams.length - 1} AND "chainId" > $${queryParams.length}))`,
-            );
-          } else {
-            // For ASC order with "before", get blocks with lower height
-            conditions.push(
-              `(height < $${queryParams.length - 1} OR (height = $${queryParams.length - 1} AND "chainId" < $${queryParams.length}))`,
-            );
-          }
-        }
+      if (lastHeight !== null && lastId !== null && before) {
+        queryParams.push(lastHeight, lastId);
+        conditions.push(`(height, id) > ($${queryParams.length - 1}, $${queryParams.length})`);
       }
 
       const query = `
         SELECT *
         FROM "Blocks"
         ${conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''}
-        ORDER BY height ${order}, "chainId" ${order}
+        ORDER BY height ${order}, id ${order}
         LIMIT $1
       `;
 
@@ -199,23 +176,13 @@ export default class BlockDbRepository implements BlockRepository {
       // Update cursor for next batch using the last block's height and chainId
       const lastBlock = blockRows[blockRows.length - 1];
       lastHeight = lastBlock.height;
-      lastChainId = lastBlock.chainId;
+      lastId = lastBlock.id;
     }
 
-    const edges = allFetchedBlocks
-      .slice(0, limit)
-      .map(row => ({
-        cursor: `${row.height}:${row.chainId}`,
-        node: blockValidator.validate(row),
-      }))
-      .sort((a, b) => {
-        const aNode = a.node as unknown as { id: string };
-        const bNode = b.node as unknown as { id: string };
-        if (a.cursor === b.cursor) {
-          return aNode.id > bNode.id ? 1 : -1;
-        }
-        return 0;
-      });
+    const edges = allFetchedBlocks.slice(0, limit).map(row => ({
+      cursor: `${row.height}:${row.id}`,
+      node: blockValidator.validate(row),
+    }));
 
     const pageInfo = getPageInfo({ edges, order, limit, after, before });
     return pageInfo;
@@ -267,11 +234,12 @@ export default class BlockDbRepository implements BlockRepository {
       const beforeHeight = parseInt(height, 10);
       const beforeId = parseInt(id, 10);
 
-      // Check if values are valid numbers
-      if (!isNaN(beforeHeight) && !isNaN(beforeId)) {
-        queryParams.push(beforeHeight, beforeId);
-        conditions += `\nAND (b.height < $${queryParams.length - 1} OR (b.height = $${queryParams.length - 1} AND b.id > $${queryParams.length}))`;
+      if (isNaN(beforeHeight) || isNaN(beforeId)) {
+        throw new Error('Invalid before cursor');
       }
+
+      queryParams.push(beforeHeight, beforeId);
+      conditions += `\nAND (b.height, b.id) > ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
     if (after) {
@@ -280,13 +248,11 @@ export default class BlockDbRepository implements BlockRepository {
       const afterHeight = parseInt(height, 10);
       const afterId = parseInt(id, 10);
 
-      // Check if values are valid numbers
-      if (!isNaN(afterHeight) && !isNaN(afterId)) {
-        // For forward pagination with "after", we want records where:
-        // (height < afterHeight) OR (height = afterHeight AND id < afterId)
-        queryParams.push(afterHeight, afterId);
-        conditions += `\nAND (b.height < $${queryParams.length - 1} OR (b.height = $${queryParams.length - 1} AND b.id < $${queryParams.length}))`;
+      if (isNaN(afterHeight) || isNaN(afterId)) {
+        throw new Error('Invalid after cursor');
       }
+      queryParams.push(afterHeight, afterId);
+      conditions += `\nAND (b.height, b.id) < ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
     if (chainIds?.length) {
@@ -316,7 +282,7 @@ export default class BlockDbRepository implements BlockRepository {
         b.parent as "parent",
         b.canonical as "canonical"
       FROM "Blocks" b
-      WHERE b.height >= $2
+      WHERE b.height ${before ? '<=' : '>='} $2
       ${conditions}
       ORDER BY b.height ${order}, b.id ${order}
       LIMIT $1;
