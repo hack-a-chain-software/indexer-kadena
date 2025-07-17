@@ -294,7 +294,7 @@ type Query {
 
   """
   Retrieve transactions. Default page size is 20.
-   At least one of accountName, fungibleName, blockHash, or requestKey must be provided.
+  At least one of accountName, fungibleName, blockHash, or requestKey must be provided.
   """
   transactions(
     accountName: String
@@ -309,6 +309,7 @@ type Query {
     minHeight: Int
     minimumDepth: Int
     requestKey: String
+    isCoinbase: Boolean
   ): QueryTransactionsConnection! @complexity(value: 10, multipliers: ["first", "last"])
 
   """

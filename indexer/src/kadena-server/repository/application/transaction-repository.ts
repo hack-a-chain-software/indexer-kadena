@@ -71,6 +71,8 @@ export interface GetTransactionsCountParams {
   minHeight?: number | null;
   /** Filter by whether the transaction has a token ID (NFT transactions) */
   hasTokenId?: boolean | null;
+  /** Filter by coinbase */
+  isCoinbase?: boolean | null;
 }
 
 /**

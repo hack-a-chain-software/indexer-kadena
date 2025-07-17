@@ -92,6 +92,7 @@ describe('markCanonicalTip', () => {
       epoch: new Date(),
       flags: '1',
       neighbors: [],
+      coinbase: '{}',
     };
     const blockB: BlockOutput = {
       ...blockA,
@@ -181,6 +182,7 @@ describe('markCanonicalTip', () => {
       epoch: new Date(),
       flags: '1',
       neighbors: [],
+      coinbase: '{}',
     };
 
     // Main chain
@@ -391,6 +393,7 @@ describe('markCanonicalTip', () => {
       epoch: new Date(),
       flags: '1',
       neighbors: [],
+      coinbase: '{}',
     };
 
     const blockB: BlockOutput = {
