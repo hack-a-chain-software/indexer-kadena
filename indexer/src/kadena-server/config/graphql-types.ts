@@ -1200,7 +1200,7 @@ export type TransactionMeta = {
   chainId: Scalars['BigInt']['output'];
   creationTime: Scalars['DateTime']['output'];
   gasLimit: Scalars['BigInt']['output'];
-  gasPrice: Scalars['Float']['output'];
+  gasPrice: Scalars['String']['output'];
   sender: Scalars['String']['output'];
   ttl: Scalars['BigInt']['output'];
 };
@@ -3226,7 +3226,7 @@ export type TransactionMetaResolvers<
   chainId?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   creationTime?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   gasLimit?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
-  gasPrice?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  gasPrice?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   sender?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   ttl?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

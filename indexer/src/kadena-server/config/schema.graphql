@@ -791,7 +791,7 @@ type TransactionMeta {
   chainId: BigInt!
   creationTime: DateTime!
   gasLimit: BigInt!
-  gasPrice: Float!
+  gasPrice: String!
   sender: String!
   ttl: BigInt!
 }

@@ -18,7 +18,6 @@
 import { Model, DataTypes, Optional } from 'sequelize';
 import { sequelize } from '../config/database';
 import Contract from './contract';
-import { gql, makeExtendSchemaPlugin } from 'postgraphile';
 
 /**
  * Interface defining the attributes of a Balance.
@@ -217,105 +216,6 @@ Balance.init(
 Balance.belongsTo(Contract, {
   foreignKey: 'contractId',
   as: 'contract',
-});
-
-/**
- * GraphQL extension plugin for querying token holders.
- *
- * This plugin extends the GraphQL schema to provide a specialized endpoint
- * for retrieving token holder information for a specific module/contract.
- * It includes pagination support for handling large token holder lists
- * efficiently and provides calculated percentage ownership statistics.
- *
- * The resolver calls a database function that optimizes holder calculations
- * and pagination for better performance.
- *
- * The makeExtendSchemaPlugin function is a PostGraphile utility that:
- * 1. Allows extending the auto-generated GraphQL schema with custom queries and types
- * 2. Provides type safety and integration with PostGraphile's plugin system
- * 3. Maintains compatibility with PostGraphile's existing resolvers and connections
- * 4. Enables custom database access patterns while preserving GraphQL conventions
- *
- * In this implementation, it creates:
- * - A 'getHolders' query that accepts pagination parameters and a moduleName
- * - Custom types for the response structure following Relay connection specifications
- * - A resolver that calls a specialized database function for optimal performance
- */
-export const getHoldersPlugin = makeExtendSchemaPlugin(build => {
-  return {
-    typeDefs: gql`
-      extend type Query {
-        getHolders(
-          moduleName: String!
-          before: String
-          after: String
-          first: Int
-          last: Int
-        ): HolderResponse
-      }
-
-      type HolderResponse {
-        edges: [HolderEdge]
-        pageInfo: PageInfo
-        totalCount: Int
-      }
-
-      type HolderEdge {
-        cursor: String
-        node: HolderNode
-      }
-
-      type HolderNode {
-        address: String
-        quantity: Float
-        percentage: Float
-      }
-    `,
-    resolvers: {
-      Query: {
-        getHolders: async (_query, args, context, _resolveInfo) => {
-          const { moduleName, before, after, first, last } = args;
-          const { rootPgPool } = context;
-
-          // Call the specialized database function with cursor-based pagination parameters
-          const { rows } = await rootPgPool.query(
-            `SELECT * FROM get_holders_by_module($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::INT, $5::INT)`,
-            [moduleName, before, after, first, last],
-          );
-
-          // Transform the database results into Relay-compatible connection format
-          const holders = rows.map((row: any) => ({
-            cursor: Buffer.from(row.row_id.toString()).toString('base64'),
-            node: {
-              address: row.address,
-              quantity: row.quantity,
-              percentage: row.percentage,
-            },
-          }));
-
-          // Calculate pagination metadata based on results
-          const hasNextPage = first ? holders.length === first : false;
-          const hasPreviousPage = last ? holders.length === last : !!after;
-
-          const endCursor = hasNextPage ? holders[holders.length - 1].cursor : null;
-          const startCursor = holders.length > 0 ? holders[0].cursor : null;
-          const totalCount = holders.length;
-
-          // Return a properly structured Relay connection response
-          return {
-            edges: holders,
-            pageInfo: {
-              endCursor,
-              hasNextPage,
-              hasPreviousPage,
-              startCursor,
-            },
-            totalCount,
-          };
-        },
-      },
-    },
-  };
 });
 
 export default Balance;
