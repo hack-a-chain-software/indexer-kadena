@@ -48,7 +48,7 @@ func FetchPayloadsWithHeaders(network string, chainId int, Hash string, minHeigh
 		Items []BlockInfo `json:"items"`
 	}
 
-	startTime := time.Now()
+	// startTime := time.Now()
 	env := config.GetConfig()
 	endpoint := fmt.Sprintf("%s/%s/chain/%d/block/branch?minheight=%d&maxheight=%d", env.SyncBaseUrl, network, chainId, minHeight, maxHeight)
 
@@ -118,7 +118,7 @@ func FetchPayloadsWithHeaders(network string, chainId int, Hash string, minHeigh
 			continue
 		}
 
-		log.Printf("Fetched payloads in %fs\n", time.Since(startTime).Seconds())
+		// log.Printf("Fetched payloads in %fs\n", time.Since(startTime).Seconds())
 		return payload.Items, nil
 	}
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 )
 
 type Event struct {
@@ -68,7 +67,7 @@ type TransactionPart1 struct {
 }
 
 func ProcessPayloads(blocks []BlockInfo) ([]ProcessedPayload, error) {
-	startTime := time.Now()
+	// startTime := time.Now()
 	var processedPayloads []ProcessedPayload
 
 	for _, block := range blocks {
@@ -133,7 +132,7 @@ func ProcessPayloads(blocks []BlockInfo) ([]ProcessedPayload, error) {
 		processedPayloads = append(processedPayloads, processedPayload)
 	}
 
-	log.Printf("Processed payloads in %fs\n", time.Since(startTime).Seconds())
+	// log.Printf("Processed payloads in %fs\n", time.Since(startTime).Seconds())
 	return processedPayloads, nil
 }
 
