@@ -1,0 +1,42 @@
+FROM postgres:17
+
+# Install pgBackRest and dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        pgbackrest \
+        openssh-client \
+        gettext-base \
+        ssh \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create folders for pgBackRest and adjust permissions
+RUN mkdir -p /tmp/pgbackrest /var/log/pgbackrest && \
+    chown postgres:postgres /tmp/pgbackrest /var/log/pgbackrest && \
+    chmod 700 /tmp/pgbackrest /var/log/pgbackrest
+
+# Add the pgbackrest configuration file
+COPY pgbackrest.conf.generated /etc/pgbackrest.conf
+RUN chown postgres:postgres /etc/pgbackrest.conf && \
+    chmod 600 /etc/pgbackrest.conf
+
+# Create the .ssh folder and copy the SSH keys
+RUN mkdir -p /var/lib/postgresql/.ssh
+COPY id_ed25519 /var/lib/postgresql/.ssh/id_ed25519
+COPY id_ed25519.pub /var/lib/postgresql/.ssh/id_ed25519.pub
+
+# Adjust permissions for the SSH keys
+RUN chown -R postgres:postgres /var/lib/postgresql/.ssh && \
+    chmod 700 /var/lib/postgresql/.ssh && \
+    chmod 600 /var/lib/postgresql/.ssh/id_ed25519 && \
+    chmod 644 /var/lib/postgresql/.ssh/id_ed25519.pub
+
+# Copy the custom initialization script
+COPY script.sh.generated /script.sh
+RUN chmod +x /script.sh
+
+# Expose the default PostgreSQL port
+EXPOSE 5432
+EXPOSE 5433
+
+# Default CMD to keep container alive and interactive
+CMD ["bash"]
