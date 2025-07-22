@@ -616,7 +616,7 @@ export default class BlockDbRepository implements BlockRepository {
     );
 
     if (blockRows.length !== hashes.length) {
-      throw new Error('There was an issue fetching blocks for transaction IDs.');
+      return [];
     }
 
     const blockMap = blockRows.reduce(
