@@ -44,13 +44,6 @@ export default class TransactionQueryBuilder {
       blocksConditions += `${op} b.hash = $${blockParams.length}`;
     }
 
-    // Add chain ID condition if specified
-    if (chainId) {
-      blockParams.push(chainId);
-      const op = this.operator(blockParams.length);
-      blocksConditions += `${op} b."chainId" = $${blockParams.length}`;
-    }
-
     // Add maximum height condition if specified
     if (maxHeight) {
       blockParams.push(maxHeight);
@@ -63,6 +56,20 @@ export default class TransactionQueryBuilder {
       blockParams.push(minHeight);
       const op = this.operator(blockParams.length);
       blocksConditions += `${op} b."height" >= $${blockParams.length}`;
+    }
+
+    // Add chain ID condition if specified
+    if (chainId) {
+      blockParams.push(chainId);
+      const op = this.operator(blockParams.length);
+      blocksConditions += `${op} b."chainId" = $${blockParams.length}`;
+    }
+
+    // Force query to retrieve a smaller set of blocks since only using chainId doesn't filter many rows
+    if (chainId && !params.after && !params.before && !minHeight && !maxHeight) {
+      blockParams.push(chainId);
+      const op = this.operator(blockParams.length);
+      blocksConditions += `${op} b."chainId" = $${blockParams.length} AND b."height" > 5980000`;
     }
 
     return { blocksConditions, blockParams };
@@ -300,11 +307,16 @@ export default class TransactionQueryBuilder {
     let whereCondition = '';
     let queryParams: (string | number)[] = [params.limit];
 
-    if (!params.after && !params.before) {
+    if (!params.after && !params.before && params.order === 'DESC') {
       const currentTime = Date.now() - 10000000;
       queryParams.push(currentTime, 0);
       whereCondition = ` WHERE t.creationtime > $2 AND t.id > $3`;
     }
+
+    if (!params.after && !params.before && params.order === 'ASC') {
+      whereCondition = ` WHERE t.creationtime < '1578000000'`;
+    }
+
     if (params.after) {
       const [creationTime, id] = params.after.split(':');
       queryParams.push(creationTime, id);
@@ -346,6 +358,7 @@ export default class TransactionQueryBuilder {
       ORDER BY t.creationtime ${params.order}, t.id ${params.order}
       LIMIT $1
     `;
+
     return { query, queryParams };
   }
 }
