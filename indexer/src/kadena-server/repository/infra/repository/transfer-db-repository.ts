@@ -353,13 +353,13 @@ export default class TransferDbRepository implements TransferRepository {
     if (chainId) {
       queryParams.push(chainId);
       const op = localOperator(queryParams.length);
-      conditions += `${op} trans."chainId" = $${queryParams.length}`;
+      conditions += `${op} b."chainId" = $${queryParams.length}`;
     }
 
     if (transactionId) {
       queryParams.push(transactionId);
       const op = localOperator(queryParams.length);
-      conditions += `${op} trans.id = $${queryParams.length}`;
+      conditions += `${op} t.id = $${queryParams.length}`;
     }
 
     if (fungibleName) {
