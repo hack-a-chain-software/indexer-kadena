@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"go-backfill/fetch"
 	"go-backfill/repository"
-	"log"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -28,7 +26,7 @@ type DataSizeTracker struct {
 }
 
 func savePayloads(network string, chainId int, processedPayloads []fetch.ProcessedPayload, pool *pgxpool.Pool) (Counters, DataSizeTracker, error) {
-	startTime := time.Now()
+	// startTime := time.Now()
 
 	counters := Counters{
 		Transactions: 0,
@@ -155,13 +153,13 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		counters.Signers += len(signers)
 	}
 
-	log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
+	// log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
 
-	commitStartTime := time.Now()
+	// commitStartTime := time.Now()
 	if err := tx.Commit(context.Background()); err != nil {
 		return Counters{}, DataSizeTracker{}, fmt.Errorf("committing transaction: %w", err)
 	}
-	log.Printf("DB commit took %fs\n", time.Since(commitStartTime).Seconds())
+	// log.Printf("DB commit took %fs\n", time.Since(commitStartTime).Seconds())
 
 	dataSizeTracker.TransactionsKB /= 1024
 	dataSizeTracker.EventsKB /= 1024

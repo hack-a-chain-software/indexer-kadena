@@ -40,7 +40,7 @@ func StartBackfill(LastHeight int, Hash string, ChainId int, SyncMinHeight int, 
 			log.Fatalf("Error processing payloads for chain %d, height %d to %d: %v\n", ChainId, nextHeight, CurrentHeight, err)
 		}
 
-		counters, dataSizeTracker, err := savePayloads(network, ChainId, processedPayloads, db)
+		_, _, err = savePayloads(network, ChainId, processedPayloads, db)
 		if err != nil {
 			log.Fatalf("Error saving payloads for chain %d, height %d to %d -> %v\n", ChainId, nextHeight, CurrentHeight, err)
 		}
@@ -58,12 +58,12 @@ func StartBackfill(LastHeight int, Hash string, ChainId int, SyncMinHeight int, 
 
 		// Log progress and stats
 		log.Printf("(%.2f%%) Processed chain %d in %fs\n", progress, ChainId, duration.Seconds())
-		log.Printf("Counters: %d transactions, %d transfers, %d events, %d signers\n", counters.Transactions, counters.Transfers, counters.Events, counters.Signers)
-		log.Printf("Transactions: %d KB, Transfers: %d KB, Events: %d KB, Signers: %d KB\n", dataSizeTracker.TransactionsKB, dataSizeTracker.TransfersKB, dataSizeTracker.EventsKB, dataSizeTracker.SignersKB)
+		// log.Printf("Counters: %d transactions, %d transfers, %d events, %d signers\n", counters.Transactions, counters.Transfers, counters.Events, counters.Signers)
+		// log.Printf("Transactions: %d KB, Transfers: %d KB, Events: %d KB, Signers: %d KB\n", dataSizeTracker.TransactionsKB, dataSizeTracker.TransfersKB, dataSizeTracker.EventsKB, dataSizeTracker.SignersKB)
 
 		// Update average time
 		AverageTime = (AverageTime + duration.Seconds()) / 2
-		log.Printf("Average time: %f\n", AverageTime)
+		// log.Printf("Average time: %f\n", AverageTime)
 	}
 
 	log.Printf("Backfill process completed for chain %d.\n", ChainId)
