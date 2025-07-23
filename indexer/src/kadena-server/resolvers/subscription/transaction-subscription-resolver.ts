@@ -22,16 +22,22 @@ import { buildTransactionOutput } from '../output/build-transaction-output';
  * The function terminates after yielding the first result, effectively providing
  * a one-time notification when the transaction is added to the blockchain.
  *
- * @param requestKey - The unique request key of the transaction to monitor
  * @param context - Resolver context containing repositories and control signals
+ * @param requestKey - The unique request key of the transaction to monitor
  * @param chainId - Optional chain ID to filter transactions by specific chain
  * @returns AsyncGenerator that yields the transaction when found
  */
-async function* iteratorFn(
-  requestKey: string,
-  context: ResolverContext,
-  chainId?: string | null,
-): AsyncGenerator<TransactionOutput | undefined, void, unknown> {
+interface IteratorFnParams {
+  context: ResolverContext;
+  requestKey: string;
+  chainId?: string | null;
+}
+
+async function* iteratorFn({
+  requestKey,
+  context,
+  chainId,
+}: IteratorFnParams): AsyncGenerator<TransactionOutput | undefined, void, unknown> {
   while (context.signal) {
     const { edges } = await context.transactionRepository.getTransactions({
       requestKey,
@@ -66,8 +72,12 @@ async function* iteratorFn(
  */
 export const transactionSubscriptionResolver: SubscriptionResolvers<ResolverContext>['transaction'] =
   {
-    subscribe: (_root, args, context) => {
-      return iteratorFn(args.requestKey, context, args.chainId);
-    },
     resolve: (payload: any) => payload,
+    subscribe: (_root, args, context) => {
+      return iteratorFn({
+        context,
+        requestKey: args.requestKey,
+        chainId: args.chainId,
+      });
+    },
   };

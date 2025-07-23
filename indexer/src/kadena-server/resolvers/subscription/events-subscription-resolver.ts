@@ -26,21 +26,37 @@ import { buildEventOutput } from '../output/build-event-output';
  *
  * @param context - Resolver context containing repositories and control signals
  * @param qualifiedEventName - The qualified name of events to monitor (module.name format)
+ * @param quantity - The number of events to fetch per poll
  * @param chainId - Optional chain ID to filter events by specific chain
  * @param minimumDepth - Optional minimum confirmation depth for events
  * @returns AsyncGenerator that yields arrays of new events as they are discovered
  */
-async function* iteratorFn(
-  context: ResolverContext,
-  qualifiedEventName: string,
-  chainId?: string | null,
-  minimumDepth?: number | null,
-): AsyncGenerator<EventOutput[] | undefined, void, unknown> {
+
+interface IteratorFnParams {
+  context: ResolverContext;
+  qualifiedEventName: string;
+  quantity: number;
+  chainId?: string | null;
+  minimumDepth?: number | null;
+}
+
+async function* iteratorFn({
+  context,
+  qualifiedEventName,
+  quantity,
+  chainId,
+  minimumDepth,
+}: IteratorFnParams): AsyncGenerator<EventOutput[] | undefined, void, unknown> {
+  if (quantity > 100) {
+    throw new Error('[ERROR][SUBSCRIPTION][PARAMS] Quantity must be less than 100.');
+  }
+
   let lastEventId = await context.eventRepository.getLastEventId();
   while (context.signal) {
     const newEvents = await context.eventRepository.getLastEvents({
       qualifiedEventName,
       lastEventId,
+      quantity,
       chainId,
       minimumDepth,
     });
@@ -65,8 +81,14 @@ async function* iteratorFn(
  * for chain ID and minimum confirmation depth.
  */
 export const eventsSubscriptionResolver: SubscriptionResolvers<ResolverContext>['events'] = {
-  subscribe: (__root, args, context) => {
-    return iteratorFn(context, args.qualifiedEventName, args.chainId, args.minimumDepth);
-  },
   resolve: (payload: any) => payload,
+  subscribe: (__root, args, context) => {
+    return iteratorFn({
+      context,
+      qualifiedEventName: args.qualifiedEventName,
+      quantity: args.quantity,
+      chainId: args.chainId,
+      minimumDepth: args.minimumDepth,
+    });
+  },
 };

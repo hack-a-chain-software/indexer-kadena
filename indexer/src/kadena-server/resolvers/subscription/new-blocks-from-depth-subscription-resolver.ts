@@ -11,16 +11,45 @@ import { ResolverContext } from '../../config/apollo-server-config';
 import { SubscriptionResolvers } from '../../config/graphql-types';
 import { BlockOutput } from '../../repository/application/block-repository';
 
-async function* iteratorFn(
-  chainIds: string[],
-  minimumDepth: number,
-  context: ResolverContext,
-): AsyncGenerator<BlockOutput[], void, unknown> {
+/**
+ * AsyncGenerator function that continuously polls for new blocks
+ *
+ * This function creates a polling loop that checks for new blocks at regular intervals.
+ * It keeps track of the last seen block ID to avoid sending duplicate blocks, and uses
+ * a starting timestamp to limit results to blocks created after the subscription started.
+ *
+ * The function maintains its state between iterations, allowing it to effectively paginate
+ * through new blocks as they are created on the blockchain.
+ * Interface for the parameters of the iterator function
+ * @param context - The context of the resolver
+ * @param chainIds - The chain IDs to filter the blocks by
+ * @param quantity - The number of blocks to fetch per poll
+ * @param minimumDepth - The minimum depth of the blocks to fetch
+ * @returns AsyncGenerator that yields arrays of new blocks as they are discovered
+ */
+interface IteratorFnParams {
+  context: ResolverContext;
+  chainIds: string[];
+  quantity: number;
+  minimumDepth: number;
+}
+
+async function* iteratorFn({
+  context,
+  chainIds,
+  quantity,
+  minimumDepth,
+}: IteratorFnParams): AsyncGenerator<BlockOutput[], void, unknown> {
+  if (quantity > 100) {
+    throw new Error('[ERROR][SUBSCRIPTION][PARAMS] Quantity must be less than 100.');
+  }
+
   const startingTimestamp = new Date().getTime() / 1000000;
   const blockResult = await context.blockRepository.getLastBlocksWithDepth(
     chainIds,
     minimumDepth,
     startingTimestamp,
+    quantity,
   );
 
   let lastBlockId: string | undefined;
@@ -35,6 +64,7 @@ async function* iteratorFn(
       chainIds,
       minimumDepth,
       startingTimestamp,
+      quantity,
       lastBlockId,
     );
 
@@ -66,6 +96,11 @@ export const newBlocksFromDepthSubscriptionResolver: SubscriptionResolvers<Resol
   {
     resolve: (payload: any) => payload,
     subscribe: (_root, args, context) => {
-      return iteratorFn(args.chainIds ?? [], args.minimumDepth, context);
+      return iteratorFn({
+        context,
+        chainIds: args.chainIds ?? [],
+        quantity: args.quantity,
+        minimumDepth: args.minimumDepth,
+      });
     },
   };

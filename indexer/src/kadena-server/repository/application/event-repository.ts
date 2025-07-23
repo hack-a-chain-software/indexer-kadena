@@ -36,6 +36,7 @@ export interface GetEventParams {
 
 export interface GetLastEventsParams {
   qualifiedEventName: string;
+  quantity: number;
   lastEventId?: number;
   chainId?: string | null;
   minimumDepth?: number | null;
