@@ -22,6 +22,21 @@ const DB_CONNECTION = `postgres://${DB_USERNAME}:${encodeURIComponent(DB_PASSWOR
 // Determine if SSL is enabled for database connections
 const isSslEnabled = DB_SSL_ENABLED === 'true';
 
+// Determine if the server's certificate should be validated against the local CA bundle.
+// Defaults to true (most secure). This is only overridden if SSL is enabled AND the
+// DB_SSL_REJECT_UNAUTHORIZED variable is explicitly set.
+let rejectUnauthorized = true;
+
+if (isSslEnabled) {
+  try {
+    // getRequiredEnvString throws if the env var is not present. We catch this to make it optional.
+    const rejectUnauthorizedEnv = getRequiredEnvString('DB_SSL_REJECT_UNAUTHORIZED');
+    rejectUnauthorized = rejectUnauthorizedEnv !== 'false';
+  } catch (error) {
+    // The env var is not set; we'll proceed with the default of rejectUnauthorized = true.
+  }
+}
+
 /**
  * PostgreSQL connection pool for direct query execution.
  * This provides a lower-level database access mechanism than Sequelize.
@@ -35,8 +50,11 @@ export const rootPgPool = new Pool({
   connectionString: DB_CONNECTION,
   ...(isSslEnabled && {
     ssl: {
-      rejectUnauthorized: true,
-      ca: fs.readFileSync(__dirname + '/global-bundle.pem').toString(),
+      rejectUnauthorized: rejectUnauthorized,
+      // Only include the CA if we are validating the certificate
+      ...(rejectUnauthorized && {
+        ca: fs.readFileSync(__dirname + '/global-bundle.pem').toString(),
+      }),
     },
   }),
 });
@@ -75,8 +93,11 @@ export const sequelize = new Sequelize(
       dialectOptions: {
         ssl: {
           require: true,
-          rejectUnauthorized: true,
-          ca: fs.readFileSync(__dirname + '/global-bundle.pem').toString(),
+          rejectUnauthorized: rejectUnauthorized,
+          // Only include the CA if we are validating the certificate
+          ...(rejectUnauthorized && {
+            ca: fs.readFileSync(__dirname + '/global-bundle.pem').toString(),
+          }),
         },
       },
     }),

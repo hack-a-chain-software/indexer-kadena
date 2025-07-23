@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go-backfill/fetch"
 	"log"
+	"math/big"
 	"strconv"
 )
 
@@ -58,22 +59,31 @@ func (g *TtlString) UnmarshalJSON(data []byte) error {
 
 type GasPriceString string
 
+// UnmarshalJSON handles parsing the gas price from either a number (e.g., 0.0000001 or 1e-7)
+// or a string (e.g., "0.0000001") into a standardized, fixed-point decimal string.
 func (g *GasPriceString) UnmarshalJSON(data []byte) error {
-	// Try to unmarshal as a float
-	var floatValue float64
-	if err := json.Unmarshal(data, &floatValue); err == nil {
-		*g = GasPriceString(fmt.Sprintf("%g", floatValue)) // Convert float64 to string
-		return nil
+	var valStr string
+
+	// Attempt to unmarshal as a string first to correctly handle quoted values.
+	// If the value in JSON is "1e-7", valStr will become "1e-7".
+	if err := json.Unmarshal(data, &valStr); err != nil {
+		// If it's not a JSON string, it must be a raw number (e.g., 1e-7).
+		// We use its raw byte representation as the string.
+		valStr = string(data)
 	}
 
-	// Try to unmarshal as a string
-	var stringValue string
-	if err := json.Unmarshal(data, &stringValue); err == nil {
-		*g = GasPriceString(stringValue)
-		return nil
+	// Use big.Float for arbitrary-precision parsing. This avoids float64 precision loss.
+	// We use a high precision (256 bits) to handle any value.
+	f, _, err := big.ParseFloat(valStr, 10, 256, big.ToNearestEven)
+	if err != nil {
+		return fmt.Errorf("could not parse gas price '%s' to big.Float: %w", valStr, err)
 	}
 
-	return fmt.Errorf("data is neither float64 nor string: %s", string(data))
+	// Format the big.Float into a fixed-point string ('f').
+	// A precision of -1 formats with the minimum number of digits required.
+	// This correctly converts "1e-7" to "0.0000001".
+	*g = GasPriceString(f.Text('f', -1))
+	return nil
 }
 
 type GasLimit string
@@ -161,7 +171,7 @@ func buildModuleName(namespace *string, name string) string {
 	return name
 }
 
-func max(a, b int) int {
+func Max(a, b int) int {
 	if a > b {
 		return a
 	}

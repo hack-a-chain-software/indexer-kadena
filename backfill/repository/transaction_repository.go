@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -119,8 +120,7 @@ func SaveTransactionDetails(db pgx.Tx, details []TransactionDetailsAttributes, t
 		return nil
 	}
 
-	query := `
-		INSERT INTO "TransactionDetails" (
+	query := `INSERT INTO "TransactionDetails" (
 			"transactionId", code, continuation, data, gas, gaslimit, gasprice,
 			nonce, pactid, proof, rollback, sigs, step, ttl, "createdAt", "updatedAt"
 		)
@@ -131,6 +131,10 @@ func SaveTransactionDetails(db pgx.Tx, details []TransactionDetailsAttributes, t
 	batch := &pgx.Batch{}
 
 	for index := 0; index < len(details); index++ {
+		// Sanitize data before marshalling to prevent "unsupported Unicode escape sequence" errors.
+		// PostgreSQL's JSONB type does not support null characters (\u0000), so we remove them.
+		details[index].Data = bytes.ReplaceAll(details[index].Data, []byte(`\u0000`), []byte{})
+
 		detail := details[index]
 		code, err := json.Marshal(detail.Code)
 		if err != nil {
@@ -179,7 +183,9 @@ func SaveTransactionDetails(db pgx.Tx, details []TransactionDetailsAttributes, t
 	// Execute all queued queries
 	for i := 0; i < len(details); i++ {
 		if _, err := br.Exec(); err != nil {
-			return fmt.Errorf("failed to execute batch for transaction details %d: %v", i, err)
+			failedDetail := details[i]
+			failedData, _ := json.MarshalIndent(failedDetail, "", "  ")
+			return fmt.Errorf("failed to execute batch for transaction details %d: %v\nFailing data:\n%s", i, err, string(failedData))
 		}
 	}
 

@@ -30,7 +30,9 @@ export type Scalars = {
 /** A unit of information that stores a set of verified transactions. */
 export type Block = Node & {
   __typename?: 'Block';
+  canonical: Scalars['Boolean']['output'];
   chainId: Scalars['BigInt']['output'];
+  coinbase: Scalars['String']['output'];
   creationTime: Scalars['DateTime']['output'];
   /** The difficulty of the block. */
   difficulty: Scalars['BigInt']['output'];
@@ -728,7 +730,7 @@ export type Query = {
   transaction?: Maybe<Transaction>;
   /**
    * Retrieve transactions. Default page size is 20.
-   *  At least one of accountName, fungibleName, blockHash, or requestKey must be provided.
+   * At least one of accountName, fungibleName, blockHash, or requestKey must be provided.
    */
   transactions: QueryTransactionsConnection;
   /** Retrieve all transactions by a given public key. */
@@ -912,6 +914,7 @@ export type QueryTransactionsArgs = {
   chainId?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   fungibleName?: InputMaybe<Scalars['String']['input']>;
+  isCoinbase?: InputMaybe<Scalars['Boolean']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
   maxHeight?: InputMaybe<Scalars['Int']['input']>;
   minHeight?: InputMaybe<Scalars['Int']['input']>;
@@ -1091,6 +1094,8 @@ export type Subscription = {
   newBlocksFromDepth?: Maybe<Array<Block>>;
   /** Listen for a transaction by request key. */
   transaction?: Maybe<Transaction>;
+  /** Listen for transactions by chain ID and minimum confirmation depth. */
+  transactions?: Maybe<Array<Transaction>>;
 };
 
 export type SubscriptionEventsArgs = {
@@ -1112,6 +1117,10 @@ export type SubscriptionNewBlocksFromDepthArgs = {
 export type SubscriptionTransactionArgs = {
   chainId?: InputMaybe<Scalars['String']['input']>;
   requestKey: Scalars['String']['input'];
+};
+
+export type SubscriptionTransactionsArgs = {
+  quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
 /** Time frame for chart data */
@@ -1191,7 +1200,7 @@ export type TransactionMeta = {
   chainId: Scalars['BigInt']['output'];
   creationTime: Scalars['DateTime']['output'];
   gasLimit: Scalars['BigInt']['output'];
-  gasPrice: Scalars['Float']['output'];
+  gasPrice: Scalars['String']['output'];
   sender: Scalars['String']['output'];
   ttl: Scalars['BigInt']['output'];
 };
@@ -1976,7 +1985,9 @@ export type BlockResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Block'] = ResolversParentTypes['Block'],
 > = {
+  canonical?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   chainId?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  coinbase?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   creationTime?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   difficulty?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   epoch?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
@@ -3113,6 +3124,13 @@ export type SubscriptionResolvers<
     ContextType,
     RequireFields<SubscriptionTransactionArgs, 'requestKey'>
   >;
+  transactions?: SubscriptionResolver<
+    Maybe<Array<ResolversTypes['Transaction']>>,
+    'transactions',
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionTransactionsArgs, 'quantity'>
+  >;
 };
 
 export type TokenResolvers<
@@ -3208,7 +3226,7 @@ export type TransactionMetaResolvers<
   chainId?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   creationTime?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   gasLimit?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
-  gasPrice?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  gasPrice?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   sender?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   ttl?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

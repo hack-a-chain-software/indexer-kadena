@@ -56,15 +56,8 @@ export const transactionsQueryResolver: QueryResolvers<ResolverContext>['transac
     maxHeight,
     minHeight,
     minimumDepth,
+    isCoinbase = false,
   } = args;
-
-  // Business rule: At least one filtering parameter must be provided
-  // This prevents overly broad queries that could impact performance
-  if (!accountName && !fungibleName && !blockHash && !requestKey) {
-    throw new Error(
-      '[ERROR][QUERY][BIZ_FLOW] At least one of accountName, fungibleName, blockHash, or requestKey must be provided',
-    );
-  }
 
   // Call the repository layer to retrieve the filtered and paginated transactions
   // Pass all parameters through to maintain complete filtering flexibility
@@ -77,6 +70,7 @@ export const transactionsQueryResolver: QueryResolvers<ResolverContext>['transac
     maxHeight,
     minHeight,
     minimumDepth,
+    isCoinbase,
     first,
     last,
     before,
@@ -108,6 +102,7 @@ export const transactionsQueryResolver: QueryResolvers<ResolverContext>['transac
     maxHeight,
     minHeight,
     minimumDepth,
+    isCoinbase,
     fungibleName,
     requestKey,
   };

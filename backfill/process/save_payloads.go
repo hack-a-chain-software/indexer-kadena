@@ -16,6 +16,7 @@ type Counters struct {
 	Events       int
 	Transfers    int
 	Signers      int
+	Balances     int
 }
 
 type DataSizeTracker struct {
@@ -23,6 +24,7 @@ type DataSizeTracker struct {
 	EventsKB       int
 	TransfersKB    int
 	SignersKB      int
+	BalancesKB     int
 }
 
 func savePayloads(network string, chainId int, processedPayloads []fetch.ProcessedPayload, pool *pgxpool.Pool) (Counters, DataSizeTracker, error) {
@@ -33,6 +35,7 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		Events:       0,
 		Transfers:    0,
 		Signers:      0,
+		Balances:     0,
 	}
 
 	dataSizeTracker := DataSizeTracker{
@@ -40,6 +43,7 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		EventsKB:       0,
 		TransfersKB:    0,
 		SignersKB:      0,
+		BalancesKB:     0,
 	}
 
 	conn, err := pool.Acquire(context.Background())
@@ -72,17 +76,17 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		var currBlock = blocks[index]
 		txs, txDetails, txCoinbase, err := PrepareTransactions(network, blockId, processedPayload, currBlock)
 		if err != nil {
-			return Counters{}, DataSizeTracker{}, fmt.Errorf("saving transactions -> %w", err)
+			return Counters{}, DataSizeTracker{}, fmt.Errorf("preparing transactions for block %d -> %w", currBlock.Height, err)
 		}
 
 		transactionIds, err := repository.SaveTransactions(tx, txs, txCoinbase)
 		if err != nil {
-			return Counters{}, DataSizeTracker{}, fmt.Errorf("saving transactions -> %w", err)
+			return Counters{}, DataSizeTracker{}, fmt.Errorf("saving transactions for block %d -> %w", currBlock.Height, err)
 		}
 
 		err = repository.SaveTransactionDetails(tx, txDetails, transactionIds)
 		if err != nil {
-			return Counters{}, DataSizeTracker{}, fmt.Errorf("saving transactions -> %w", err)
+			return Counters{}, DataSizeTracker{}, fmt.Errorf("saving transaction details for block %d -> %w", currBlock.Height, err)
 		}
 
 		txsSize := approximateSize(txs)
@@ -100,6 +104,18 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 			return Counters{}, DataSizeTracker{}, fmt.Errorf("saving events -> %w", err)
 		}
 
+		balances, err := PrepareNonFungibleBalancesData(events)
+		if err != nil {
+			return Counters{}, DataSizeTracker{}, fmt.Errorf("preparing non fungible balances -> %w", err)
+		}
+		if err := repository.SaveBalancesToDatabase(balances, tx); err != nil {
+			return Counters{}, DataSizeTracker{}, fmt.Errorf("saving non fungible balances: %w", err)
+		}
+
+		balancesSize := approximateSize(balances)
+		dataSizeTracker.BalancesKB += balancesSize
+		counters.Balances += len(balances)
+
 		size := approximateSize(events)
 		dataSizeTracker.EventsKB += size
 		counters.Events += len(events)
@@ -113,6 +129,15 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		if err := repository.SaveTransfersToDatabase(transfers, tx); err != nil {
 			return Counters{}, DataSizeTracker{}, fmt.Errorf("saving transfers: %w", err)
 		}
+
+		balances := PrepareFungibleBalancesData(transfers)
+		if err := repository.SaveBalancesToDatabase(balances, tx); err != nil {
+			return Counters{}, DataSizeTracker{}, fmt.Errorf("saving fungible balances: %w", err)
+		}
+
+		balancesSize := approximateSize(balances)
+		dataSizeTracker.BalancesKB += balancesSize
+		counters.Balances += len(balances)
 
 		size := approximateSize(transfers)
 		dataSizeTracker.TransfersKB += size
@@ -130,29 +155,19 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		counters.Signers += len(signers)
 	}
 
-	// for _, processedPayload := range processedPayloads {
-	// 	guards, err := PrepareGuards(processedPayload)
-	// 	if err != nil {
-	// 		return Counters{}, DataSizeTracker{}, fmt.Errorf("preparing guards -> %w", err)
-	// 	}
-	// 	if err := repository.SaveGuardsToDatabase(guards, tx); err != nil {
-	// 		return Counters{}, DataSizeTracker{}, fmt.Errorf("saving guards -> %w", err)
-	// 	}
+	log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
 
-	// 	size := approximateSize(guards)
-	// 	dataSizeTracker.GuardsKB += size
-	// 	counters.Guards += len(guards)
-	// }
-
+	commitStartTime := time.Now()
 	if err := tx.Commit(context.Background()); err != nil {
 		return Counters{}, DataSizeTracker{}, fmt.Errorf("committing transaction: %w", err)
 	}
+	log.Printf("DB commit took %fs\n", time.Since(commitStartTime).Seconds())
 
 	dataSizeTracker.TransactionsKB /= 1024
 	dataSizeTracker.EventsKB /= 1024
 	dataSizeTracker.TransfersKB /= 1024
 	dataSizeTracker.SignersKB /= 1024
+	dataSizeTracker.BalancesKB /= 1024
 
-	log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
 	return counters, dataSizeTracker, nil
 }

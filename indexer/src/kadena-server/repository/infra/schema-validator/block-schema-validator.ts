@@ -40,6 +40,8 @@ const schema = zod.object({
   target: zod.string(),
   adjacents: zod.record(zod.any()),
   parent: zod.string(),
+  coinbase: zod.any(),
+  canonical: zod.boolean().nullable(),
 });
 
 /**
@@ -74,20 +76,24 @@ const getBase64ID = (hash: string): string => {
  */
 const validate = (row: any): BlockOutput => {
   const res = schema.parse(row);
+  const isCanonicalNull = res.canonical === null;
+  const canonicalValue = res.canonical ?? false;
   return {
     id: getBase64ID(res.hash),
     parentHash: res.parent,
     creationTime: convertStringToDate(res.creationTime),
     epoch: convertStringToDate(res.epochStart),
     flags: int64ToUint64String(res.featureFlags),
-    powHash: '...', // TODO (STREAMING)
+    powHash: '',
     hash: res.hash,
     height: res.height,
     nonce: res.nonce,
     payloadHash: res.payloadHash,
     target: res.target,
+    coinbase: JSON.stringify(res.coinbase),
     weight: res.weight,
     chainId: res.chainId,
+    canonical: isCanonicalNull ? true : canonicalValue,
     difficulty: Number(calculateBlockDifficulty(res.target)),
     neighbors: Object.entries(res.adjacents).map(([chainId, hash]) => ({
       chainId,
@@ -108,13 +114,16 @@ const validate = (row: any): BlockOutput => {
  * @returns A transformed BlockOutput object
  */
 const mapFromSequelize = (blockModel: BlockAttributes): BlockOutput => {
+  const isCanonicalNull = blockModel.canonical === null;
+  const canonicalValue = blockModel.canonical ?? false;
   return {
     id: getBase64ID(blockModel.hash),
     hash: blockModel.hash,
     parentHash: blockModel.parent,
     chainId: blockModel.chainId,
+    canonical: isCanonicalNull ? true : canonicalValue,
     creationTime: convertStringToDate(blockModel.creationTime),
-    powHash: '...', // TODO (STREAMING)
+    powHash: '',
     difficulty: Number(calculateBlockDifficulty(blockModel.target)),
     epoch: convertStringToDate(blockModel.epochStart),
     flags: int64ToUint64String(blockModel.featureFlags),
@@ -123,6 +132,7 @@ const mapFromSequelize = (blockModel: BlockAttributes): BlockOutput => {
     payloadHash: blockModel.payloadHash,
     weight: blockModel.weight,
     target: blockModel.target,
+    coinbase: JSON.stringify(blockModel.coinbase),
     neighbors: Object.entries(blockModel.adjacents).map(([chainId, hash]) => ({
       chainId,
       hash,

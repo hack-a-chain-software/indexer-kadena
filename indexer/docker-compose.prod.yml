@@ -12,8 +12,16 @@ services:
       - '5432:5432'
     volumes:
       - ${PWD}/indexer/postgres:/var/lib/postgresql/data
+      - /etc/letsencrypt/live/${PROD_URL}/fullchain.pem:/var/lib/postgresql/server.crt:ro
+      - /etc/letsencrypt/live/${PROD_URL}/privkey.pem:/var/lib/postgresql/server.key:ro
     command:
       - 'postgres'
+      - '-c'
+      - 'ssl=on'
+      - '-c'
+      - 'ssl_cert_file=/var/lib/postgresql/server.crt'
+      - '-c'
+      - 'ssl_key_file=/var/lib/postgresql/server.key'
       - '-c'
       - 'shared_buffers=8GB'
       - '-c'
@@ -68,7 +76,7 @@ services:
       dockerfile: Dockerfile.development
     container_name: kad-indexer-streaming
     environment:
-      DB_HOST: indexer-db
+      DB_HOST: index-db
       KADENA_GRAPHQL_API_URL: http://graphql-app
     command: ['yarn', 'dev:streaming']
     depends_on:

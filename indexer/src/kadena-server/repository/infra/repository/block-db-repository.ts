@@ -14,15 +14,16 @@
  * - Optimized batch retrieval through DataLoader patterns
  */
 
-import { FindOptions, Op, QueryTypes } from 'sequelize';
+import { Op, QueryTypes } from 'sequelize';
 import { rootPgPool, sequelize } from '../../../../config/database';
-import BlockModel, { BlockAttributes } from '../../../../models/block';
+import BlockModel from '../../../../models/block';
 import BlockRepository, {
   BlockOutput,
   GetBlocksBetweenHeightsParams,
   GetBlocksFromDepthParams,
   GetCompletedBlocksParams,
   GetLatestBlocksParams,
+  UpdateCanonicalStatusParams,
 } from '../../application/block-repository';
 import { getPageInfo, getPaginationParams } from '../../pagination';
 import { blockValidator } from '../schema-validator/block-schema-validator';
@@ -53,14 +54,12 @@ export default class BlockDbRepository implements BlockRepository {
    * @returns Promise resolving to the block data if found
    * @throws Error if the block is not found
    */
-  async getBlockByHash(hash: string) {
+  async getBlockByHash(hash: string): Promise<BlockOutput | null> {
     const block = await BlockModel.findOne({
       where: { hash },
     });
 
-    if (!block) {
-      throw new Error('Block not found.');
-    }
+    if (!block) return null;
 
     return blockValidator.mapFromSequelize(block);
   }
@@ -92,22 +91,9 @@ export default class BlockDbRepository implements BlockRepository {
       last,
     });
 
-    const chainIdsToUse = chainIds?.length ? chainIds.map(Number) : await this.getChainIds();
-
     let allFetchedBlocks: any[] = [];
     let lastHeight: number | null = null;
-    let lastChainId: number | null = null;
-
-    if (after) {
-      const [heightStr, chainIdStr] = after.split(':');
-      lastHeight = parseInt(heightStr, 10);
-      lastChainId = parseInt(chainIdStr, 10);
-
-      if (isNaN(lastHeight) || isNaN(lastChainId)) {
-        lastHeight = null;
-        lastChainId = null;
-      }
-    }
+    let lastId: number | null = null;
 
     const batchSize = Math.max(limit * 2, 50); // Fetch more than needed in each batch
     let hasMoreBlocks = true;
@@ -116,10 +102,30 @@ export default class BlockDbRepository implements BlockRepository {
     const baseQueryParams: any[] = [batchSize];
     let baseConditions: string[] = [];
 
+    baseConditions.push(`"height" <= (SELECT MAX(height) - ${minimumDepth} FROM "Blocks")`);
+
     // Add chain ID filtering - only need to do this once since chainIdsToUse doesn't change
-    if (chainIdsToUse.length > 0) {
-      baseQueryParams.push(chainIdsToUse);
+    if (chainIds?.length) {
+      baseQueryParams.push(chainIds);
       baseConditions.push(`"chainId" = ANY($${baseQueryParams.length})`);
+    }
+
+    if (after) {
+      const [heightStr, idStr] = after.split(':');
+      lastHeight = parseInt(heightStr, 10);
+      lastId = parseInt(idStr, 10);
+      if (isNaN(lastHeight) || isNaN(lastId)) {
+        throw new Error('Invalid after cursor');
+      }
+    }
+
+    if (before) {
+      const [heightStr, idStr] = before.split(':');
+      lastHeight = parseInt(heightStr, 10);
+      lastId = parseInt(idStr, 10);
+      if (isNaN(lastHeight) || isNaN(lastId)) {
+        throw new Error('Invalid before cursor');
+      }
     }
 
     // Keep fetching batches until we have enough blocks that meet the depth requirement
@@ -127,51 +133,21 @@ export default class BlockDbRepository implements BlockRepository {
       const queryParams: any[] = [...baseQueryParams];
       let conditions = [...baseConditions];
 
-      if (lastHeight !== null && lastChainId !== null) {
-        queryParams.push(lastHeight);
-        queryParams.push(lastChainId);
-
-        if (order === 'DESC') {
-          // For DESC order, get blocks with lower height or same height but different chain
-          conditions.push(
-            `(height < $${queryParams.length - 1} OR (height = $${queryParams.length - 1} AND "chainId" < $${queryParams.length}))`,
-          );
-        } else {
-          // For ASC order, get blocks with higher height or same height but different chain
-          conditions.push(
-            `(height > $${queryParams.length - 1} OR (height = $${queryParams.length - 1} AND "chainId" > $${queryParams.length}))`,
-          );
-        }
+      if (lastHeight !== null && lastId !== null && after) {
+        queryParams.push(lastHeight, lastId);
+        conditions.push(`(height, id) < ($${queryParams.length - 1}, $${queryParams.length})`);
       }
 
-      if (before) {
-        const [heightStr, chainIdStr] = before.split(':');
-        const beforeHeight = parseInt(heightStr, 10);
-        const beforeChainId = parseInt(chainIdStr, 10);
-
-        if (!isNaN(beforeHeight) && !isNaN(beforeChainId)) {
-          queryParams.push(beforeHeight);
-          queryParams.push(beforeChainId);
-
-          if (order === 'DESC') {
-            // For DESC order with "before", get blocks with higher height
-            conditions.push(
-              `(height > $${queryParams.length - 1} OR (height = $${queryParams.length - 1} AND "chainId" > $${queryParams.length}))`,
-            );
-          } else {
-            // For ASC order with "before", get blocks with lower height
-            conditions.push(
-              `(height < $${queryParams.length - 1} OR (height = $${queryParams.length - 1} AND "chainId" < $${queryParams.length}))`,
-            );
-          }
-        }
+      if (lastHeight !== null && lastId !== null && before) {
+        queryParams.push(lastHeight, lastId);
+        conditions.push(`(height, id) > ($${queryParams.length - 1}, $${queryParams.length})`);
       }
 
       const query = `
         SELECT *
         FROM "Blocks"
         ${conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''}
-        ORDER BY height ${order}, "chainId" ${order}
+        ORDER BY height ${order}, id ${order}
         LIMIT $1
       `;
 
@@ -200,23 +176,13 @@ export default class BlockDbRepository implements BlockRepository {
       // Update cursor for next batch using the last block's height and chainId
       const lastBlock = blockRows[blockRows.length - 1];
       lastHeight = lastBlock.height;
-      lastChainId = lastBlock.chainId;
+      lastId = lastBlock.id;
     }
 
-    const edges = allFetchedBlocks
-      .slice(0, limit)
-      .map(row => ({
-        cursor: `${row.height}:${row.chainId}`,
-        node: blockValidator.validate(row),
-      }))
-      .sort((a, b) => {
-        const aNode = a.node as unknown as { id: string };
-        const bNode = b.node as unknown as { id: string };
-        if (a.cursor === b.cursor) {
-          return aNode.id > bNode.id ? 1 : -1;
-        }
-        return 0;
-      });
+    const edges = allFetchedBlocks.slice(0, limit).map(row => ({
+      cursor: `${row.height}:${row.id}`,
+      node: blockValidator.validate(row),
+    }));
 
     const pageInfo = getPageInfo({ edges, order, limit, after, before });
     return pageInfo;
@@ -246,13 +212,19 @@ export default class BlockDbRepository implements BlockRepository {
       last,
     } = params;
 
-    const { limit, order, after, before } = getPaginationParams({
+    const {
+      limit,
+      order: orderParam,
+      after,
+      before,
+    } = getPaginationParams({
       after: afterEncoded,
       before: beforeEncoded,
       first,
       last,
     });
 
+    const order = orderParam === 'ASC' ? 'DESC' : 'ASC';
     const queryParams: (string | number | string[])[] = [limit, startHeight];
     let conditions = '';
 
@@ -262,11 +234,12 @@ export default class BlockDbRepository implements BlockRepository {
       const beforeHeight = parseInt(height, 10);
       const beforeId = parseInt(id, 10);
 
-      // Check if values are valid numbers
-      if (!isNaN(beforeHeight) && !isNaN(beforeId)) {
-        queryParams.push(beforeHeight, beforeId);
-        conditions += `\nAND (b.height < $${queryParams.length - 1} OR (b.height = $${queryParams.length - 1} AND b.id > $${queryParams.length}))`;
+      if (isNaN(beforeHeight) || isNaN(beforeId)) {
+        throw new Error('Invalid before cursor');
       }
+
+      queryParams.push(beforeHeight, beforeId);
+      conditions += `\nAND (b.height, b.id) > ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
     if (after) {
@@ -275,13 +248,11 @@ export default class BlockDbRepository implements BlockRepository {
       const afterHeight = parseInt(height, 10);
       const afterId = parseInt(id, 10);
 
-      // Check if values are valid numbers
-      if (!isNaN(afterHeight) && !isNaN(afterId)) {
-        // For forward pagination with "after", we want records where:
-        // (height < afterHeight) OR (height = afterHeight AND id < afterId)
-        queryParams.push(afterHeight, afterId);
-        conditions += `\nAND (b.height < $${queryParams.length - 1} OR (b.height = $${queryParams.length - 1} AND b.id < $${queryParams.length}))`;
+      if (isNaN(afterHeight) || isNaN(afterId)) {
+        throw new Error('Invalid after cursor');
       }
+      queryParams.push(afterHeight, afterId);
+      conditions += `\nAND (b.height, b.id) < ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
     if (chainIds?.length) {
@@ -306,10 +277,12 @@ export default class BlockDbRepository implements BlockRepository {
         b."payloadHash" as "payloadHash",
         b.weight as "weight",
         b.target as "target",
+        b.coinbase as "coinbase",
         b.adjacents as "adjacents",
-        b.parent as "parent"
+        b.parent as "parent",
+        b.canonical as "canonical"
       FROM "Blocks" b
-      WHERE b.height >= $2
+      WHERE b.height ${before ? '<=' : '>='} $2
       ${conditions}
       ORDER BY b.height ${order}, b.id ${order}
       LIMIT $1;
@@ -584,8 +557,10 @@ export default class BlockDbRepository implements BlockRepository {
         b."payloadHash" as "payloadHash",
         b.weight as "weight",
         b.target as "target",
+        b.coinbase as "coinbase",
         b.adjacents as "adjacents",
         b.parent as "parent",
+        b.canonical as "canonical",
         t.id as "transactionId"
         FROM "Blocks" b
         JOIN "Transactions" t ON b.id = t."blockId"
@@ -631,8 +606,10 @@ export default class BlockDbRepository implements BlockRepository {
         b."payloadHash" as "payloadHash",
         b.weight as "weight",
         b.target as "target",
+        b.coinbase as "coinbase",
         b.adjacents as "adjacents",
-        b.parent as "parent"
+        b.parent as "parent",
+        b.canonical as "canonical"
         FROM "Blocks" b
         WHERE b.hash = ANY($1::text[])`,
       [hashes],
@@ -913,5 +890,85 @@ export default class BlockDbRepository implements BlockRepository {
     const maxHeightsArray = await Promise.all(maxHeightsByChainIdPromises);
 
     return Object.assign({}, ...maxHeightsArray);
+  }
+
+  async getBlocksWithSameHeight(height: number, chainId: string): Promise<BlockOutput[]> {
+    const query = `
+      SELECT b.*
+      FROM "Blocks" b
+      WHERE b."height" = $1 AND b."chainId" = $2
+    `;
+
+    const { rows } = await rootPgPool.query(query, [height, chainId]);
+
+    return rows.map(row => blockValidator.validate(row));
+  }
+
+  async getBlockNParent(depth: number, hash: string): Promise<string | undefined> {
+    const query = `
+      WITH RECURSIVE BlockAncestors AS (
+        SELECT hash, parent, 1 AS depth, height
+        FROM "Blocks"
+        WHERE hash = $1
+        UNION ALL
+        SELECT b.hash, b.parent, d.depth + 1 AS depth, b.height
+        FROM BlockAncestors d
+        JOIN "Blocks" b ON d.parent = b.hash
+        WHERE d.depth < $2
+      )
+      SELECT parent as hash, depth
+      FROM BlockAncestors
+      ORDER BY depth DESC
+      LIMIT 1;
+    `;
+    const { rows } = await rootPgPool.query(query, [hash, depth]);
+
+    return rows?.[0]?.hash;
+  }
+
+  async getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]> {
+    const query = `
+      SELECT b.*
+      FROM "Blocks" b
+      WHERE b.height > $1 AND b."chainId" = $2;
+    `;
+
+    const { rows } = await rootPgPool.query(query, [height, chainId]);
+
+    return rows.map(row => blockValidator.validate(row));
+  }
+
+  async updateCanonicalStatus(params: UpdateCanonicalStatusParams) {
+    const canonicalHashes = params.blocks
+      .filter(change => change.canonical)
+      .map(change => change.hash);
+    const nonCanonicalHashes = params.blocks
+      .filter(change => !change.canonical)
+      .map(change => change.hash);
+
+    await rootPgPool.query('BEGIN');
+    try {
+      if (canonicalHashes.length > 0) {
+        const canonicalQuery = `
+          UPDATE "Blocks"
+          SET "canonical" = true
+          WHERE hash = ANY($1)
+        `;
+        await rootPgPool.query(canonicalQuery, [canonicalHashes]);
+      }
+
+      if (nonCanonicalHashes.length > 0) {
+        const nonCanonicalQuery = `
+          UPDATE "Blocks"
+          SET "canonical" = false
+          WHERE hash = ANY($1)
+        `;
+        await rootPgPool.query(nonCanonicalQuery, [nonCanonicalHashes]);
+      }
+      await rootPgPool.query('COMMIT');
+    } catch (error) {
+      await rootPgPool.query('ROLLBACK');
+      throw error;
+    }
   }
 }

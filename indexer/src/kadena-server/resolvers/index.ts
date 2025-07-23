@@ -95,6 +95,7 @@ import {
   tokenPriceQueryResolver,
   tokenPricesQueryResolver,
 } from './query/token-price-query-resolver';
+import { transactionsSubscriptionResolver } from '@/kadena-server/resolvers/subscription/transactions-subscription-resolver';
 /**
  * Complete resolver map for the GraphQL API
  *
@@ -115,6 +116,7 @@ export const resolvers: Resolvers<ResolverContext> = {
   DateTime: DateTimeResolver,
   Subscription: {
     transaction: transactionSubscriptionResolver,
+    transactions: transactionsSubscriptionResolver,
     newBlocks: newBlocksSubscriptionResolver,
     newBlocksFromDepth: newBlocksFromDepthSubscriptionResolver,
     events: eventsSubscriptionResolver,
@@ -261,7 +263,7 @@ export const resolvers: Resolvers<ResolverContext> = {
      * @returns The GraphQL type name as a string, or null if unrecognized
      */
     __resolveType(obj: any) {
-      if (obj.difficulty && obj.powHash) {
+      if (obj.difficulty && obj.hash) {
         return 'Block';
       }
 

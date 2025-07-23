@@ -20,7 +20,14 @@ func StartBackfill(LastHeight int, Hash string, ChainId int, SyncMinHeight int, 
 
 	for CurrentHeight >= SyncMinHeight {
 		startTime := time.Now()
-		nextHeight := max(CurrentHeight-env.SyncFetchIntervalInBlocks+1, SyncMinHeight)
+
+		var nextHeight int
+		if CurrentHeight == SyncMinHeight {
+			nextHeight = SyncMinHeight
+		} else {
+			nextHeight = Max(CurrentHeight-env.SyncFetchIntervalInBlocks+1, SyncMinHeight)
+		}
+
 		log.Printf("Processing height %d to %d...\n", CurrentHeight, nextHeight)
 
 		blocks, err := fetch.FetchPayloadsWithHeaders(network, ChainId, Hash, nextHeight, CurrentHeight)

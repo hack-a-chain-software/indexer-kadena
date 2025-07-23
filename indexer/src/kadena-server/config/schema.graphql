@@ -91,6 +91,12 @@ type Subscription {
   Listen for a transaction by request key.
   """
   transaction(chainId: String, requestKey: String!): Transaction
+
+  """
+  Listen for transactions by chain ID and minimum confirmation depth.
+  """
+  transactions(quantity: Int = 20): [Transaction!]
+
   """
   Listen for events by qualifiedName (e.g. `coin.TRANSFER`).
          
@@ -288,7 +294,7 @@ type Query {
 
   """
   Retrieve transactions. Default page size is 20.
-   At least one of accountName, fungibleName, blockHash, or requestKey must be provided.
+  At least one of accountName, fungibleName, blockHash, or requestKey must be provided.
   """
   transactions(
     accountName: String
@@ -303,6 +309,7 @@ type Query {
     minHeight: Int
     minimumDepth: Int
     requestKey: String
+    isCoinbase: Boolean
   ): QueryTransactionsConnection! @complexity(value: 10, multipliers: ["first", "last"])
 
   """
@@ -349,7 +356,15 @@ type Query {
   """
   Retrieve a specific pool by its ID.
   """
-  pool(id: ID!, timeFrame: TimeFrame, type: PoolTransactionType, first: Int, after: String, last: Int, before: String): Pool @complexity(value: 1)
+  pool(
+    id: ID!
+    timeFrame: TimeFrame
+    type: PoolTransactionType
+    first: Int
+    after: String
+    last: Int
+    before: String
+  ): Pool @complexity(value: 1)
 
   poolTransactions(
     pairId: String!
@@ -599,11 +614,14 @@ type Block implements Node {
   payloadHash: String!
   weight: String!
   target: String!
+  coinbase: String!
   neighbors: [BlockNeighbor!]! @complexity(value: 5, multipliers: ["length"])
   """
   The proof of work hash.
   """
   powHash: String!
+
+  canonical: Boolean!
 
   parent: Block @complexity(value: 1)
   """
@@ -773,7 +791,7 @@ type TransactionMeta {
   chainId: BigInt!
   creationTime: DateTime!
   gasLimit: BigInt!
-  gasPrice: Float!
+  gasPrice: String!
   sender: String!
   ttl: BigInt!
 }

@@ -71,6 +71,8 @@ export interface GetTransactionsCountParams {
   minHeight?: number | null;
   /** Filter by whether the transaction has a token ID (NFT transactions) */
   hasTokenId?: boolean | null;
+  /** Filter by coinbase */
+  isCoinbase?: boolean | null;
 }
 
 /**
@@ -131,6 +133,14 @@ export default interface TransactionRepository {
     pageInfo: PageInfo;
     edges: ConnectionEdge<TransactionOutput>[];
   }>;
+
+  /**
+   * Retrieves the last transactions based on specified parameters.
+   *
+   * @param quantity - Quantity of transactions to retrieve
+   * @returns Promise resolving to the last transactions
+   */
+  getLastTransactions(quantity: number): Promise<TransactionOutput[]>;
 
   /**
    * Counts transactions matching the specified filter parameters.
