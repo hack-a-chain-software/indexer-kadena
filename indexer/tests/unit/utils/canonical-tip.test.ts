@@ -92,6 +92,7 @@ describe('markCanonicalTip', () => {
       epoch: new Date(),
       flags: '1',
       neighbors: [],
+      numTransactions: 1,
       coinbase: '{}',
     };
     const blockB: BlockOutput = {
@@ -135,7 +136,7 @@ describe('markCanonicalTip', () => {
     // console.log('Initial state:', repository.getBlockChain());
 
     // Mark D as the canonical tip
-    const changes = await markCanonicalTip({
+    await markCanonicalTip({
       tipBlock: blockD,
       blocksWithHigherHeightOfTipBlock: [],
       blocksWithSameHeightOfTipBlock: [blockE],
@@ -183,6 +184,7 @@ describe('markCanonicalTip', () => {
       flags: '1',
       neighbors: [],
       coinbase: '{}',
+      numTransactions: 1,
     };
 
     // Main chain
@@ -394,6 +396,7 @@ describe('markCanonicalTip', () => {
       flags: '1',
       neighbors: [],
       coinbase: '{}',
+      numTransactions: 1,
     };
 
     const blockB: BlockOutput = {

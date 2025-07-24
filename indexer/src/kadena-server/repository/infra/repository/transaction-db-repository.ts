@@ -461,8 +461,16 @@ export default class TransactionDbRepository implements TransactionRepository {
     const hasNoParams = Object.values(params).every(v => !v);
 
     if (hasNoParams) {
-      const cachedData = MEMORY_CACHE.get<NetworkStatistics>(NETWORK_STATISTICS_KEY);
-      return cachedData?.transactionCount ?? 0;
+      const query = `
+        SELECT canonicalTransactions as "totalTransactionsCount", canonicalBlocks as "totalBlocksCount"
+        FROM "Counters"
+      `;
+
+      const { rows } = await rootPgPool.query(query);
+      const totalTransactionsCount = parseInt(rows?.[0]?.totalTransactionsCount ?? '0', 10);
+      const totalBlocksCount = parseInt(rows?.[0]?.totalBlocksCount ?? '0', 10);
+      const totalCount = totalTransactionsCount + (params.isCoinbase ? totalBlocksCount : 0);
+      return totalCount;
     }
 
     const {

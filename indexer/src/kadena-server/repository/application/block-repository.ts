@@ -31,10 +31,14 @@ export interface UpdateCanonicalStatusParams {
   blocks: { hash: string; canonical: boolean }[];
 }
 
-export type BlockOutput = Omit<Block, 'parent' | 'events' | 'minerAccount' | 'transactions'> & {
+export type BlockOutput = Omit<
+  Block,
+  'parent' | 'events' | 'minerAccount' | 'transactions' | 'canonical'
+> & {
   parentHash: string;
   blockId: number;
-  canonical: boolean;
+  canonical: boolean | null;
+  numTransactions: number;
 };
 
 export type FungibleChainAccountOutput = Omit<
