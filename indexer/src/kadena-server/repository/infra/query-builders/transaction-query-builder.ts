@@ -69,7 +69,7 @@ export default class TransactionQueryBuilder {
     if (chainId && !params.after && !params.before && !minHeight && !maxHeight) {
       blockParams.push(chainId);
       const op = this.operator(blockParams.length);
-      blocksConditions += `${op} b."chainId" = $${blockParams.length} AND b."height" > 5980000`;
+      blocksConditions += `${op} b."chainId" = $${blockParams.length} AND b."height" > (SELECT max(height) FROM "Blocks") - 1000`;
     }
 
     return { blocksConditions, blockParams };
@@ -302,7 +302,7 @@ export default class TransactionQueryBuilder {
     before?: string | null;
     order: string;
     limit: number;
-    isCoinbase: boolean;
+    isCoinbase?: boolean | null;
   }) {
     let whereCondition = '';
     let queryParams: (string | number)[] = [params.limit];
@@ -311,10 +311,6 @@ export default class TransactionQueryBuilder {
       const currentTime = Date.now() - 10000000;
       queryParams.push(currentTime, 0);
       whereCondition = ` WHERE t.creationtime > $2 AND t.id > $3`;
-    }
-
-    if (!params.after && !params.before && params.order === 'ASC') {
-      whereCondition = ` WHERE t.creationtime < '1578000000'`;
     }
 
     if (params.after) {
@@ -327,6 +323,8 @@ export default class TransactionQueryBuilder {
       queryParams.push(creationTime, id);
       whereCondition = ` WHERE (t.creationtime, t.id) > ($2, $3)`;
     }
+
+    whereCondition += ` AND b.canonical = true`;
 
     let query = `
       SELECT

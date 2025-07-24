@@ -42,6 +42,7 @@ const schema = zod.object({
   parent: zod.string(),
   coinbase: zod.any(),
   canonical: zod.boolean().nullable(),
+  transactionsCount: zod.number(),
 });
 
 /**
@@ -76,8 +77,6 @@ const getBase64ID = (hash: string): string => {
  */
 const validate = (row: any): BlockOutput => {
   const res = schema.parse(row);
-  const isCanonicalNull = res.canonical === null;
-  const canonicalValue = res.canonical ?? false;
   return {
     id: getBase64ID(res.hash),
     parentHash: res.parent,
@@ -93,12 +92,13 @@ const validate = (row: any): BlockOutput => {
     coinbase: JSON.stringify(res.coinbase),
     weight: res.weight,
     chainId: res.chainId,
-    canonical: isCanonicalNull ? true : canonicalValue,
+    canonical: res.canonical ?? null,
     difficulty: Number(calculateBlockDifficulty(res.target)),
     neighbors: Object.entries(res.adjacents).map(([chainId, hash]) => ({
       chainId,
       hash,
     })),
+    numTransactions: res.transactionsCount,
     blockId: res.id,
   };
 };
@@ -114,14 +114,12 @@ const validate = (row: any): BlockOutput => {
  * @returns A transformed BlockOutput object
  */
 const mapFromSequelize = (blockModel: BlockAttributes): BlockOutput => {
-  const isCanonicalNull = blockModel.canonical === null;
-  const canonicalValue = blockModel.canonical ?? false;
   return {
     id: getBase64ID(blockModel.hash),
     hash: blockModel.hash,
     parentHash: blockModel.parent,
     chainId: blockModel.chainId,
-    canonical: isCanonicalNull ? true : canonicalValue,
+    canonical: blockModel.canonical ?? null,
     creationTime: convertStringToDate(blockModel.creationTime),
     powHash: '',
     difficulty: Number(calculateBlockDifficulty(blockModel.target)),
@@ -137,6 +135,7 @@ const mapFromSequelize = (blockModel: BlockAttributes): BlockOutput => {
       chainId,
       hash,
     })),
+    numTransactions: blockModel.transactionsCount,
     blockId: blockModel.id,
   };
 };

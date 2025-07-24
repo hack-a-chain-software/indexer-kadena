@@ -156,10 +156,19 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		counters.Signers += len(signers)
 	}
 
+	repository.SaveCounters(tx, repository.CounterAttributes{
+		ChainId:              chainId,
+		CanonicalBlocksCount: len(blocks),
+		// ignore coinbase transactions on the canonical transaction counter
+		CanonicalTransactionsCount: counters.Transactions - len(blocks),
+	})
+
 	env := config.GetConfig()
 	if env.IsSingleChain {
 		log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
 	}
+
+	log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
 
 	if err := tx.Commit(context.Background()); err != nil {
 		return Counters{}, DataSizeTracker{}, fmt.Errorf("committing transaction: %w", err)

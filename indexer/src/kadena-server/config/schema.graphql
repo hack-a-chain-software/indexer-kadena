@@ -564,6 +564,7 @@ type QueryBlocksFromHeightConnectionEdge {
 type QueryBlocksFromDepthConnection {
   edges: [QueryBlocksFromDepthConnectionEdge!]!
   pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type QueryBlocksFromDepthConnectionEdge {
