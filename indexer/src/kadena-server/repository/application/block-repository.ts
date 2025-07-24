@@ -24,6 +24,7 @@ export interface GetLatestBlocksParams {
   creationTime: number;
   lastBlockId?: number;
   chainIds?: string[];
+  quantity: number;
 }
 
 export interface UpdateCanonicalStatusParams {
@@ -77,6 +78,7 @@ export default interface BlockRepository {
     chainIds: string[],
     minimumDepth: number,
     startingTimestamp: number,
+    quantity: number,
     id?: string,
   ): Promise<BlockOutput[]>;
 

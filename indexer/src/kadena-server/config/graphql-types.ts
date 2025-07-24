@@ -1103,15 +1103,18 @@ export type SubscriptionEventsArgs = {
   minimumDepth?: InputMaybe<Scalars['Int']['input']>;
   parametersFilter?: InputMaybe<Scalars['String']['input']>;
   qualifiedEventName: Scalars['String']['input'];
+  quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type SubscriptionNewBlocksArgs = {
   chainIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type SubscriptionNewBlocksFromDepthArgs = {
   chainIds?: InputMaybe<Array<Scalars['String']['input']>>;
   minimumDepth: Scalars['Int']['input'];
+  quantity?: InputMaybe<Scalars['Int']['input']>;
 };
 
 export type SubscriptionTransactionArgs = {
@@ -3101,21 +3104,21 @@ export type SubscriptionResolvers<
     'events',
     ParentType,
     ContextType,
-    RequireFields<SubscriptionEventsArgs, 'qualifiedEventName'>
+    RequireFields<SubscriptionEventsArgs, 'qualifiedEventName' | 'quantity'>
   >;
   newBlocks?: SubscriptionResolver<
     Maybe<Array<ResolversTypes['Block']>>,
     'newBlocks',
     ParentType,
     ContextType,
-    Partial<SubscriptionNewBlocksArgs>
+    RequireFields<SubscriptionNewBlocksArgs, 'quantity'>
   >;
   newBlocksFromDepth?: SubscriptionResolver<
     Maybe<Array<ResolversTypes['Block']>>,
     'newBlocksFromDepth',
     ParentType,
     ContextType,
-    RequireFields<SubscriptionNewBlocksFromDepthArgs, 'minimumDepth'>
+    RequireFields<SubscriptionNewBlocksFromDepthArgs, 'minimumDepth' | 'quantity'>
   >;
   transaction?: SubscriptionResolver<
     Maybe<ResolversTypes['Transaction']>,
