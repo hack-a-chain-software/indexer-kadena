@@ -82,6 +82,7 @@
     "dev:hot:graphql": "nodemon --exec ts-node -r tsconfig-paths/register src/index.ts --graphql",
     "graphql:generate-types": "npx graphql-codegen",
     "migrate:up": "dotenv -e .env npx sequelize-cli db:migrate",
+    "new-migrate:up": "ts-node -r tsconfig-paths/register src/db-migrator.ts",
     "migrate:down": "dotenv -e .env npx sequelize-cli db:migrate:undo",
     "test:unit": "jest tests/unit",
     "test:queries": "dotenv -e .env jest tests/integration/queries/*.test.ts",
