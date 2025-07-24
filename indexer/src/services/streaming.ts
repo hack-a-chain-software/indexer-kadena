@@ -28,6 +28,7 @@ import {
   checkCanonicalPathForAllChains,
   startMissingBlocksBeforeStreamingProcess,
 } from '@/services/missing';
+import { EventAttributes } from '@/models/event';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
@@ -92,7 +93,7 @@ export async function startStreaming() {
       const payload = processPayload(block.payloadWithOutputs);
 
       // Save the block data and process its transactions
-      await saveBlock({ header: block.header, payload }, tx);
+      await saveBlock({ header: block.header, payload, canonical: null }, tx);
 
       if (!initialChainGapsAlreadyFilled.has(block.header.chainId)) {
         initialChainGapsAlreadyFilled.add(block.header.chainId);
@@ -213,10 +214,13 @@ export function processPayload(payload: any) {
  * TODO: [OPTIMIZATION] Consider implementing batch processing for high transaction volumes
  * to improve database performance.
  */
-export async function saveBlock(parsedData: any, tx?: Transaction): Promise<void> {
+export async function saveBlock(
+  parsedData: any,
+  tx?: Transaction,
+): Promise<EventAttributes[] | null> {
   const headerData = parsedData.header;
   const payloadData = parsedData.payload;
-  const canonical = parsedData.canonical ?? false;
+  const canonical = parsedData.canonical;
   const transactions = payloadData.transactions || [];
 
   try {
@@ -249,8 +253,9 @@ export async function saveBlock(parsedData: any, tx?: Transaction): Promise<void
     });
 
     // Process the block's transactions and events
-    await processPayloadKey(createdBlock, payloadData, tx);
+    return processPayloadKey(createdBlock, payloadData, tx);
   } catch (error) {
     console.error(`[ERROR][DB][DATA_CORRUPT] Failed to save block to database:`, error);
+    return null;
   }
 }

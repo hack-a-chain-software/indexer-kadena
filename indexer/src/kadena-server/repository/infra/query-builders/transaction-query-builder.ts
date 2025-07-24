@@ -31,11 +31,14 @@ export default class TransactionQueryBuilder {
    */
   private createBlockConditions(
     params: GetTransactionsParams,
-    queryParams: Array<string | number>,
+    queryParams: Array<string | number | boolean>,
   ) {
-    const { blockHash, chainId, maxHeight, minHeight, minimumDepth } = params;
+    const { blockHash, chainId, maxHeight, minHeight } = params;
     let blocksConditions = '';
-    const blockParams: (string | number)[] = [...queryParams];
+    const blockParams: (string | number | boolean)[] = [...queryParams];
+
+    blockParams.push(true);
+    blocksConditions += `WHERE b.canonical = $${blockParams.length}`;
 
     // Add block hash condition if specified
     if (blockHash) {
@@ -69,7 +72,7 @@ export default class TransactionQueryBuilder {
     if (chainId && !params.after && !params.before && !minHeight && !maxHeight) {
       blockParams.push(chainId);
       const op = this.operator(blockParams.length);
-      blocksConditions += `${op} b."chainId" = $${blockParams.length} AND b."height" > 5980000`;
+      blocksConditions += `${op} b."chainId" = $${blockParams.length} AND b."height" > (SELECT max(height) FROM "Blocks") - 1000`;
     }
 
     return { blocksConditions, blockParams };
@@ -86,7 +89,7 @@ export default class TransactionQueryBuilder {
    */
   private createTransactionConditions(
     params: GetTransactionsParams,
-    queryParams: Array<string | number>,
+    queryParams: Array<string | number | boolean>,
   ) {
     const { accountName, after, before, requestKey, fungibleName, hasTokenId = false } = params;
     let conditions = '';
@@ -179,7 +182,7 @@ export default class TransactionQueryBuilder {
     const isBlockQueryFirst = blockHash || minHeight || maxHeight || minimumDepth || chainId;
 
     // Initialize query parameters and condition strings
-    const queryParams: (string | number)[] = [];
+    const queryParams: (string | number | boolean)[] = [];
     let blocksConditions = '';
     let transactionsConditions = '';
 
@@ -302,7 +305,7 @@ export default class TransactionQueryBuilder {
     before?: string | null;
     order: string;
     limit: number;
-    isCoinbase: boolean;
+    isCoinbase?: boolean | null;
   }) {
     let whereCondition = '';
     let queryParams: (string | number)[] = [params.limit];
@@ -311,10 +314,6 @@ export default class TransactionQueryBuilder {
       const currentTime = Date.now() - 10000000;
       queryParams.push(currentTime, 0);
       whereCondition = ` WHERE t.creationtime > $2 AND t.id > $3`;
-    }
-
-    if (!params.after && !params.before && params.order === 'ASC') {
-      whereCondition = ` WHERE t.creationtime < '1578000000'`;
     }
 
     if (params.after) {
@@ -327,6 +326,8 @@ export default class TransactionQueryBuilder {
       queryParams.push(creationTime, id);
       whereCondition = ` WHERE (t.creationtime, t.id) > ($2, $3)`;
     }
+
+    whereCondition += ` AND b.canonical = true`;
 
     let query = `
       SELECT

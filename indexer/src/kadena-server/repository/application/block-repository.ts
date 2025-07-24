@@ -8,6 +8,11 @@ export interface GetBlocksFromDepthParams extends PaginationsParams {
   minimumDepth: InputMaybe<number>;
 }
 
+export interface GetTotalCountParams {
+  chainIds?: string[];
+  minimumDepth: number;
+}
+
 export interface GetCompletedBlocksParams extends PaginationsParams {
   completedHeights?: boolean | null;
   heightCount?: number | null;
@@ -31,10 +36,14 @@ export interface UpdateCanonicalStatusParams {
   blocks: { hash: string; canonical: boolean }[];
 }
 
-export type BlockOutput = Omit<Block, 'parent' | 'events' | 'minerAccount' | 'transactions'> & {
+export type BlockOutput = Omit<
+  Block,
+  'parent' | 'events' | 'minerAccount' | 'transactions' | 'canonical'
+> & {
   parentHash: string;
   blockId: number;
-  canonical: boolean;
+  canonical: boolean | null;
+  numTransactions: number;
 };
 
 export type FungibleChainAccountOutput = Omit<
@@ -69,6 +78,8 @@ export default interface BlockRepository {
   getTotalCountOfBlockTransactions(blockHash: string): Promise<number>;
 
   getLatestBlocks(params: GetLatestBlocksParams): Promise<BlockOutput[]>;
+
+  getTotalCount(params: GetTotalCountParams): Promise<number>;
 
   getTransactionsOrderedByBlockDepth(
     transactions: TransactionOutput[],

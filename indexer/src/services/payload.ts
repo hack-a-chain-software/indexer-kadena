@@ -25,11 +25,11 @@ import Guard from '@/models/guard';
 import { handleSingleQuery } from '@/utils/raw-query';
 import { sequelize } from '@/config/database';
 import { addCoinbaseTransactions } from './coinbase';
-import { getRequiredEnvString } from '@/utils/helpers';
 import TransactionDetails, { TransactionDetailsAttributes } from '@/models/transaction-details';
 import { mapToEventModel } from '@/models/mappers/event-mapper';
 import { processPairCreationEvents } from './pair';
 import { Decimal } from 'decimal.js';
+import { increaseCounters } from '@/services/counters';
 
 // Constants for array indices in the transaction data structure
 const TRANSACTION_INDEX = 0;
@@ -74,17 +74,30 @@ export async function processPayloadKey(
   const transactions = payloadData.transactions || [];
 
   // Process all regular transactions in parallel
-  const transactionPromises = transactions.map((transactionInfo: any) => {
+  const transactionPromises: Array<
+    Promise<{ events: EventAttributes[]; transfers: TransferAttributes[] }>
+  > = transactions.map((transactionInfo: any) => {
     return processTransaction(transactionInfo, block, tx);
   });
-  const normalTransactions = (await Promise.all(transactionPromises)).flat();
+
+  const transactionResults = await Promise.all(transactionPromises);
+  const normalEvents = transactionResults.map(t => t.events).flat();
 
   // Process coinbase transactions (mining rewards)
-  const coinbase = await addCoinbaseTransactions([block], tx!);
-  const coinbaseTransactions = (await Promise.all(coinbase)).flat();
+  const coinbaseResult = await addCoinbaseTransactions([block], tx!);
+  const coinbaseEvents = coinbaseResult.events;
+
+  await increaseCounters({
+    canonicalBlocksCount: 1,
+    orphansBlocksCount: 0,
+    canonicalTransactionsCount: transactionPromises.length,
+    orphanTransactionsCount: 0,
+    chainId: block.chainId,
+    tx,
+  });
 
   // Combine all events from both transaction types
-  return [...normalTransactions, ...coinbaseTransactions];
+  return [...normalEvents, ...coinbaseEvents];
 }
 
 /**
@@ -109,7 +122,7 @@ export async function processTransaction(
   transactionArray: any,
   block: BlockAttributes,
   tx?: Transaction,
-): Promise<EventAttributes[]> {
+): Promise<{ events: EventAttributes[]; transfers: TransferAttributes[] }> {
   const transactionInfo = transactionArray[TRANSACTION_INDEX];
   const receiptInfo = transactionArray[RECEIPT_INDEX];
 
@@ -296,7 +309,10 @@ export async function processTransaction(
     const balances = [...balancesFrom, ...balancesTo, ...marmaladeBalances];
 
     if (balances.length === 0) {
-      return eventsWithTransactionId;
+      return {
+        events: eventsWithTransactionId,
+        transfers: transfersWithTransactionId,
+      };
     }
 
     // Create values string for SQL insert
@@ -319,7 +335,10 @@ export async function processTransaction(
       transaction: tx,
     });
 
-    return eventsWithTransactionId;
+    return {
+      events: eventsWithTransactionId,
+      transfers: transfersWithTransactionId,
+    };
   } catch (error) {
     console.error(
       `[ERROR][DB][DATA_CORRUPT] Failed to save transaction ${transactionInfo.hash}: ${error}`,

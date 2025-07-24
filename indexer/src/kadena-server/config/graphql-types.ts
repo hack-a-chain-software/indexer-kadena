@@ -946,6 +946,7 @@ export type QueryBlocksFromDepthConnection = {
   __typename?: 'QueryBlocksFromDepthConnection';
   edges: Array<QueryBlocksFromDepthConnectionEdge>;
   pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
 };
 
 export type QueryBlocksFromDepthConnectionEdge = {
@@ -2878,6 +2879,7 @@ export type QueryBlocksFromDepthConnectionResolvers<
     ContextType
   >;
   pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

@@ -33,6 +33,7 @@ import { BlockOutput } from '../../repository/application/block-repository';
 export const buildBlockOutput = (output: BlockOutput) => {
   return {
     ...output,
+    canonical: output.canonical ?? false,
     // for resolvers
     parent: {} as Block,
     events: {} as BlockEventsConnection,

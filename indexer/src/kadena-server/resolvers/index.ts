@@ -96,6 +96,7 @@ import {
   tokenPricesQueryResolver,
 } from './query/token-price-query-resolver';
 import { transactionsSubscriptionResolver } from '@/kadena-server/resolvers/subscription/transactions-subscription-resolver';
+import { totalCountQueryBlocksFromDepthConnectionResolver } from '@/kadena-server/resolvers/fields/query-blocks-from-depth-connection/total-count-query-blocks-from-depth-connection-resolver';
 /**
  * Complete resolver map for the GraphQL API
  *
@@ -224,6 +225,9 @@ export const resolvers: Resolvers<ResolverContext> = {
   TransactionCommand: {
     signers: signersTransactionCommandResolver, // add dataloader
     meta: metaTransactionCommandResolver, // add dataloader
+  },
+  QueryBlocksFromDepthConnection: {
+    totalCount: totalCountQueryBlocksFromDepthConnectionResolver,
   },
   QueryEventsConnection: {
     totalCount: totalCountQueryEventsConnectionResolver,
