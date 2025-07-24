@@ -5,9 +5,14 @@ import { nodeProfilingIntegration } from '@sentry/profiling-node';
 /**
  * Sentry configuration
  */
-const SENTRY_DSN = getRequiredEnvString('SENTRY_DSN');
+const SENTRY_DSN = process.env['SENTRY_DSN'];
 const SENTRY_ENVIRONMENT = 'production';
 const SENTRY_RELEASE = 'v1.0.0';
+
+if (SENTRY_DSN === undefined || SENTRY_DSN === 0) {
+  console.info('[INFO][SENTRY][LOG] Not using Sentry as it is disabled by not setting SENTRY_DSN env var');
+  return; 
+}
 
 // Initialize Sentry
 console.info('[INFO][SENTRY][INIT] Initializing Sentry error reporting');
