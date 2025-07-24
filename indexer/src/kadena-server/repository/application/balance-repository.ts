@@ -102,52 +102,6 @@ export interface GetTokensParams extends PaginationsParams {}
  */
 export default interface BalanceRepository {
   /**
-   * Retrieves fungible token information for a specific account.
-   *
-   * @param accountName - Name of the account to retrieve balance for
-   * @param fungibleName - Optional name of the fungible token (defaults to all tokens)
-   * @returns Promise resolving to the account's fungible token information
-   */
-  getAccountInfo(accountName: string, fungibleName?: string | null): Promise<FungibleAccountOutput>;
-
-  /**
-   * Retrieves fungible token information for an account across specified chains.
-   *
-   * @param accountName - Name of the account
-   * @param fungibleName - Name of the fungible token
-   * @param chainIds - Optional array of chain IDs to filter by
-   * @returns Promise resolving to array of chain-specific account information
-   */
-  getChainsAccountInfo(
-    accountName: string,
-    fungibleName: string,
-    chainIds?: string[],
-  ): Promise<FungibleChainAccountOutput[]>;
-
-  /**
-   * Retrieves fungible accounts associated with a specific public key.
-   *
-   * @param publicKey - The public key to look up accounts for
-   * @param fungibleName - Name of the fungible token
-   * @returns Promise resolving to array of account information
-   */
-  getAccountsByPublicKey(publicKey: string, fungibleName: string): Promise<FungibleAccountOutput[]>;
-
-  /**
-   * Retrieves chain-specific fungible accounts for a public key.
-   *
-   * @param publicKey - The public key to look up accounts for
-   * @param fungibleName - Name of the fungible token
-   * @param chainId - ID of the specific chain
-   * @returns Promise resolving to array of chain-specific account information
-   */
-  getChainAccountsByPublicKey(
-    publicKey: string,
-    fungibleName: string,
-    chainId: string,
-  ): Promise<FungibleChainAccountOutput[]>;
-
-  /**
    * Retrieves non-fungible token information for a specific account.
    *
    * @param accountName - Name of the account

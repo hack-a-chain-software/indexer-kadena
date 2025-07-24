@@ -14,7 +14,6 @@
 
 import { FungibleAccountOutput } from '../../application/balance-repository';
 import zod from 'zod';
-import { BalanceAttributes } from '../../../../models/balance';
 
 /**
  * Zod schema for validating fungible account data
@@ -24,7 +23,6 @@ import { BalanceAttributes } from '../../../../models/balance';
  * identification properties.
  */
 const fungibleSchema = zod.object({
-  id: zod.number(),
   account: zod.string(),
   module: zod.string(),
 });
