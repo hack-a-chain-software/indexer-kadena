@@ -511,11 +511,12 @@ export default class EventDbRepository implements EventRepository {
     qualifiedEventName,
     lastEventId,
     chainId,
+    quantity,
     minimumDepth,
   }: GetLastEventsParams) {
     const queryParams = [];
     let conditions = '';
-    let limitCondition = lastEventId ? 'LIMIT 5' : 'LIMIT 100';
+    let limitCondition = lastEventId ? 'LIMIT 5' : `LIMIT ${quantity}`;
 
     const splitted = qualifiedEventName.split('.');
     const name = splitted.pop() ?? '';
@@ -556,9 +557,7 @@ export default class EventDbRepository implements EventRepository {
 
     const { rows } = await rootPgPool.query(query, queryParams);
 
-    const events = rows
-      .map(e => eventValidator.validate(e))
-      .sort((a, b) => Number(b.id) - Number(a.id));
+    const events = rows.map(e => eventValidator.validate(e));
 
     return events;
   }

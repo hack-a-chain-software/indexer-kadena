@@ -1,5 +1,108 @@
 # Changelog
 
+## May 21 - Jul 25, 2025
+
+- docs: DEXs API documentation
+- fix: transfers count field in transaction type
+- fix: use isCoinbase flag in transactions counter; use an auxiliary filter if only chainId was feat: provided in transactions query
+- fix: adjust query logic when only first or last was provided
+- fix: made fungibleAccount queries use chainweb-node directly
+- fix: blocksFromDepth and blocksFromDepth pagination
+- fix: circulating coins value
+- fix: transactions cursor pagination
+- fix: missing ssl config
+- fix: adjusted the all transactions fetch logic in the database repository
+- fix: the error in streaming by sequalize transaction
+- fix: removed the duplicated index (pool_stats_pairid_timestamp_idx) on down function as well
+- fix: changed the blocksFromHeight response to return blocks in ascending order based on the startHeight parameter
+- fix: improve effectiveSyncMinHeight calculation logic in backfill process
+- fix: sanitize data in SaveTransactionDetails to prevent unsupported Unicode errors
+- fix: update backfill process to use effectiveSyncMinHeight and rename max function
+- fix: adjust nextHeight calculation in backfill process
+- fix: backfill time analysis
+- fix: no debug on production
+- fix: the order error in pools and luiquidity-balances
+- fix: the after error
+- fix: after error in pools and liquidity-balances
+- fix: the false of hasNextPage in pools and liquidity-positions
+- fix: the pool-transaction timestamp error
+- fix: the error in liquidity position
+- fix: the error to show 0 fee data if there are no swaps
+- fix: the limit calculation error
+- fix: added missing create pool transaction migration
+- fix: sequelize.sync and migrations approach conflict
+- fix: the empty transaction error in pools query
+- fix: missing transaction id during event creation on the streaming process
+- fix: use tsconfig-paths to run scrips in dev mode
+- fix: added create table migrations for DEX Protocol Data
+- fix: the path error in pair service
+- fix: resolve the reviews
+- fix: the return type for pool-query-resolver
+- fix: old graphql import error
+- fix: resolve conflicts
+- fix: alias resolution inside a container; missing dotenv-cli package
+- fix: missing nfts
+- fix: graphql hot reload and subscription tests
+- remove: duplicated index
+- remove: duplicate code to fetch pool data
+- remove: env testing
+- remove: env example from git ignore
+- refactor: removed unused devcontainer configuration
+- refactor: changed complexity calculation
+- refactor: removed old graphql code
+- refactor: changed gasPrice type in graphql schema
+- refactor: improved balances backfill; normalized the gas price format in the database to a decimal to ensure consistency
+- refactor: removed unnecessary backfill code
+- refactor: increase max complexity to 4k
+- refactor: use DEFAULT_PROTOCOL in module names
+- refactor: creating new path for wss
+- refactor: the namespace
+- refactor: added canonical flag to the Events table
+- refactor: added canonical = true on backfill
+- refactor: the contract address
+- refactor: decimal from (20,2) to (20,10)
+- refactor: liquidity-positions
+- refactor: primary key from int to string in pair
+- refactor: the total supply when adding/removing liquidity
+- refactor: the pool-resolver
+- refactor: the sushi namespace
+- refactor: splitted the backfill steps in batches to make it faster
+- refactor: query params in pools
+- refactor: query params in liquidity-position
+- refactor: graphql query for pool-transaction
+- refactor: scope into span
+- refactor: rename example env
+- refactor: added a database index for pactid; adjusted how to fetch a cross chain transfer
+- feat: added custom database script to run a postgres with pgbackrest inside a docker container
+- feat: orphan blocks mechanism
+- feat: added coinbase field in block queries
+- feat: added latest transactions query and subscription
+- feat: removing impractical allowed origin method
+- feat: set env without affecting existing services
+- feat: enhance SSL configuration for database connections with optional CA validation
+- feat: kadena ssl auth config
+- feat: displaying block height when throwing errors
+- feat: adding some configs for a faster postgres
+- feat: calculate tvlUsd in real time in pool query
+- feat: transacionCount24h to the PoolStats
+- feat: get chart data by hours and days
+- feat: store poolstats data by dateonly
+- feat: query pairs by the protocol
+- feat: group pools by id
+- feat: more args for charts and transactions data in the pool query
+- feat: logic to process changes in liquidity balances
+- feat: get a token price by the protocol
+- feat: tokenPrice and tokenPrices queries
+- feat: token address in the token query and fix the empty transaction error in pools query
+- feat: protocolAddress in pools query
+- feat: query dexMetrics by protocol
+- feat: migration for new index in pair model
+- feat: create a pair if it doesn't exist when updating reserves
+- feat: sort events by the transaction creationtime
+- feat: sort events by the block height in the backfill
+- feat: sentry plugin
+- feat: add backfill function for pair tables
+
 ## May 13 - May 20, 2025
 
 - merge: PR of Sushi

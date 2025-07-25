@@ -32,7 +32,15 @@ import { createGraphqlContext, ResolverContext } from './config/apollo-server-co
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
 import { makeExecutableSchema } from '@graphql-tools/schema';
-import { ArgumentNode, ASTNode, GraphQLError, Kind } from 'graphql';
+import {
+  ArgumentNode,
+  ASTNode,
+  GraphQLError,
+  Kind,
+  specifiedRules,
+  parse,
+  validate,
+} from 'graphql';
 
 import initCache from '../cache/init';
 import { getRequiredEnvString, getRequiredArrayEnvString } from '../utils/helpers';
@@ -259,12 +267,7 @@ export async function startGraphqlServer() {
     introspection: true,
     validationRules: [
       depthLimit({
-        maxDepth: 15, // Reasonable depth for most queries
-        maxListDepth: 8, // Prevent deeply nested array queries
-        maxSelfReferentialDepth: 3, // Limit recursive queries
-        maxIntrospectionDepth: 15, // Limit introspection query depth
-        maxIntrospectionListDepth: 8, // Limit introspection array depth
-        maxIntrospectionSelfReferentialDepth: 3,
+        maxDepth: 9,
         revealDetails: false, // Don't expose limits to clients
       }),
     ],
@@ -300,31 +303,16 @@ export async function startGraphqlServer() {
              * More documentation can be found at https://github.com/ivome/graphql-query-complexity
              */
             const complexity = getComplexity({
-              // GraphQL schema
               schema,
-              // To calculate query complexity properly,
-              // check only the requested operation
-              // not the whole document that may contains multiple operations
               operationName: request.operationName,
-              // GraphQL query document
               query: document,
-              // GraphQL query variables
               variables: request.variables,
-              // Add any number of estimators. The estimators are invoked in order, the first
-              // numeric value that is being returned by an estimator is used as the field complexity
-              // If no estimator returns a value, an exception is raised
               estimators: [
-                // Using fieldExtensionsEstimator is mandatory to make it work with type-graphql
                 fieldExtensionsEstimator(),
-                // Add directive support
                 directiveEstimator({
-                  // Optionally change the name of the directive here... Default value is `complexity`
                   name: 'complexity',
                 }),
-                // Add more estimators here...
-                // This will assign each field a complexity of 1
-                // if no other estimator returned a value
-                simpleEstimator({ defaultComplexity: 1 }),
+                simpleEstimator({ defaultComplexity: 0 }),
               ],
             });
 
@@ -332,7 +320,7 @@ export async function startGraphqlServer() {
             // like compare it with max and throw error when the threshold is reached
             if (complexity > MAX_COMPLEXITY) {
               throw new Error(
-                `Sorry, too complicated query! Exceeded the maximum allowed complexity.`,
+                'Sorry, too complicated query! Exceeded the maximum allowed complexity.',
               );
             }
           },
@@ -389,6 +377,35 @@ export async function startGraphqlServer() {
           signal: abortController.signal, // Pass signal per subscription
         };
       },
+      onSubscribe: (_ctx, msg) => {
+        const { operationName, query, variables } = msg.payload;
+
+        const document = parse(query);
+        const errors = validate(schema, document, specifiedRules);
+        if (errors.length > 0) return errors;
+
+        const complexity = getComplexity({
+          schema,
+          operationName: operationName ?? undefined,
+          query: document,
+          variables: variables ?? {},
+          estimators: [
+            fieldExtensionsEstimator(),
+            directiveEstimator({
+              name: 'complexity',
+            }),
+            simpleEstimator({ defaultComplexity: 0 }),
+          ],
+        });
+
+        if (complexity > MAX_COMPLEXITY) {
+          return [
+            new GraphQLError(
+              'Sorry, too complicated query! Exceeded the maximum allowed complexity.',
+            ),
+          ];
+        }
+      },
       // Add connection lifecycle hooks for tracking
       onConnect: ctx => {
         const ip = ctx.extra.request.socket.remoteAddress || 'unknown';
@@ -396,7 +413,7 @@ export async function startGraphqlServer() {
         console.log('New connection -> ', ip, 'Total connections opened:', activeConnections);
         return true; // Allow the connection
       },
-      onDisconnect: (ctx, code, reason) => {
+      onDisconnect: ctx => {
         const ip = ctx.extra.request.socket.remoteAddress || 'unknown';
         activeConnections--;
         console.log('Closed connection -> ', ip, 'Total connections opened:', activeConnections);

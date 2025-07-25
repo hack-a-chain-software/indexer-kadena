@@ -19,6 +19,7 @@ const schema = zod.object({
   minHeight: zod.number().nullable().optional(),
   minimumDepth: zod.number().nullable().optional(),
   requestKey: zod.string().nullable().optional(),
+  isCoinbase: zod.boolean().nullable().optional(),
 });
 
 /**
@@ -41,6 +42,7 @@ export const totalCountQueryTransactionsConnectionResolver: QueryTransactionsCon
       minimumDepth,
       fungibleName,
       requestKey,
+      isCoinbase,
     } = schema.parse(parent);
     const output = await context.transactionRepository.getTransactionsCount({
       accountName,
@@ -51,6 +53,7 @@ export const totalCountQueryTransactionsConnectionResolver: QueryTransactionsCon
       minHeight,
       minimumDepth,
       requestKey,
+      isCoinbase,
     });
     return output;
   };

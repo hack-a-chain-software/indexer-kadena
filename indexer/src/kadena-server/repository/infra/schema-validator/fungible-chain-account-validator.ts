@@ -42,7 +42,6 @@ const getBase64IDChain = (chainId: number, fungibleName: string, accountName: st
  * as well as the chain ID and balance amount.
  */
 const fungibleChainSchema = zod.object({
-  id: zod.number(),
   accountName: zod.string(),
   module: zod.string(),
   chainId: zod.number(),
