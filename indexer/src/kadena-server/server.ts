@@ -43,7 +43,7 @@ import {
 } from 'graphql';
 
 import initCache from '../cache/init';
-import { getRequiredEnvString, getRequiredArrayEnvString } from '../utils/helpers';
+import { getArrayEnvString } from '../utils/helpers';
 import {
   directiveEstimator,
   fieldExtensionsEstimator,
@@ -82,12 +82,13 @@ const typeDefs = readFileSync(join(__dirname, './config/schema.graphql'), 'utf-8
 /**
  * The port on which the GraphQL API will listen
  */
-const KADENA_GRAPHQL_API_PORT = getRequiredEnvString('KADENA_GRAPHQL_API_PORT');
+const KADENA_GRAPHQL_API_PORT = process.env.KADENA_GRAPHQL_API_PORT ?? '3001';
 
 /**
  * Array of domains allowed to access the GraphQL API
  */
-const ALLOWED_ORIGINS = getRequiredArrayEnvString('ALLOWED_ORIGINS');
+
+const ALLOWED_ORIGINS = getArrayEnvString('ALLOWED_ORIGINS');
 
 /**
  * Apollo Server plugin that validates pagination parameters in GraphQL requests
