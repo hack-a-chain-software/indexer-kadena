@@ -715,14 +715,14 @@ export default class BlockDbRepository implements BlockRepository {
    * @returns Promise resolving to an array of recent blocks
    */
   async getLatestBlocks(params: GetLatestBlocksParams): Promise<BlockOutput[]> {
-    const { creationTime, lastBlockId, chainIds = [] } = params;
+    const { creationTime, lastBlockId, chainIds = [], quantity } = params;
     const blocks = await BlockModel.findAll({
       where: {
         ...(lastBlockId && { id: { [Op.gt]: lastBlockId } }),
         creationTime: { [Op.gt]: creationTime },
         ...(chainIds.length && { chainId: { [Op.in]: chainIds } }),
       },
-      limit: 100,
+      limit: quantity,
       order: [['id', 'DESC']],
     });
 
@@ -774,6 +774,7 @@ export default class BlockDbRepository implements BlockRepository {
     chainIdsParam: string[],
     minimumDepth: number,
     startingTimestamp: number,
+    quantity: number,
     id?: string,
   ): Promise<BlockOutput[]> {
     const chainIds = chainIdsParam.length ? chainIdsParam.map(Number) : await this.getChainIds();
@@ -802,11 +803,11 @@ export default class BlockDbRepository implements BlockRepository {
     `;
 
     if (id) {
-      queryParams.push(id);
+      queryParams.push(id, quantity);
       query += `
-        AND id > $${queryParams.length}
+        AND id > $${queryParams.length - 1}
         ORDER BY id DESC
-        LIMIT 100
+        LIMIT $${queryParams.length}
       `;
     } else {
       query += `

@@ -21,14 +21,27 @@ import { buildBlockOutput } from '../output/build-block-output';
  * The function maintains its state between iterations, allowing it to effectively paginate
  * through new blocks as they are created on the blockchain.
  *
- * @param chainIds - Array of chain IDs to filter blocks by (empty array means all chains)
  * @param context - Resolver context containing repositories and control signals
+ * @param chainIds - Array of chain IDs to filter blocks by (empty array means all chains)
+ * @param quantity - The number of blocks to fetch per poll
  * @returns AsyncGenerator that yields arrays of new blocks as they are discovered
  */
-async function* iteratorFn(
-  chainIds: string[],
-  context: ResolverContext,
-): AsyncGenerator<BlockOutput[], void, unknown> {
+
+interface IteratorFnParams {
+  context: ResolverContext;
+  chainIds: string[];
+  quantity: number;
+}
+
+async function* iteratorFn({
+  context,
+  chainIds,
+  quantity,
+}: IteratorFnParams): AsyncGenerator<BlockOutput[], void, unknown> {
+  if (quantity > 100) {
+    throw new Error('[ERROR][SUBSCRIPTION][PARAMS] Quantity must be less than 100.');
+  }
+
   const startingTimestamp = new Date().getTime() / 1000;
 
   let lastBlockId: number | undefined;
@@ -38,6 +51,7 @@ async function* iteratorFn(
       creationTime: startingTimestamp,
       lastBlockId,
       chainIds,
+      quantity,
     });
 
     if (newBlocks.length > 0) {
@@ -59,8 +73,12 @@ async function* iteratorFn(
  * The resolver filters blocks by chain ID if specified, or returns blocks from all chains if no filter is provided.
  */
 export const newBlocksSubscriptionResolver: SubscriptionResolvers<ResolverContext>['newBlocks'] = {
-  subscribe: (_root, args, context) => {
-    return iteratorFn(args.chainIds ?? [], context);
-  },
   resolve: (payload: any) => payload,
+  subscribe: (_root, args, context) => {
+    return iteratorFn({
+      context,
+      chainIds: args.chainIds ?? [],
+      quantity: args.quantity,
+    });
+  },
 };

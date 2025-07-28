@@ -20,16 +20,15 @@ import { TransactionOutput } from '@/kadena-server/repository/application/transa
  * sending duplicate transactions to subscribers.
  *
  * @param context - Resolver context containing repositories and control signals
- * @param chainId - Optional chain ID to filter transactions by specific chain
- * @param minimumDepth - Optional minimum confirmation depth for transactions
+ * @param quantity - The number of transactions to fetch per poll
  * @returns AsyncGenerator that yields arrays of new transactions as they are discovered
  */
 async function* iteratorFn(
-  quantity: number,
   context: ResolverContext,
+  quantity: number,
 ): AsyncGenerator<TransactionOutput[] | undefined, void, unknown> {
   if (quantity > 100) {
-    throw new Error('Quantity must be less than 100.');
+    throw new Error('[ERROR][SUBSCRIPTION][PARAMS] Quantity must be less than 100.');
   }
 
   let hasError = false;
@@ -45,7 +44,7 @@ async function* iteratorFn(
     }
   } catch (error) {
     hasError = true;
-    console.error('Error getting last transactions:', error);
+    console.error('[ERROR][DB][DATA_CORRUPT] Error getting last transactions:', error);
   }
 }
 
@@ -60,8 +59,8 @@ async function* iteratorFn(
  */
 export const transactionsSubscriptionResolver: SubscriptionResolvers<ResolverContext>['transactions'] =
   {
-    subscribe: (__root, args, context) => {
-      return iteratorFn(args.quantity, context);
-    },
     resolve: (payload: any) => payload,
+    subscribe: (__root, args, context) => {
+      return iteratorFn(context, args.quantity);
+    },
   };
