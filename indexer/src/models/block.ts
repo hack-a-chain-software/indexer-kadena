@@ -8,7 +8,7 @@
  */
 
 import { Model, DataTypes } from 'sequelize';
-import { sequelize } from '../config/database';
+import { sequelize } from '@/config/db-migrator';
 
 /**
  * Interface defining the attributes of a Block.

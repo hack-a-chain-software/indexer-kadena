@@ -1,6 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
 
-import { sequelize } from '../config/database';
+import { sequelize } from '@/config/db-migrator';
 import type PoolChart from './pool-chart';
 import type PoolStats from './pool-stats';
 import type PoolTransaction from './pool-transaction';

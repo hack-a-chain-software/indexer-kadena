@@ -1,6 +1,6 @@
 import { Model, DataTypes, Optional } from 'sequelize';
-import { sequelize } from '../config/database';
 import Transaction from './transaction';
+import { sequelize } from '@/config/db-migrator';
 
 export interface SignerAttributes {
   id: number;

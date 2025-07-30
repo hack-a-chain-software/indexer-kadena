@@ -1,9 +1,21 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import { sequelize } from '@/config/database';
+import { QueryTypes, Sequelize } from 'sequelize';
+const { sequelizeConfig } = require('./database');
+export const sequelize = new Sequelize(sequelizeConfig);
+
+// Import models to allow initialization using sync()
+import '@/models/signer';
+import '@/models/balance';
+import '@/models/block';
+import '@/models/contract';
+import '@/models/event';
+import '@/models/guard';
+import '@/models/transfer';
+import '@/models/transaction';
+
 import { execSync } from 'child_process';
-import { QueryTypes } from 'sequelize';
 
 export default async function migrate() {
   const isCreated = await isDatabaseAlreadyCreated();
@@ -12,7 +24,10 @@ export default async function migrate() {
     await createDatabase();
   }
 
-  execSync('npx sequelize-cli db:migrate', { stdio: 'inherit' });
+  execSync('npx sequelize-cli db:migrate', {
+    stdio: 'inherit',
+  });
+  process.exit(0);
 }
 
 async function isDatabaseAlreadyCreated() {
@@ -21,12 +36,14 @@ async function isDatabaseAlreadyCreated() {
       SELECT EXISTS (
         SELECT 1 FROM pg_catalog.pg_class c
         JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-        WHERE c.relname = 'SequelizeMeta' AND n.nspname = 'public'
+        WHERE c.relname = 'Blocks' AND n.nspname = 'public'
       )
     `,
     { type: QueryTypes.SELECT },
   );
 
+  // Since Blocks is the first table to be created
+  // We can use it to check if the database is already created.
   return row?.exists;
 }
 
@@ -44,13 +61,12 @@ async function createDatabase() {
     'Events',
     'Guards',
     'Signers',
-    'StreamingErrors',
     'Transactions',
     'Transfers',
   ];
 
   // Get all models
-  const models = Object.values(sequelize.models);
+  const models: any = Object.values(sequelize.models);
 
   // Sync only the specified tables
   for (const model of models) {

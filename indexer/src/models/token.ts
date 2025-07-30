@@ -1,6 +1,6 @@
 import { DataTypes, Model } from 'sequelize';
 
-import { sequelize } from '../config/database';
+import { sequelize } from '@/config/db-migrator';
 import type Pair from './pair';
 
 class Token extends Model {

@@ -1,6 +1,6 @@
 import { Op, Transaction as SequelizeTransaction } from 'sequelize';
 
-import { sequelize } from '../config/database';
+import { sequelize } from '@/config/db-migrator';
 import Pair from '../models/pair';
 import PoolChart from '../models/pool-chart';
 import PoolStats from '../models/pool-stats';
