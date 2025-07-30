@@ -4,4 +4,4 @@ ssh-keyscan -H ${BACKUP_HOST_IP} >> ~postgres/.ssh/known_hosts
 chown postgres:postgres ~postgres/.ssh/known_hosts
 chmod 644 ~postgres/.ssh/known_hosts
 
-exec /usr/local/bin/docker-entrypoint.sh postgres -c archive_mode=on -c archive_command='pgbackrest --stanza=${SYNC_NETWORK} archive-push %p' -c ssl=on -c ssl_cert_file=/var/lib/postgresql/server.crt -c ssl_key_file=/var/lib/postgresql/server.key -c shared_buffers=8GB -c effective_cache_size=24GB -c maintenance_work_mem=2GB -c work_mem=64MB -c max_wal_size=16GB -c random_page_cost=1.1 -c effective_io_concurrency=200 -c synchronous_commit=off
+exec /usr/local/bin/docker-entrypoint.sh postgres -c archive_mode=on -c archive_command='pgbackrest --stanza=${STANZA_NAME} archive-push %p' -c ssl=on -c ssl_cert_file=/var/lib/postgresql/server.crt -c ssl_key_file=/var/lib/postgresql/server.key -c shared_buffers=8GB -c effective_cache_size=24GB -c maintenance_work_mem=2GB -c work_mem=64MB -c max_wal_size=16GB -c random_page_cost=1.1 -c effective_io_concurrency=200 -c synchronous_commit=off
