@@ -58,12 +58,13 @@ func StartBackfill(LastHeight int, Hash string, ChainId int, SyncMinHeight int, 
 
 		// Log progress and stats
 		log.Printf("(%.2f%%) Processed chain %d in %fs\n", progress, ChainId, duration.Seconds())
-		log.Printf("Counters: %d transactions, %d transfers, %d events, %d signers\n", counters.Transactions, counters.Transfers, counters.Events, counters.Signers)
-		log.Printf("Transactions: %d KB, Transfers: %d KB, Events: %d KB, Signers: %d KB\n", dataSizeTracker.TransactionsKB, dataSizeTracker.TransfersKB, dataSizeTracker.EventsKB, dataSizeTracker.SignersKB)
-
-		// Update average time
 		AverageTime = (AverageTime + duration.Seconds()) / 2
-		log.Printf("Average time: %f\n", AverageTime)
+
+		if env.IsSingleChain {
+			log.Printf("Counters: %d transactions, %d transfers, %d events, %d signers\n", counters.Transactions, counters.Transfers, counters.Events, counters.Signers)
+			log.Printf("Transactions: %d KB, Transfers: %d KB, Events: %d KB, Signers: %d KB\n", dataSizeTracker.TransactionsKB, dataSizeTracker.TransfersKB, dataSizeTracker.EventsKB, dataSizeTracker.SignersKB)
+			log.Printf("Average time: %f\n", AverageTime)
+		}
 	}
 
 	log.Printf("Backfill process completed for chain %d.\n", ChainId)

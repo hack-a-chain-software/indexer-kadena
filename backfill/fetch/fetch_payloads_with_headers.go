@@ -118,7 +118,10 @@ func FetchPayloadsWithHeaders(network string, chainId int, Hash string, minHeigh
 			continue
 		}
 
-		log.Printf("Fetched payloads in %fs\n", time.Since(startTime).Seconds())
+		if env.IsSingleChain {
+			log.Printf("Fetched payloads in %fs\n", time.Since(startTime).Seconds())
+		}
+
 		return payload.Items, nil
 	}
 
