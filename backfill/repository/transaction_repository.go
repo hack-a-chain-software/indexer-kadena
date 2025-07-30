@@ -134,6 +134,7 @@ func SaveTransactionDetails(db pgx.Tx, details []TransactionDetailsAttributes, t
 		// Sanitize data before marshalling to prevent "unsupported Unicode escape sequence" errors.
 		// PostgreSQL's JSONB type does not support null characters (\u0000), so we remove them.
 		details[index].Data = bytes.ReplaceAll(details[index].Data, []byte(`\u0000`), []byte{})
+		details[index].Code = bytes.ReplaceAll(details[index].Code, []byte(`\u0000`), []byte{})
 
 		detail := details[index]
 		code, err := json.Marshal(detail.Code)
