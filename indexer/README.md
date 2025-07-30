@@ -45,21 +45,20 @@ cp indexer/.env.template indexer/.env
 
 ### 3.2. Environment Variables Reference
 
-| Variable                        | Description                             | Example                                 |
-| ------------------------------- | --------------------------------------- | --------------------------------------- |
-| `NODE_API_URL`                  | Base URL for the Kadena node API        | `https://api.chainweb.com`              |
-| `SYNC_BASE_URL`                 | Base URL for the Chainweb API           | `https://api.chainweb.com/chainweb/0.0` |
-| `SYNC_MIN_HEIGHT`               | Minimum height to start syncing from    | `0`                                     |
-| `SYNC_FETCH_INTERVAL_IN_BLOCKS` | Interval in blocks to fetch             | `100`                                   |
-| `SYNC_NETWORK`                  | Network to sync                         | `mainnet01`, `testnet04`, `devnet`      |
-| `KADENA_GRAPHQL_API_URL`        | GraphQL API host                        | `localhost`                             |
-| `KADENA_GRAPHQL_API_PORT`       | GraphQL API port                        | `3000`                                  |
-| `DB_USERNAME`                   | PostgreSQL database username            | `postgres`                              |
-| `DB_PASSWORD`                   | PostgreSQL database password            | `your_password`                         |
-| `DB_NAME`                       | PostgreSQL database name                | `indexer`                               |
-| `DB_HOST`                       | PostgreSQL database host                | `localhost`                             |
-| `DB_SSL_ENABLED`                | Enable/disable SSL for database         | `true` or `false`                       |
-| `PRICE_CACHE_TTL`               | Time-to-live for price cache in seconds | `300`                                   |
+| Variable                  | Description                             | Example                                 |
+| ------------------------- | --------------------------------------- | --------------------------------------- |
+| `NODE_API_URL`            | Base URL for the Kadena node API        | `https://api.chainweb.com`              |
+| `SYNC_BASE_URL`           | Base URL for the Chainweb API           | `https://api.chainweb.com/chainweb/0.0` |
+| `SYNC_NETWORK`            | Network to sync                         | `mainnet01`, `testnet04`, `devnet`      |
+| `DB_USERNAME`             | PostgreSQL database username            | `postgres`                              |
+| `DB_PASSWORD`             | PostgreSQL database password            | `your_password`                         |
+| `DB_NAME`                 | PostgreSQL database name                | `indexer`                               |
+| `DB_HOST`                 | PostgreSQL database host                | `localhost`                             |
+| `DB_SSL_ENABLED`          | Enable/disable SSL for database         | `true` or `false`                       |
+| `KADENA_GRAPHQL_API_PORT` | GraphQL API port                        | `3000`                                  |
+| `SENTRY_DSN`              | Sentry url to monitor indexer usage     | `https://123.ingest.us.sentry.io/123`   |
+| `ALLOWED_ORIGINS`         | Allowed origins for CORS                | `http://abcde:3001,http://abcde:3002`   |
+| `PRICE_CACHE_TTL`         | Time-to-live for price cache in seconds | `300`                                   |
 
 **NOTE:** The example Kadena node API from chainweb will not work for the indexer purpose. You will need to run your own Kadena node and set the `NODE_API_URL` to your node's API URL.
 
