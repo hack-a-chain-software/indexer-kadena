@@ -7,6 +7,7 @@ export async function increaseCounters({
   canonicalTransactionsCount,
   orphanTransactionsCount,
   chainId,
+  totalGasUsed = 0,
   tx,
 }: {
   canonicalBlocksCount: number;
@@ -14,6 +15,7 @@ export async function increaseCounters({
   canonicalTransactionsCount: number;
   orphanTransactionsCount: number;
   chainId: number;
+  totalGasUsed?: number;
   tx?: Transaction;
 }) {
   await Counter.increment('canonicalBlocks', {
@@ -36,4 +38,11 @@ export async function increaseCounters({
     transaction: tx,
     where: { chainId: { [Op.eq]: chainId } },
   });
+  if (totalGasUsed > 0) {
+    await Counter.increment('totalGasUsed', {
+      by: totalGasUsed,
+      transaction: tx,
+      where: { chainId: { [Op.eq]: chainId } },
+    });
+  }
 }
