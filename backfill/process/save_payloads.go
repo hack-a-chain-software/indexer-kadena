@@ -3,6 +3,7 @@ package process
 import (
 	"context"
 	"fmt"
+	"go-backfill/config"
 	"go-backfill/fetch"
 	"go-backfill/repository"
 	"log"
@@ -155,13 +156,14 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		counters.Signers += len(signers)
 	}
 
-	log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
+	env := config.GetConfig()
+	if env.IsSingleChain {
+		log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
+	}
 
-	commitStartTime := time.Now()
 	if err := tx.Commit(context.Background()); err != nil {
 		return Counters{}, DataSizeTracker{}, fmt.Errorf("committing transaction: %w", err)
 	}
-	log.Printf("DB commit took %fs\n", time.Since(commitStartTime).Seconds())
 
 	dataSizeTracker.TransactionsKB /= 1024
 	dataSizeTracker.EventsKB /= 1024

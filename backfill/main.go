@@ -3,8 +3,7 @@ package main
 import (
 	"flag"
 	"go-backfill/config"
-	"go-backfill/fetch"
-	"go-backfill/process"
+	"go-backfill/run"
 )
 
 func main() {
@@ -16,17 +15,9 @@ func main() {
 	pool := config.InitDatabase()
 	defer pool.Close()
 
-	go config.StartMemoryMonitoring()
-	cut := fetch.FetchCut()
-	ChainId := env.ChainId
-
-	var effectiveSyncMinHeight int
-	if env.SyncMinHeight > 0 {
-		effectiveSyncMinHeight = env.SyncMinHeight
+	if env.IsSingleChain {
+		run.RunSingleChainBackfill(pool)
 	} else {
-		chainGenesisHeights := config.GetMinHeights(env.Network)
-		effectiveSyncMinHeight = chainGenesisHeights[ChainId]
+		run.RunParallelChainBackfill(pool)
 	}
-
-	process.StartBackfill(cut.Height, cut.Hash, ChainId, effectiveSyncMinHeight, pool)
 }

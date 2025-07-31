@@ -23,6 +23,7 @@ type Config struct {
 	SyncAttemptsMaxRetry      int
 	SyncAttemptsIntervalInMs  int
 	IsDevelopment             bool
+	IsSingleChain             bool
 }
 
 var config *Config
@@ -48,6 +49,7 @@ func InitEnv(envFilePath string) {
 		SyncFetchIntervalInBlocks: getEnvAsInt("SYNC_FETCH_INTERVAL_IN_BLOCKS"),
 		SyncAttemptsMaxRetry:      getEnvAsInt("SYNC_ATTEMPTS_MAX_RETRY"),
 		SyncAttemptsIntervalInMs:  getEnvAsInt("SYNC_ATTEMPTS_INTERVAL_IN_MS"),
+		IsSingleChain:             getEnvAsBool("IS_SINGLE_CHAIN_RUN"),
 		IsDevelopment:             IsDevelopment,
 	}
 }
@@ -72,6 +74,15 @@ func getEnvAsInt(key string) int {
 	value, err := strconv.Atoi(valueStr)
 	if err != nil {
 		log.Fatalf("Environment variable %s must be an integer, but got: %s", key, valueStr)
+	}
+	return value
+}
+
+func getEnvAsBool(key string) bool {
+	valueStr := getEnv(key)
+	value, err := strconv.ParseBool(valueStr)
+	if err != nil {
+		log.Fatalf("Environment variable %s must be a boolean, but got: %s", key, valueStr)
 	}
 	return value
 }
