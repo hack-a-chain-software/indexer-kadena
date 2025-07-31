@@ -8,6 +8,7 @@ class Counter extends Model {
   public orphansBlocks!: number;
   public canonicalTransactions!: number;
   public orphanTransactions!: number;
+  public totalGasUsed!: number;
 }
 
 Counter.init(
@@ -30,6 +31,10 @@ Counter.init(
     },
     orphanTransactions: {
       type: DataTypes.INTEGER,
+      allowNull: false,
+    },
+    totalGasUsed: {
+      type: DataTypes.DECIMAL(20, 10),
       allowNull: false,
     },
   },

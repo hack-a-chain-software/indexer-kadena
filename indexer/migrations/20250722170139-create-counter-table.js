@@ -24,6 +24,10 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
+      totalGasUsed: {
+        type: Sequelize.DECIMAL(20, 10),
+        allowNull: false,
+      },
     });
 
     const chainIds = Array.from({ length: 20 }, (_, i) => ({
@@ -32,6 +36,7 @@ module.exports = {
       orphansBlocks: 0,
       canonicalTransactions: 0,
       orphanTransactions: 0,
+      totalGasUsed: 0,
     }));
 
     await queryInterface.bulkInsert('Counters', chainIds);
