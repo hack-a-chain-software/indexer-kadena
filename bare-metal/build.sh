@@ -13,8 +13,8 @@ fi
 export $(grep -v '^#' .env | xargs)
 
 # Check for required variables
-if [ -z "$SYNC_NETWORK" ] || [ -z "$BACKUP_HOST_IP" ]; then
-    echo "Error: SYNC_NETWORK and BACKUP_HOST_IP must be set in .env"
+if [ -z "$SYNC_NETWORK" ] || [ -z "$BACKUP_HOST_IP" ] || [ -z "$STANZA_NAME" ]; then
+    echo "Error: SYNC_NETWORK, BACKUP_HOST_IP and STANZA_NAME must be set in .env"
     exit 1
 fi
 

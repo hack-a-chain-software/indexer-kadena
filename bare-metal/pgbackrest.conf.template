@@ -8,7 +8,7 @@ start-fast=y
 log-level-console=info
 log-level-file=info
 
-[${SYNC_NETWORK}]
+[${STANZA_NAME}]
 pg1-path=/var/lib/postgresql/data
 pg1-user=postgres
 pg1-database=indexer
