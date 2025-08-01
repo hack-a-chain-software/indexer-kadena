@@ -134,11 +134,11 @@ docker run --rm --name postgres-indexer \
 
 Assuming you've already started the Docker container, you can run the following commands to start the indexer:
 
-**Note**: Run each command in a separate terminal window -- with exception of `yarn create:database`, as they are long-running process.
+**Note**: Run each command in a separate terminal window -- with exception of `yarn migrate:up`, as they are long-running process.
 
 ```bash
 # Run the database migrations
-yarn create:database
+yarn migrate:up
 
 # Start the streaming service
 yarn dev:streaming

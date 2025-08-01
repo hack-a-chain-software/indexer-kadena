@@ -42,7 +42,6 @@ func GetNftTransfers(network string, chainId int, events []fetch.Event, reqKey s
 				HasTokenId:    tokenId != nil,
 				TokenId:       tokenId,
 				Type:          "poly-fungible",
-				ContractId:    nil,
 				OrderIndex:    len(transfers),
 			}
 

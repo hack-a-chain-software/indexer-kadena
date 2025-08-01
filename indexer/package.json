@@ -72,7 +72,6 @@
   },
   "scripts": {
     "build": "tsc",
-    "create:database": "ts-node -r tsconfig-paths/register src/index.ts --database && yarn migrate:up",
     "dev:guards": "ts-node -r tsconfig-paths/register src/index.ts --guards",
     "dev:database": "ts-node -r tsconfig-paths/register src/index.ts --database",
     "dev:backfillPairs": "ts-node -r tsconfig-paths/register src/index.ts --backfillPairs",
@@ -81,7 +80,7 @@
     "dev:graphql": "ts-node -r tsconfig-paths/register src/index.ts --graphql",
     "dev:hot:graphql": "nodemon --exec ts-node -r tsconfig-paths/register src/index.ts --graphql",
     "graphql:generate-types": "npx graphql-codegen",
-    "migrate:up": "dotenv -e .env npx sequelize-cli db:migrate",
+    "migrate:up": "ts-node -r tsconfig-paths/register src/config/migrator-wrapper.ts",
     "migrate:down": "dotenv -e .env npx sequelize-cli db:migrate:undo",
     "test:unit": "jest tests/unit",
     "test:queries": "dotenv -e .env jest tests/integration/queries/*.test.ts",

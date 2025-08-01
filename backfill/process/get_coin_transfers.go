@@ -43,7 +43,6 @@ func GetCoinTransfers(
 				HasTokenId:    false,
 				TokenId:       nil,
 				Type:          "fungible",
-				ContractId:    nil,
 				OrderIndex:    len(transfers),
 			}
 

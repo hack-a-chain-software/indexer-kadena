@@ -51,7 +51,7 @@ services:
     container_name: db-migration
     environment:
       DB_HOST: indexer-db
-    command: ['yarn', 'create:database']
+    command: ['yarn', 'migrate:up']
     depends_on:
       indexer-db:
         condition: service_healthy
@@ -76,8 +76,7 @@ services:
       dockerfile: Dockerfile.development
     container_name: kad-indexer-streaming
     environment:
-      DB_HOST: index-db
-      KADENA_GRAPHQL_API_URL: http://graphql-app
+      DB_HOST: indexer-db
     command: ['yarn', 'dev:streaming']
     depends_on:
       graphql-app:

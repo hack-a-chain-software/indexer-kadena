@@ -17,7 +17,6 @@
 
 import { Model, DataTypes, Optional } from 'sequelize';
 import { sequelize } from '../config/database';
-import Contract from './contract';
 
 /**
  * Interface defining the attributes of a Balance.
@@ -39,8 +38,6 @@ export interface BalanceAttributes {
   tokenId?: string;
   /** Flag indicating whether this balance has a specific token ID (NFTs) */
   hasTokenId: boolean;
-  /** Reference to the associated contract record */
-  contractId?: number;
   /** Count of transactions affecting this balance */
   transactionsCount?: number;
   /** Count of fungible token transfers affecting this balance */
@@ -87,9 +84,6 @@ class Balance
   /** Whether the balance has a token ID (e.g., false). */
   public hasTokenId!: boolean;
 
-  /** The ID of the associated contract (e.g., 204). */
-  public contractId!: number;
-
   /** The number of transactions in the block. */
   public transactionsCount!: number;
 
@@ -107,7 +101,6 @@ class Balance
  *
  * The model includes multiple specialized indexes:
  * - A unique constraint ensuring each balance combination is unique
- * - Simple indexes for common lookup fields (account, tokenId, contractId)
  * - A case-insensitive search index for account addresses
  *
  * These indexes support efficient balance lookups, account portfolio views,
@@ -154,11 +147,7 @@ Balance.init(
       defaultValue: false,
       comment: 'Whether the balance has a token ID (e.g., false).',
     },
-    contractId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      comment: 'The ID of the associated contract (e.g., 204).',
-    },
+
     transactionsCount: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
@@ -193,29 +182,11 @@ Balance.init(
         fields: ['tokenId'],
       },
       {
-        name: 'balances_contractid_index',
-        fields: ['contractId'],
-      },
-      {
         name: 'balances_search_idx',
         fields: [sequelize.fn('LOWER', sequelize.col('account'))],
       },
     ],
   },
 );
-
-/**
- * Define relationships between the Balance model and other models.
- *
- * Balances belong to:
- * - Contract - Each balance is associated with a specific token contract
- *
- * This relationship enables efficient querying of token metadata and properties
- * when retrieving balance information.
- */
-Balance.belongsTo(Contract, {
-  foreignKey: 'contractId',
-  as: 'contract',
-});
 
 export default Balance;
