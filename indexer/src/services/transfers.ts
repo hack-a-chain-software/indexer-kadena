@@ -13,10 +13,8 @@
  * ensuring that contract information is properly stored and referenced.
  */
 
-import { handleSingleQuery } from '@/utils/raw-query';
 import { TransactionAttributes, TransactionCreationAttributes } from '@/models/transaction';
 import { TransferAttributes } from '@/models/transfer';
-import { getContract, saveContract, syncContract } from './contract';
 
 /**
  * Filters and processes NFT transfer events from a payload's event data. It identifies NFT transfer events based on
@@ -88,10 +86,6 @@ export function getNftTransfers(
         ? `${eventData.module.namespace}.${eventData.module.name}`
         : eventData.module.name;
 
-      // Synchronize the contract information for this NFT
-      // This ensures the contract is tracked in the database and returns its ID
-      let contractId = await syncContract(chainId, modulename, tokenId);
-
       // Create and return a transfer object with all the extracted information
       return {
         // Set the amount being transferred
@@ -114,8 +108,6 @@ export function getNftTransfers(
         tokenId: tokenId,
         // The type of token being transferred (poly-fungible for NFTs)
         type: 'poly-fungible',
-        // Reference to the contract that manages this NFT
-        contractId: contractId,
         // The position of this transfer within the transaction's events
         orderIndex: eventData.orderIndex,
       } as TransferAttributes;
@@ -124,9 +116,6 @@ export function getNftTransfers(
   // Wait for all transfer processing promises to complete and return the results
   return Promise.all(transferPromises);
 }
-
-// Cache to track in-flight contract precision queries to prevent duplicates
-const requests: Record<string, undefined | boolean> = {};
 
 /**
  * Filters and processes coin transfer events from a payload's event data. Similar to `getNftTransfers`, but focuses on
@@ -182,53 +171,6 @@ export function getCoinTransfers(
       const modulename = eventData.module.namespace
         ? `${eventData.module.namespace}.${eventData.module.name}`
         : eventData.module.name;
-      // Get the chain ID where this transfer is occurring
-      const chainId = transactionAttributes.chainId;
-
-      // Variables to store contract information
-      let contractId;
-      // Try to get existing contract information from the database
-      let contract = await getContract(chainId, modulename);
-
-      // If the contract already exists in our database, use its ID
-      if (contract) {
-        contractId = contract.id;
-      }
-      // If the contract doesn't exist and we're not already querying for it
-      // (This prevents duplicate concurrent queries for the same contract)
-      else if (!requests[`(${modulename}.precision)`]) {
-        // Mark that we're currently querying for this contract
-        requests[`(${modulename}.precision)`] = true;
-
-        // Query the blockchain for the token's precision
-        // This makes a direct call to the blockchain to get the 'precision' value
-        // of the token, which is needed for proper decimal handling
-        const precisionData = await handleSingleQuery({
-          chainId: chainId.toString(),
-          code: `(${modulename}.precision)`,
-        });
-
-        // If we successfully got the precision data
-        if (precisionData.result) {
-          // Save the contract information to the database and get its ID
-          // This creates a new contract record with:
-          // - Chain ID: which chain this token exists on
-          // - Module name: which smart contract manages this token
-          // - Type: 'fungible' (as opposed to 'poly-fungible' for NFTs)
-          // - Precision: how many decimal places the token supports
-          contractId = await saveContract(
-            chainId,
-            modulename,
-            'fungible',
-            null,
-            null,
-            Number(JSON.parse(precisionData.result).int),
-          );
-        }
-
-        // Mark that we're done querying for this contract
-        requests[`(${modulename}.precision)`] = false;
-      }
 
       // Extract the parameters from the event data
       const params = eventData.params;
@@ -250,11 +192,7 @@ export function getCoinTransfers(
         // The hash of the module that processed this transfer
         modulehash: eventData.moduleHash,
         // The name of the module that processed this transfer
-        // This is recalculated here to ensure consistency, even though
-        // we already calculated it above
-        modulename: eventData.module.namespace
-          ? `${eventData.module.namespace}.${eventData.module.name}`
-          : eventData.module.name,
+        modulename,
         // The unique request key of the transaction
         requestkey: transactionAttributes.requestkey,
         // The receiver's account address
@@ -265,8 +203,6 @@ export function getCoinTransfers(
         tokenId: undefined,
         // The type of token being transferred ('fungible' for regular tokens)
         type: 'fungible',
-        // Reference to the contract that manages this token
-        contractId: contractId,
         // The position of this transfer within the transaction's events
         orderIndex: eventData.orderIndex,
       } as TransferAttributes;

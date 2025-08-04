@@ -16,7 +16,6 @@
 import { Model, DataTypes } from 'sequelize';
 import { sequelize } from '../config/database';
 import Transaction from './transaction';
-import Contract from './contract';
 
 /**
  * Interface defining the attributes of a Transfer.
@@ -48,8 +47,6 @@ export interface TransferAttributes {
   hasTokenId: boolean;
   /** Specific token ID for NFT transfers, undefined for fungible transfers */
   tokenId?: string;
-  /** Reference to the associated contract record */
-  contractId?: number;
   /** Flag indicating whether this is a canonical transfer record */
   canonical?: boolean;
   /** Index representing the order of the transfer within its transaction */
@@ -98,9 +95,6 @@ class Transfer extends Model<TransferAttributes> implements TransferAttributes {
 
   /** The token ID associated with the transfer (optional, e.g., "t:DowR5LB9h6n96kxFRXDLSuSs1yh100Pk6STuUQNpseM"). */
   declare tokenId?: string;
-
-  /** The ID of the associated contract (optional, e.g., 1). */
-  declare contractId?: number;
 
   /* Whether the transfer is canonical */
   declare canonical?: boolean;
@@ -189,11 +183,6 @@ Transfer.init(
       comment:
         "The token ID associated with the transfer (optional, e.g., 't:DowR5LB9h6n96kxFRXDLSuSs1yh100Pk6STuUQNpseM').",
     },
-    contractId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      comment: 'The ID of the associated contract (optional, e.g., 1).',
-    },
     canonical: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
@@ -267,11 +256,6 @@ Transfer.init(
 Transfer.belongsTo(Transaction, {
   foreignKey: 'transactionId',
   as: 'transaction',
-});
-
-Transfer.belongsTo(Contract, {
-  foreignKey: 'contractId',
-  as: 'contract',
 });
 
 export default Transfer;
