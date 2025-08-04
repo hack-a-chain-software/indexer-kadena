@@ -29,7 +29,7 @@ func PrepareBlocks(network string, chainId int, payloads []fetch.ProcessedPayloa
 			TransactionsHash:  payload.TransactionsHash,
 			OutputsHash:       payload.OutputsHash,
 			Coinbase:          string(payload.Coinbase),
-			TransactionsCount: len(payload.Transactions) + 1, // txs + coinbase tx
+			TransactionsCount: len(payload.Transactions),
 		}
 
 		blocks = append(blocks, block)

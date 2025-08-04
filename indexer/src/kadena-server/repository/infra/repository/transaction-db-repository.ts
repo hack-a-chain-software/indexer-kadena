@@ -30,9 +30,6 @@ import { getPageInfo, getPaginationParams } from '../../pagination';
 import { transactionMetaValidator } from '../schema-validator/transaction-meta-schema-validator';
 import { transactionValidator } from '../schema-validator/transaction-schema-validator';
 import { signerMetaValidator } from '../schema-validator/signer-schema-validator';
-import { MEMORY_CACHE } from '../../../../cache/init';
-import { NETWORK_STATISTICS_KEY } from '../../../../cache/keys';
-import { NetworkStatistics } from '../../application/network-repository';
 import BlockDbRepository from './block-db-repository';
 import TransactionQueryBuilder from '../query-builders/transaction-query-builder';
 
@@ -69,7 +66,7 @@ export default class TransactionDbRepository implements TransactionRepository {
         order,
         after,
         before,
-        isCoinbase: !!rest.isCoinbase,
+        isCoinbase: rest.isCoinbase,
       });
 
       // Execute the query with the constructed parameters
@@ -458,11 +455,20 @@ export default class TransactionDbRepository implements TransactionRepository {
    * @returns Promise resolving to the count of matching transactions
    */
   async getTransactionsCount(params: GetTransactionsCountParams): Promise<number> {
-    const hasNoParams = Object.values(params).every(v => !v);
+    const { isCoinbase: isCoinbaseParam, chainId: chainIdParam, ...rest } = params;
+    const hasNoOtherParams = Object.values(rest).every(v => v === undefined || v === null);
+    if (hasNoOtherParams) {
+      const query = `
+        SELECT sum("canonicalTransactions") as "totalTransactionsCount", sum("canonicalBlocks") as "totalBlocksCount"
+        FROM "Counters"
+        ${chainIdParam ? `WHERE "chainId" = $1` : ''}
+      `;
 
-    if (hasNoParams) {
-      const cachedData = MEMORY_CACHE.get<NetworkStatistics>(NETWORK_STATISTICS_KEY);
-      return cachedData?.transactionCount ?? 0;
+      const { rows } = await rootPgPool.query(query);
+      const totalTransactionsCount = parseInt(rows?.[0]?.totalTransactionsCount ?? '0', 10);
+      const totalBlocksCount = parseInt(rows?.[0]?.totalBlocksCount ?? '0', 10);
+      const totalCount = totalTransactionsCount + (params.isCoinbase ? totalBlocksCount : 0);
+      return totalCount;
     }
 
     const {

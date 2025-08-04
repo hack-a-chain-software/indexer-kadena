@@ -35,6 +35,7 @@ export interface BlockAttributes {
   coinbase: object;
   canonical?: boolean;
   transactionsCount: number;
+  totalGasUsed: number;
 }
 
 /**
@@ -102,6 +103,9 @@ class Block extends Model<BlockAttributes> implements BlockAttributes {
 
   /** The number of transactions in the block. */
   declare transactionsCount: number;
+
+  /** The total gas used in the block. */
+  declare totalGasUsed: number;
 }
 
 /**
@@ -201,6 +205,10 @@ Block.init(
       type: DataTypes.INTEGER,
       defaultValue: 0,
       comment: 'The number of transactions in the block.',
+    },
+    totalGasUsed: {
+      type: DataTypes.DECIMAL(20, 10),
+      comment: 'The total gas used in the block.',
     },
   },
   {

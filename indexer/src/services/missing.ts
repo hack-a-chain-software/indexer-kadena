@@ -206,7 +206,7 @@ export async function fillChainGapsBeforeDefiningCanonicalBaseline({
 
     const promises = data.items.map(async (item: any) => {
       const payload = processPayload(item.payloadWithOutputs);
-      return saveBlock({ header: item.header, payload }, tx);
+      return saveBlock({ header: item.header, payload, canonical: true }, tx);
     });
 
     await Promise.all(promises);
