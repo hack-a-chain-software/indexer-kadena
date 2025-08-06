@@ -65,6 +65,7 @@ export default class TransferDbRepository implements TransferRepository {
       orderIndex,
       requestKey,
       moduleHash,
+      hasTokenId,
     } = params;
 
     const { limit, order, after, before } = getPaginationParams({
@@ -73,13 +74,20 @@ export default class TransferDbRepository implements TransferRepository {
       first,
       last,
     });
-    const queryParams: (string | number)[] = [limit];
+    const queryParams: (string | number | boolean)[] = [limit];
     let conditions = '';
 
     if (accountName) {
       queryParams.push(accountName);
       const op = operator(queryParams.length);
       conditions += `\n${op} (transfers.from_acct = $${queryParams.length} OR transfers.to_acct = $${queryParams.length})`;
+    }
+
+    if (hasTokenId) {
+      queryParams.push('marmalade-v2.ledger');
+      queryParams.push('marmalade.ledger');
+      const op = operator(queryParams.length);
+      conditions += `\n${op} transfers.modulename IN ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
     if (after) {
@@ -332,7 +340,8 @@ export default class TransferDbRepository implements TransferRepository {
       return transfersCount;
     }
 
-    const { blockHash, accountName, chainId, transactionId, fungibleName, requestKey } = params;
+    const { blockHash, accountName, chainId, transactionId, fungibleName, requestKey, hasTokenId } =
+      params;
     const queryParams: (string | number)[] = [];
     let conditions = '';
 
@@ -366,6 +375,13 @@ export default class TransferDbRepository implements TransferRepository {
       queryParams.push(fungibleName);
       const op = localOperator(queryParams.length);
       conditions += `${op} trans.modulename = $${queryParams.length}`;
+    }
+
+    if (hasTokenId) {
+      queryParams.push('marmalade-v2.ledger');
+      queryParams.push('marmalade.ledger');
+      const op = localOperator(queryParams.length);
+      conditions += `${op} trans.modulename IN ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
     if (requestKey) {

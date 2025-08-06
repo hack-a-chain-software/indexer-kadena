@@ -147,13 +147,13 @@ export default class TransactionQueryBuilder {
     // Add NFT ownership condition using a subquery on Transfers table
     if (accountName && hasTokenId) {
       transactionParams.push(accountName);
-      const op = localOperator(queryParams.length + transactionParams.length);
+      const op = localOperator(transactionParams.length);
       conditions += `
         ${op} EXISTS
         (
           SELECT 1
           FROM "Transfers" t
-          WHERE (t."from_acct" = $${transactionParams.length} OR t."to_acct" = $${transactionParams.length})
+          WHERE (t."from_acct" = $${queryParams.length + transactionParams.length} OR t."to_acct" = $${queryParams.length + transactionParams.length})
           AND t."modulename" = 'marmalade-v2.ledger'
         )`;
     }
