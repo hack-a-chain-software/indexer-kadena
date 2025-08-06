@@ -425,10 +425,20 @@ export type NonFungibleAccount = Node & {
   nonFungibleTokenBalances: Array<NonFungibleTokenBalance>;
   /** Default page size is 20. Note that custom token related transactions are not included. */
   transactions: NonFungibleAccountTransactionsConnection;
+  /** Default page size is 20. */
+  transfers: NonFungibleAccountTransfersConnection;
 };
 
 /** A non-fungible-specific account. */
 export type NonFungibleAccountTransactionsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+/** A non-fungible-specific account. */
+export type NonFungibleAccountTransfersArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -448,6 +458,19 @@ export type NonFungibleAccountTransactionsConnectionEdge = {
   node: Transaction;
 };
 
+export type NonFungibleAccountTransfersConnection = {
+  __typename?: 'NonFungibleAccountTransfersConnection';
+  edges: Array<NonFungibleAccountTransfersConnectionEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type NonFungibleAccountTransfersConnectionEdge = {
+  __typename?: 'NonFungibleAccountTransfersConnectionEdge';
+  cursor: Scalars['String']['output'];
+  node: Transfer;
+};
+
 /** A chain and non-fungible-specific account. */
 export type NonFungibleChainAccount = Node & {
   __typename?: 'NonFungibleChainAccount';
@@ -457,10 +480,20 @@ export type NonFungibleChainAccount = Node & {
   nonFungibleTokenBalances: Array<NonFungibleTokenBalance>;
   /** Default page size is 20. Note that custom token related transactions are not included. */
   transactions: NonFungibleChainAccountTransactionsConnection;
+  /** Default page size is 20. */
+  transfers: NonFungibleChainAccountTransfersConnection;
 };
 
 /** A chain and non-fungible-specific account. */
 export type NonFungibleChainAccountTransactionsArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+/** A chain and non-fungible-specific account. */
+export type NonFungibleChainAccountTransfersArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -478,6 +511,19 @@ export type NonFungibleChainAccountTransactionsConnectionEdge = {
   __typename?: 'NonFungibleChainAccountTransactionsConnectionEdge';
   cursor: Scalars['String']['output'];
   node: Transaction;
+};
+
+export type NonFungibleChainAccountTransfersConnection = {
+  __typename?: 'NonFungibleChainAccountTransfersConnection';
+  edges: Array<NonFungibleChainAccountTransfersConnectionEdge>;
+  pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
+};
+
+export type NonFungibleChainAccountTransfersConnectionEdge = {
+  __typename?: 'NonFungibleChainAccountTransfersConnectionEdge';
+  cursor: Scalars['String']['output'];
+  node: Transfer;
 };
 
 /** Information related to a token. */
@@ -1441,14 +1487,19 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
         transactions: _RefType['FungibleChainAccountTransactionsConnection'];
         transfers: _RefType['FungibleChainAccountTransfersConnection'];
       })
-    | (Omit<NonFungibleAccount, 'chainAccounts' | 'nonFungibleTokenBalances' | 'transactions'> & {
+    | (Omit<
+        NonFungibleAccount,
+        'chainAccounts' | 'nonFungibleTokenBalances' | 'transactions' | 'transfers'
+      > & {
         chainAccounts: Array<_RefType['NonFungibleChainAccount']>;
         nonFungibleTokenBalances: Array<_RefType['NonFungibleTokenBalance']>;
         transactions: _RefType['NonFungibleAccountTransactionsConnection'];
+        transfers: _RefType['NonFungibleAccountTransfersConnection'];
       })
-    | (Omit<NonFungibleChainAccount, 'nonFungibleTokenBalances' | 'transactions'> & {
+    | (Omit<NonFungibleChainAccount, 'nonFungibleTokenBalances' | 'transactions' | 'transfers'> & {
         nonFungibleTokenBalances: Array<_RefType['NonFungibleTokenBalance']>;
         transactions: _RefType['NonFungibleChainAccountTransactionsConnection'];
+        transfers: _RefType['NonFungibleChainAccountTransfersConnection'];
       })
     | (Omit<NonFungibleTokenBalance, 'guard'> & { guard: _RefType['IGuard'] })
     | Pool
@@ -1572,10 +1623,14 @@ export type ResolversTypes = {
   NetworkInfo: ResolverTypeWrapper<NetworkInfo>;
   Node: ResolverTypeWrapper<ResolversInterfaceTypes<ResolversTypes>['Node']>;
   NonFungibleAccount: ResolverTypeWrapper<
-    Omit<NonFungibleAccount, 'chainAccounts' | 'nonFungibleTokenBalances' | 'transactions'> & {
+    Omit<
+      NonFungibleAccount,
+      'chainAccounts' | 'nonFungibleTokenBalances' | 'transactions' | 'transfers'
+    > & {
       chainAccounts: Array<ResolversTypes['NonFungibleChainAccount']>;
       nonFungibleTokenBalances: Array<ResolversTypes['NonFungibleTokenBalance']>;
       transactions: ResolversTypes['NonFungibleAccountTransactionsConnection'];
+      transfers: ResolversTypes['NonFungibleAccountTransfersConnection'];
     }
   >;
   NonFungibleAccountTransactionsConnection: ResolverTypeWrapper<
@@ -1588,10 +1643,19 @@ export type ResolversTypes = {
       node: ResolversTypes['Transaction'];
     }
   >;
+  NonFungibleAccountTransfersConnection: ResolverTypeWrapper<
+    Omit<NonFungibleAccountTransfersConnection, 'edges'> & {
+      edges: Array<ResolversTypes['NonFungibleAccountTransfersConnectionEdge']>;
+    }
+  >;
+  NonFungibleAccountTransfersConnectionEdge: ResolverTypeWrapper<
+    Omit<NonFungibleAccountTransfersConnectionEdge, 'node'> & { node: ResolversTypes['Transfer'] }
+  >;
   NonFungibleChainAccount: ResolverTypeWrapper<
-    Omit<NonFungibleChainAccount, 'nonFungibleTokenBalances' | 'transactions'> & {
+    Omit<NonFungibleChainAccount, 'nonFungibleTokenBalances' | 'transactions' | 'transfers'> & {
       nonFungibleTokenBalances: Array<ResolversTypes['NonFungibleTokenBalance']>;
       transactions: ResolversTypes['NonFungibleChainAccountTransactionsConnection'];
+      transfers: ResolversTypes['NonFungibleChainAccountTransfersConnection'];
     }
   >;
   NonFungibleChainAccountTransactionsConnection: ResolverTypeWrapper<
@@ -1602,6 +1666,16 @@ export type ResolversTypes = {
   NonFungibleChainAccountTransactionsConnectionEdge: ResolverTypeWrapper<
     Omit<NonFungibleChainAccountTransactionsConnectionEdge, 'node'> & {
       node: ResolversTypes['Transaction'];
+    }
+  >;
+  NonFungibleChainAccountTransfersConnection: ResolverTypeWrapper<
+    Omit<NonFungibleChainAccountTransfersConnection, 'edges'> & {
+      edges: Array<ResolversTypes['NonFungibleChainAccountTransfersConnectionEdge']>;
+    }
+  >;
+  NonFungibleChainAccountTransfersConnectionEdge: ResolverTypeWrapper<
+    Omit<NonFungibleChainAccountTransfersConnectionEdge, 'node'> & {
+      node: ResolversTypes['Transfer'];
     }
   >;
   NonFungibleToken: ResolverTypeWrapper<NonFungibleToken>;
@@ -1831,11 +1905,12 @@ export type ResolversParentTypes = {
   Node: ResolversInterfaceTypes<ResolversParentTypes>['Node'];
   NonFungibleAccount: Omit<
     NonFungibleAccount,
-    'chainAccounts' | 'nonFungibleTokenBalances' | 'transactions'
+    'chainAccounts' | 'nonFungibleTokenBalances' | 'transactions' | 'transfers'
   > & {
     chainAccounts: Array<ResolversParentTypes['NonFungibleChainAccount']>;
     nonFungibleTokenBalances: Array<ResolversParentTypes['NonFungibleTokenBalance']>;
     transactions: ResolversParentTypes['NonFungibleAccountTransactionsConnection'];
+    transfers: ResolversParentTypes['NonFungibleAccountTransfersConnection'];
   };
   NonFungibleAccountTransactionsConnection: Omit<
     NonFungibleAccountTransactionsConnection,
@@ -1845,12 +1920,20 @@ export type ResolversParentTypes = {
     NonFungibleAccountTransactionsConnectionEdge,
     'node'
   > & { node: ResolversParentTypes['Transaction'] };
+  NonFungibleAccountTransfersConnection: Omit<NonFungibleAccountTransfersConnection, 'edges'> & {
+    edges: Array<ResolversParentTypes['NonFungibleAccountTransfersConnectionEdge']>;
+  };
+  NonFungibleAccountTransfersConnectionEdge: Omit<
+    NonFungibleAccountTransfersConnectionEdge,
+    'node'
+  > & { node: ResolversParentTypes['Transfer'] };
   NonFungibleChainAccount: Omit<
     NonFungibleChainAccount,
-    'nonFungibleTokenBalances' | 'transactions'
+    'nonFungibleTokenBalances' | 'transactions' | 'transfers'
   > & {
     nonFungibleTokenBalances: Array<ResolversParentTypes['NonFungibleTokenBalance']>;
     transactions: ResolversParentTypes['NonFungibleChainAccountTransactionsConnection'];
+    transfers: ResolversParentTypes['NonFungibleChainAccountTransfersConnection'];
   };
   NonFungibleChainAccountTransactionsConnection: Omit<
     NonFungibleChainAccountTransactionsConnection,
@@ -1860,6 +1943,14 @@ export type ResolversParentTypes = {
     NonFungibleChainAccountTransactionsConnectionEdge,
     'node'
   > & { node: ResolversParentTypes['Transaction'] };
+  NonFungibleChainAccountTransfersConnection: Omit<
+    NonFungibleChainAccountTransfersConnection,
+    'edges'
+  > & { edges: Array<ResolversParentTypes['NonFungibleChainAccountTransfersConnectionEdge']> };
+  NonFungibleChainAccountTransfersConnectionEdge: Omit<
+    NonFungibleChainAccountTransfersConnectionEdge,
+    'node'
+  > & { node: ResolversParentTypes['Transfer'] };
   NonFungibleToken: NonFungibleToken;
   NonFungibleTokenBalance: Omit<NonFungibleTokenBalance, 'guard'> & {
     guard: ResolversParentTypes['IGuard'];
@@ -2473,6 +2564,12 @@ export type NonFungibleAccountResolvers<
     ContextType,
     Partial<NonFungibleAccountTransactionsArgs>
   >;
+  transfers?: Resolver<
+    ResolversTypes['NonFungibleAccountTransfersConnection'],
+    ParentType,
+    ContextType,
+    Partial<NonFungibleAccountTransfersArgs>
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2501,6 +2598,31 @@ export type NonFungibleAccountTransactionsConnectionEdgeResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type NonFungibleAccountTransfersConnectionResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['NonFungibleAccountTransfersConnection'] = ResolversParentTypes['NonFungibleAccountTransfersConnection'],
+> = {
+  edges?: Resolver<
+    Array<ResolversTypes['NonFungibleAccountTransfersConnectionEdge']>,
+    ParentType,
+    ContextType
+  >;
+  pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NonFungibleAccountTransfersConnectionEdgeResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['NonFungibleAccountTransfersConnectionEdge'] = ResolversParentTypes['NonFungibleAccountTransfersConnectionEdge'],
+> = {
+  cursor?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  node?: Resolver<ResolversTypes['Transfer'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type NonFungibleChainAccountResolvers<
   ContextType = any,
   ParentType extends
@@ -2519,6 +2641,12 @@ export type NonFungibleChainAccountResolvers<
     ParentType,
     ContextType,
     Partial<NonFungibleChainAccountTransactionsArgs>
+  >;
+  transfers?: Resolver<
+    ResolversTypes['NonFungibleChainAccountTransfersConnection'],
+    ParentType,
+    ContextType,
+    Partial<NonFungibleChainAccountTransfersArgs>
   >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -2545,6 +2673,31 @@ export type NonFungibleChainAccountTransactionsConnectionEdgeResolvers<
 > = {
   cursor?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   node?: Resolver<ResolversTypes['Transaction'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NonFungibleChainAccountTransfersConnectionResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['NonFungibleChainAccountTransfersConnection'] = ResolversParentTypes['NonFungibleChainAccountTransfersConnection'],
+> = {
+  edges?: Resolver<
+    Array<ResolversTypes['NonFungibleChainAccountTransfersConnectionEdge']>,
+    ParentType,
+    ContextType
+  >;
+  pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NonFungibleChainAccountTransfersConnectionEdgeResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['NonFungibleChainAccountTransfersConnectionEdge'] = ResolversParentTypes['NonFungibleChainAccountTransfersConnectionEdge'],
+> = {
+  cursor?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  node?: Resolver<ResolversTypes['Transfer'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3407,9 +3560,13 @@ export type Resolvers<ContextType = any> = {
   NonFungibleAccount?: NonFungibleAccountResolvers<ContextType>;
   NonFungibleAccountTransactionsConnection?: NonFungibleAccountTransactionsConnectionResolvers<ContextType>;
   NonFungibleAccountTransactionsConnectionEdge?: NonFungibleAccountTransactionsConnectionEdgeResolvers<ContextType>;
+  NonFungibleAccountTransfersConnection?: NonFungibleAccountTransfersConnectionResolvers<ContextType>;
+  NonFungibleAccountTransfersConnectionEdge?: NonFungibleAccountTransfersConnectionEdgeResolvers<ContextType>;
   NonFungibleChainAccount?: NonFungibleChainAccountResolvers<ContextType>;
   NonFungibleChainAccountTransactionsConnection?: NonFungibleChainAccountTransactionsConnectionResolvers<ContextType>;
   NonFungibleChainAccountTransactionsConnectionEdge?: NonFungibleChainAccountTransactionsConnectionEdgeResolvers<ContextType>;
+  NonFungibleChainAccountTransfersConnection?: NonFungibleChainAccountTransfersConnectionResolvers<ContextType>;
+  NonFungibleChainAccountTransfersConnectionEdge?: NonFungibleChainAccountTransfersConnectionEdgeResolvers<ContextType>;
   NonFungibleToken?: NonFungibleTokenResolvers<ContextType>;
   NonFungibleTokenBalance?: NonFungibleTokenBalanceResolvers<ContextType>;
   PactQueryResponse?: PactQueryResponseResolvers<ContextType>;

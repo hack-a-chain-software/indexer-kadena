@@ -1100,6 +1100,16 @@ type NonFungibleAccount implements Node {
     first: Int
     last: Int
   ): NonFungibleAccountTransactionsConnection! @complexity(value: 1, multipliers: ["first", "last"])
+
+  """
+  Default page size is 20.
+  """
+  transfers(
+    after: String
+    before: String
+    first: Int
+    last: Int
+  ): NonFungibleAccountTransfersConnection! @complexity(value: 1, multipliers: ["first", "last"])
 }
 
 type NonFungibleAccountTransactionsConnection {
@@ -1117,6 +1127,17 @@ type NonFungibleChainAccountTransactionsConnection {
   edges: [NonFungibleChainAccountTransactionsConnectionEdge!]!
   pageInfo: PageInfo!
   totalCount: Int!
+}
+
+type NonFungibleAccountTransfersConnection {
+  edges: [NonFungibleAccountTransfersConnectionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type NonFungibleAccountTransfersConnectionEdge {
+  cursor: String!
+  node: Transfer!
 }
 
 type NonFungibleChainAccountTransactionsConnectionEdge {
@@ -1143,6 +1164,28 @@ type NonFungibleChainAccount implements Node {
     last: Int
   ): NonFungibleChainAccountTransactionsConnection!
     @complexity(value: 10, multipliers: ["first", "last"])
+
+  """
+  Default page size is 20.
+  """
+  transfers(
+    after: String
+    before: String
+    first: Int
+    last: Int
+  ): NonFungibleChainAccountTransfersConnection!
+    @complexity(value: 1, multipliers: ["first", "last"])
+}
+
+type NonFungibleChainAccountTransfersConnection {
+  edges: [NonFungibleChainAccountTransfersConnectionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type NonFungibleChainAccountTransfersConnectionEdge {
+  cursor: String!
+  node: Transfer!
 }
 
 """
