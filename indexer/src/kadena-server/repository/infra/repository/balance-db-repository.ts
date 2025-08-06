@@ -218,6 +218,8 @@ export default class BalanceDbRepository implements BalanceRepository {
     });
 
     const balances = (await Promise.all(balancePromises)).filter(b => b.status === 'success');
+    if (balances.length === 0) return null;
+
     const balancesNumber = balances.map(b => formatBalance_NODE(b));
     const totalBalance = balancesNumber.reduce((acc, cur) => acc + cur, 0);
 
