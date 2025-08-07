@@ -339,6 +339,34 @@ export async function startGraphqlServer() {
   const wsServer = new WebSocketServer({
     server: httpServer,
     path: '/wss/graphql',
+    handleProtocols: protocols => {
+      console.log('[DEBUG] WebSocket protocols requested:', Array.from(protocols));
+      // Handle graphql-ws subprotocol
+      if (protocols.has('graphql-ws')) {
+        console.log('[DEBUG] Accepting graphql-ws protocol');
+        return 'graphql-ws';
+      }
+      // Handle legacy graphql-transport-ws
+      if (protocols.has('graphql-transport-ws')) {
+        console.log('[DEBUG] Accepting graphql-transport-ws protocol');
+        return 'graphql-transport-ws';
+      }
+      // Return false to reject connection if no supported protocol
+      console.log('[DEBUG] No supported protocols, rejecting connection');
+      return false;
+    },
+  });
+
+  // Add debug logging for WebSocket connections
+  wsServer.on('connection', (ws, request) => {
+    console.log('[DEBUG] WebSocket connection established:', {
+      url: request.url,
+      headers: request.headers,
+    });
+  });
+
+  wsServer.on('error', error => {
+    console.error('[DEBUG] WebSocket server error:', error);
   });
 
   // Track active connections
