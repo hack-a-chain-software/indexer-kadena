@@ -82,13 +82,14 @@ export async function startStreaming() {
 
   const processBlock = async (block: any) => {
     const blockIdentifier = block.header.hash;
+
+    if (blocksRecentlyProcessed.has(blockIdentifier)) {
+      await defineCanonicalInStreaming(blockIdentifier);
+      return;
+    }
+
     const tx = await sequelize.transaction();
     try {
-      if (blocksRecentlyProcessed.has(blockIdentifier)) {
-        await defineCanonicalInStreaming(blockIdentifier);
-        return;
-      }
-
       // Process the block payload (transactions, miner data, etc.)
       const payload = processPayload(block.payloadWithOutputs);
 
