@@ -8,6 +8,8 @@ import { transfersFixture005 } from '../fixtures/transfers/transfers.fixture.005
 import { transfersFixture006 } from '../fixtures/transfers/transfers.fixture.006';
 import { transfersFixture007 } from '../fixtures/transfers/transfers.fixture.007';
 import { transfersFixture008 } from '../fixtures/transfers/transfers.fixture.008';
+import { transfersFixture009 } from '../fixtures/transfers/transfers.fixture.009';
+import { transfersFixture010 } from '../fixtures/transfers/transfers.fixture.010';
 
 const client = new GraphQLClient(process.env.API_URL ?? 'http://localhost:3001/graphql');
 
@@ -33,8 +35,8 @@ describe('Transfers', () => {
   it('#003', async () => {
     const query = getTransfersQueryTwo({
       accountName: 'k:684630cdf2d1107a459a6c6004b74cd4f4437e746e6f2192c55981c2fc524fd5',
-      after: 'MjIyODc3OTg3',
-      first: 6,
+      after: 'MTc1NDY1ODMzMTozNzg1OTQ0NTQ=',
+      first: 25,
     });
 
     const data = await client.request(query);
@@ -44,8 +46,8 @@ describe('Transfers', () => {
   it('#004', async () => {
     const query = getTransfersQueryTwo({
       chainId: '19',
-      after: 'MzM0MzgxMDMx',
-      first: 6,
+      after: 'MTc1NDY3NTU1MjozNzg2NTY4MTU=',
+      first: 25,
     });
 
     const data = await client.request(query);
@@ -56,8 +58,8 @@ describe('Transfers', () => {
     const query = getTransfersQueryTwo({
       accountName: 'k:684630cdf2d1107a459a6c6004b74cd4f4437e746e6f2192c55981c2fc524fd5',
       chainId: '0',
-      after: 'MzM0MzgxMjc5',
-      first: 6,
+      after: 'MTc1NDY0MzMxNTozNzg1Mzk2NDI=',
+      first: 25,
     });
 
     const data = await client.request(query);
@@ -68,8 +70,8 @@ describe('Transfers', () => {
     const query = getTransfersQueryTwo({
       accountName: 'k:912da3f72ba0e48a1c7a2ad40b554541a382473284627861ebfa3affeaadbe5e',
       fungibleName: 'free.crankk01',
-      after: 'MzM0MzQwNTMy',
-      first: 6,
+      after: 'MTc1MjQ0NDIwNzo5NTU3MzA3OA==',
+      first: 25,
     });
 
     const data = await client.request(query);
@@ -80,8 +82,8 @@ describe('Transfers', () => {
     const query = getTransfersQueryTwo({
       fungibleName: 'free.crankk01',
       chainId: '0',
-      after: 'MzM0MzgyMDU0',
-      first: 6,
+      after: 'MTc1NDY3ODA1ODozNzg2NjU5MzE=',
+      first: 25,
     });
 
     const data = await client.request(query);
@@ -93,11 +95,36 @@ describe('Transfers', () => {
       accountName: 'k:912da3f72ba0e48a1c7a2ad40b554541a382473284627861ebfa3affeaadbe5e',
       fungibleName: 'coin',
       chainId: '19',
-      after: 'ODQxMTU3NQ==',
-      first: 6,
+      after: 'MTcxMzMzODgxNjo1NTg1MzQ4Mg==',
+      first: 25,
     });
 
     const data = await client.request(query);
     expect(transfersFixture008.data).toMatchObject(data);
+  });
+
+  it('#009', async () => {
+    const query = getTransfersQueryTwo({
+      accountName: 'k:912da3f72ba0e48a1c7a2ad40b554541a382473284627861ebfa3affeaadbe5e',
+      fungibleName: 'coin',
+      chainId: '19',
+      last: 25,
+    });
+
+    const data = await client.request(query);
+    expect(transfersFixture009.data).toMatchObject(data);
+  });
+
+  it('#010', async () => {
+    const query = getTransfersQueryTwo({
+      accountName: 'k:912da3f72ba0e48a1c7a2ad40b554541a382473284627861ebfa3affeaadbe5e',
+      fungibleName: 'coin',
+      chainId: '19',
+      before: 'MTcxMTA4Njk5OTo1NjczMzcxOQ==',
+      last: 25,
+    });
+
+    const data = await client.request(query);
+    expect(transfersFixture010.data).toMatchObject(data);
   });
 });
