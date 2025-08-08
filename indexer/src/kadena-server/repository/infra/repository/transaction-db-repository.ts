@@ -484,7 +484,7 @@ export default class TransactionDbRepository implements TransactionRepository {
     } = params;
 
     const transactionsParams: (string | number)[] = [];
-    const blockParams: (string | number)[] = [];
+    const blockParams: (string | number | boolean)[] = [];
     let transactionsConditions = '';
     let blocksConditions = '';
 
@@ -529,6 +529,10 @@ export default class TransactionDbRepository implements TransactionRepository {
     }
 
     const paramsOffset = transactionsParams.length;
+
+    blockParams.push(true);
+    blocksConditions += `\nWHERE b.canonical = $${paramsOffset + blockParams.length}`;
+
     if (blockHash) {
       blockParams.push(blockHash);
       const op = localOperator(blockParams.length);

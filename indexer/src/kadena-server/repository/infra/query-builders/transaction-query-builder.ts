@@ -264,7 +264,6 @@ export default class TransactionQueryBuilder {
           FROM "Transactions" t
           ${transactionsConditions}
           ORDER BY t.creationtime ${order}, t.id ${order}
-          LIMIT $1
         )
         SELECT
           t.id AS id,
@@ -294,6 +293,7 @@ export default class TransactionQueryBuilder {
         JOIN "Blocks" b ON b.id = t."blockId"
         ${params.isCoinbase ? 'LEFT ' : ''} JOIN "TransactionDetails" td ON t.id = td."transactionId"
         ${blocksConditions}
+        LIMIT $1
       `;
     }
 
