@@ -337,6 +337,7 @@ type Query {
     fungibleName: String
     last: Int
     requestKey: String
+    isNFT: Boolean
   ): QueryTransfersConnection! @complexity(value: 1, multipliers: ["first", "last"])
 
   tokens(after: String, before: String, first: Int, last: Int): QueryTokensConnection!
