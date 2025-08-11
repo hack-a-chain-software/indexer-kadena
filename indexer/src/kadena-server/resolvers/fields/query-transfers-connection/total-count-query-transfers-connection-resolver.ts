@@ -16,6 +16,7 @@ const schema = zod.object({
   chainId: zod.string().nullable().optional(),
   fungibleName: zod.string().nullable().optional(),
   requestKey: zod.string().nullable().optional(),
+  hasTokenId: zod.boolean().nullable().optional(),
 });
 
 /**
@@ -29,7 +30,8 @@ const schema = zod.object({
  */
 export const totalCountQueryTransfersConnectionResolver: QueryTransfersConnectionResolvers<ResolverContext>['totalCount'] =
   async (parent, _args, context) => {
-    const { accountName, blockHash, chainId, fungibleName, requestKey } = schema.parse(parent);
+    const { accountName, blockHash, chainId, fungibleName, requestKey, hasTokenId } =
+      schema.parse(parent);
 
     const transactions = await context.transferRepository.getTotalCountOfTransfers({
       accountName,
@@ -37,6 +39,7 @@ export const totalCountQueryTransfersConnectionResolver: QueryTransfersConnectio
       chainId,
       fungibleName,
       requestKey,
+      hasTokenId,
     });
 
     return transactions;

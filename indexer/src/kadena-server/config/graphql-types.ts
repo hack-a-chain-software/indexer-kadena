@@ -984,6 +984,7 @@ export type QueryTransfersArgs = {
   chainId?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   fungibleName?: InputMaybe<Scalars['String']['input']>;
+  isNFT?: InputMaybe<Scalars['Boolean']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
   requestKey?: InputMaybe<Scalars['String']['input']>;
 };

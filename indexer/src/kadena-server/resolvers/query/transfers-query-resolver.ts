@@ -33,8 +33,22 @@ export const transfersQueryResolver: QueryResolvers<ResolverContext>['transfers'
   context,
 ) => {
   // Extract all query parameters from the GraphQL arguments
-  const { after, before, first, last, accountName, blockHash, chainId, fungibleName, requestKey } =
-    args;
+  const {
+    after,
+    before,
+    first,
+    last,
+    accountName,
+    blockHash,
+    chainId,
+    fungibleName,
+    requestKey,
+    isNFT,
+  } = args;
+
+  if (isNFT && fungibleName) {
+    throw new Error('isNFT and fungibleName cannot be used together');
+  }
 
   // Call the repository layer to retrieve the filtered and paginated transfers
   const output = await context.transferRepository.getTransfers({
@@ -47,6 +61,7 @@ export const transfersQueryResolver: QueryResolvers<ResolverContext>['transfers'
     last,
     before,
     after,
+    hasTokenId: isNFT,
   });
 
   // Transform repository outputs into GraphQL-compatible transfer nodes
@@ -71,5 +86,6 @@ export const transfersQueryResolver: QueryResolvers<ResolverContext>['transfers'
     chainId,
     fungibleName,
     requestKey,
+    hasTokenId: isNFT,
   };
 };
