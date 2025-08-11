@@ -73,8 +73,6 @@ export default interface BlockRepository {
 
   getChainIds(): Promise<number[]>;
 
-  getTotalCountOfBlockEvents(blockHash: string): Promise<number>;
-
   getTotalCountOfBlockTransactions(blockHash: string): Promise<number>;
 
   getLatestBlocks(params: GetLatestBlocksParams): Promise<BlockOutput[]>;
@@ -93,7 +91,6 @@ export default interface BlockRepository {
     id?: string,
   ): Promise<BlockOutput[]>;
 
-  getBlockNParent(depth: number, hash: string): Promise<string | undefined>;
   getBlocksWithSameHeight(height: number, chainId: string): Promise<BlockOutput[]>;
   getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]>;
   updateCanonicalStatus(params: UpdateCanonicalStatusParams): Promise<void>;
