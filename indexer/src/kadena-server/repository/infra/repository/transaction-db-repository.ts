@@ -32,6 +32,7 @@ import { transactionValidator } from '../schema-validator/transaction-schema-val
 import { signerMetaValidator } from '../schema-validator/signer-schema-validator';
 import BlockDbRepository from './block-db-repository';
 import TransactionQueryBuilder from '../query-builders/transaction-query-builder';
+import { isNullOrUndefined } from '@/utils/helpers';
 
 /**
  * Database-specific implementation of the TransactionRepository interface.
@@ -39,6 +40,48 @@ import TransactionQueryBuilder from '../query-builders/transaction-query-builder
  */
 export default class TransactionDbRepository implements TransactionRepository {
   private queryBuilder = new TransactionQueryBuilder();
+
+  /**
+   * Batch fetch TransactionDetails for a set of transaction IDs and return a map by transactionId
+   */
+  private async fetchTransactionDetailsMap(transactionIds: number[]): Promise<Record<number, any>> {
+    if (transactionIds.length === 0) return {};
+
+    const query = `
+      SELECT
+        td."transactionId" as "transactionId",
+        td.nonce AS "nonceTransaction",
+        td.sigs AS sigs,
+        td.continuation AS continuation,
+        td.pactid AS "pactId",
+        td.proof AS proof,
+        td.rollback AS rollback,
+        td.gas AS "gas",
+        td.step AS step,
+        td.data AS data,
+        td.code AS code
+      FROM "TransactionDetails" td
+      WHERE td."transactionId" = ANY($1::int[])
+    `;
+
+    const { rows } = await rootPgPool.query(query, [transactionIds]);
+    return rows.reduce<Record<number, any>>((map, row) => {
+      map[row.transactionId] = row;
+      return map;
+    }, {});
+  }
+
+  /**
+   * Merge base transaction rows with their details using the transactionId as key
+   */
+  private async mergeRowsWithDetails(rows: any[]): Promise<any[]> {
+    const ids = Array.from(new Set(rows.map(r => r.id))).filter(Boolean) as number[];
+    const detailsMap = await this.fetchTransactionDetailsMap(ids);
+    return rows.map(row => ({
+      ...row,
+      ...(detailsMap[row.id] ?? {}),
+    }));
+  }
 
   /**
    * Retrieves transactions based on specified parameters with pagination.
@@ -82,6 +125,9 @@ export default class TransactionDbRepository implements TransactionRepository {
       return pageInfo;
     }
 
+    const maxHeightFromDb = (await rootPgPool.query(`SELECT max(height) FROM "Blocks"`)).rows[0]
+      .max;
+
     // If no minimumDepth is specified, we can use the normal query approach
     if (!rest.minimumDepth) {
       // Build and execute the query using the query builder
@@ -91,13 +137,15 @@ export default class TransactionDbRepository implements TransactionRepository {
         before,
         order,
         limit,
+        maxHeightFromDb,
       });
 
       // Execute the query with the constructed parameters
       const { rows } = await rootPgPool.query(query, queryParams);
+      const rowsWithDetails = await this.mergeRowsWithDetails(rows);
 
       // Transform database rows into GraphQL-compatible edges with cursors
-      const edges = rows.map(row => ({
+      const edges = rowsWithDetails.map(row => ({
         cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
         node: transactionValidator.validate(row),
       }));
@@ -121,6 +169,7 @@ export default class TransactionDbRepository implements TransactionRepository {
         before,
         order,
         limit: batchSize,
+        maxHeightFromDb,
       });
 
       const { rows: transactionBatch } = await rootPgPool.query(query, queryParams);
@@ -145,7 +194,10 @@ export default class TransactionDbRepository implements TransactionRepository {
         tx => blockHashToDepth[tx.blockHash] >= (rest.minimumDepth ?? 0),
       );
 
-      allFilteredTransactions = [...allFilteredTransactions, ...filteredBatch];
+      // Merge details for the filtered batch
+      const filteredWithDetails = await this.mergeRowsWithDetails(filteredBatch);
+
+      allFilteredTransactions = [...allFilteredTransactions, ...filteredWithDetails];
 
       // Update cursor for next batch
       if (transactionBatch.length > 0) {
@@ -455,7 +507,12 @@ export default class TransactionDbRepository implements TransactionRepository {
    * @returns Promise resolving to the count of matching transactions
    */
   async getTransactionsCount(params: GetTransactionsCountParams): Promise<number> {
-    const { isCoinbase: isCoinbaseParam, chainId: chainIdParam, ...rest } = params;
+    const {
+      isCoinbase: isCoinbaseParam,
+      chainId: chainIdParam,
+      minimumDepth: minimumDepthParam,
+      ...rest
+    } = params;
     const hasNoOtherParams = Object.values(rest).every(v => v === undefined || v === null);
     if (hasNoOtherParams) {
       const query = `
@@ -464,11 +521,51 @@ export default class TransactionDbRepository implements TransactionRepository {
         ${chainIdParam ? `WHERE "chainId" = $1` : ''}
       `;
 
-      const { rows } = await rootPgPool.query(query);
+      const { rows } = await rootPgPool.query(query, chainIdParam ? [chainIdParam] : []);
+
       const totalTransactionsCount = parseInt(rows?.[0]?.totalTransactionsCount ?? '0', 10);
       const totalBlocksCount = parseInt(rows?.[0]?.totalBlocksCount ?? '0', 10);
       const totalCount = totalTransactionsCount + (params.isCoinbase ? totalBlocksCount : 0);
-      return totalCount;
+
+      const depthDecrement = (minimumDepthParam ?? 0) * (isNullOrUndefined(chainIdParam) ? 20 : 1);
+      return Math.max(totalCount - depthDecrement, 0);
+    }
+
+    const {
+      accountName: accountNameParam,
+      fungibleName: fungibleNameParam,
+      chainId: chainIdParamTwo,
+      ...rest2
+    } = params;
+    const hasNoOtherParams2 = Object.values(rest2).every(v => v === undefined || v === null);
+    if (accountNameParam && fungibleNameParam && hasNoOtherParams2) {
+      let query = `
+        SELECT COUNT(*) as count
+        FROM "Transactions" t
+        JOIN "Events" e ON e."transactionId" = t.id
+        WHERE t.sender = $1 AND e.module = $2
+      `;
+
+      if (chainIdParamTwo) {
+        query += `\nAND EXISTS (
+          SELECT 1
+          FROM "Blocks" b
+          WHERE b.id = t."blockId"
+          AND b."chainId" = $3
+          AND b.canonical = true
+        )`;
+      }
+
+      const { rows: countResult } = await rootPgPool.query(query, [
+        accountNameParam,
+        fungibleNameParam,
+        chainIdParamTwo,
+      ]);
+
+      const totalCount = parseInt(countResult[0].count, 10);
+      const depthDecrement =
+        (minimumDepthParam ?? 0) * (isNullOrUndefined(chainIdParamTwo) ? 20 : 1);
+      return Math.max(totalCount - depthDecrement, 0);
     }
 
     const {
@@ -479,10 +576,8 @@ export default class TransactionDbRepository implements TransactionRepository {
       fungibleName,
       minHeight,
       maxHeight,
-      minimumDepth,
       hasTokenId,
     } = params;
-
     const transactionsParams: (string | number)[] = [];
     const blockParams: (string | number | boolean)[] = [];
     let transactionsConditions = '';
@@ -494,6 +589,10 @@ export default class TransactionDbRepository implements TransactionRepository {
       transactionsParams.push(accountName);
       const op = localOperator(transactionsParams.length);
       transactionsConditions += `${op} t.sender = $${transactionsParams.length}`;
+    } else if (!isCoinbaseParam) {
+      transactionsParams.push('coinbase');
+      const op = localOperator(transactionsParams.length);
+      transactionsConditions += `${op} t.sender != $${transactionsParams.length}`;
     }
 
     if (requestKey) {
@@ -557,23 +656,17 @@ export default class TransactionDbRepository implements TransactionRepository {
       blocksConditions += `${op} b."height" >= $${paramsOffset + blockParams.length}`;
     }
 
-    if (minimumDepth) {
-      blockParams.push(minimumDepth);
-      const op = localOperator(blockParams.length);
-      blocksConditions += `${op} b."minimumDepth" >= $${paramsOffset + blockParams.length}`;
-    }
-
     const totalCountQuery = `
-      WITH filtered_transactions AS (
-        SELECT id, "blockId"
-        FROM "Transactions" t
-        ${transactionsConditions}
+    WITH filtered_transactions AS (
+      SELECT id, "blockId"
+      FROM "Transactions" t
+      ${transactionsConditions}
       )
       SELECT COUNT(*) as count
       FROM filtered_transactions t
       ${blocksConditions ? `JOIN "Blocks" b ON b.id = t."blockId"` : ''}
       ${blocksConditions}
-    `;
+      `;
 
     const { rows: countResult } = await rootPgPool.query(totalCountQuery, [
       ...transactionsParams,
@@ -581,7 +674,9 @@ export default class TransactionDbRepository implements TransactionRepository {
     ]);
 
     const totalCount = parseInt(countResult[0].count, 10);
-    return totalCount;
+    const depthDecrement = (minimumDepthParam ?? 0) * (isNullOrUndefined(chainIdParam) ? 20 : 1);
+
+    return Math.max(totalCount - depthDecrement, 0);
   }
 
   /**

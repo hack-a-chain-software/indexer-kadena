@@ -4,6 +4,7 @@
  * This class encapsulates the complex logic for constructing SQL queries
  * to retrieve transactions from the database with various filtering criteria.
  */
+import { isNullOrUndefined } from '@/utils/helpers';
 import {
   GetTransactionsCountParams,
   GetTransactionsParams,
@@ -32,47 +33,72 @@ export default class TransactionQueryBuilder {
   private createBlockConditions(
     params: GetTransactionsParams,
     queryParams: Array<string | number | boolean>,
+    maxHeightFromDb: number,
   ) {
-    const { blockHash, chainId, maxHeight, minHeight } = params;
+    const { blockHash, chainId, maxHeight, minHeight, accountName } = params;
     let blocksConditions = '';
     const blockParams: (string | number | boolean)[] = [...queryParams];
 
     blockParams.push(true);
     blocksConditions += `WHERE b.canonical = $${blockParams.length}`;
 
-    // Add block hash condition if specified
     if (blockHash) {
       blockParams.push(blockHash);
       const op = this.operator(blockParams.length);
       blocksConditions += `${op} b.hash = $${blockParams.length}`;
     }
 
-    // Add maximum height condition if specified
-    if (maxHeight) {
+    if (isNullOrUndefined(accountName) && maxHeight && !minHeight) {
       blockParams.push(maxHeight);
       const op = this.operator(blockParams.length);
-      blocksConditions += `${op} b."height" <= $${blockParams.length}`;
+      const secondCondition = `LEAST($${blockParams.length}, ${maxHeightFromDb}) - 20`;
+      blocksConditions += `${op} b."height" <= $${blockParams.length} AND b."height" >= ${secondCondition}`;
     }
 
-    // Add minimum height condition if specified
-    if (minHeight) {
+    if (isNullOrUndefined(accountName) && minHeight && !maxHeight) {
+      if (minHeight < 0) {
+        throw new Error('minHeight cannot be less than 0');
+      }
+      blockParams.push(minHeight);
+      const op = this.operator(blockParams.length);
+      blocksConditions += `${op} b."height" >= $${blockParams.length} AND b."height" <= $${blockParams.length} + 20`;
+    }
+
+    if (isNullOrUndefined(accountName) && minHeight && maxHeight) {
+      if (minHeight > maxHeight) {
+        throw new Error('minHeight cannot be greater than maxHeight');
+      }
+
+      blockParams.push(minHeight);
+      const op = this.operator(blockParams.length);
+      blockParams.push(maxHeight);
+      const secondCondition = `LEAST($${blockParams.length - 1} + 20, $${blockParams.length})`;
+      blocksConditions += `${op} b."height" >= $${blockParams.length - 1} AND b."height" <= ${secondCondition}`;
+    }
+
+    if (!isNullOrUndefined(accountName) && minHeight) {
       blockParams.push(minHeight);
       const op = this.operator(blockParams.length);
       blocksConditions += `${op} b."height" >= $${blockParams.length}`;
     }
 
-    // Add chain ID condition if specified
+    if (!isNullOrUndefined(accountName) && maxHeight) {
+      blockParams.push(maxHeight);
+      const op = this.operator(blockParams.length);
+      blocksConditions += `${op} b."height" <= $${blockParams.length}`;
+    }
+
+    if (!isNullOrUndefined(accountName) && minHeight && maxHeight) {
+      blockParams.push(minHeight);
+      const op = this.operator(blockParams.length);
+      blockParams.push(maxHeight);
+      blocksConditions += `${op} b."height" >= $${blockParams.length - 1} AND b."height" <= $${blockParams.length}`;
+    }
+
     if (chainId) {
       blockParams.push(chainId);
       const op = this.operator(blockParams.length);
       blocksConditions += `${op} b."chainId" = $${blockParams.length}`;
-    }
-
-    // Force query to retrieve a smaller set of blocks since only using chainId doesn't filter many rows
-    if (chainId && !params.after && !params.before && !minHeight && !maxHeight) {
-      blockParams.push(chainId);
-      const op = this.operator(blockParams.length);
-      blocksConditions += `${op} b."chainId" = $${blockParams.length} AND b."height" > (SELECT max(height) FROM "Blocks") - 1000`;
     }
 
     return { blocksConditions, blockParams };
@@ -91,7 +117,15 @@ export default class TransactionQueryBuilder {
     params: GetTransactionsParams,
     queryParams: Array<string | number | boolean>,
   ) {
-    const { accountName, after, before, requestKey, fungibleName, hasTokenId = false } = params;
+    const {
+      accountName,
+      after,
+      before,
+      requestKey,
+      fungibleName,
+      hasTokenId = false,
+      isCoinbase,
+    } = params;
     let conditions = '';
 
     const transactionParams: (string | number)[] = [];
@@ -103,6 +137,10 @@ export default class TransactionQueryBuilder {
       transactionParams.push(accountName);
       const op = localOperator(transactionParams.length);
       conditions += `${op} t.sender = $${queryParams.length + transactionParams.length}`;
+    } else if (!isCoinbase) {
+      transactionParams.push('coinbase');
+      const op = localOperator(transactionParams.length);
+      conditions += `${op} t.sender != $${queryParams.length + transactionParams.length}`;
     }
 
     // Add 'after' cursor condition for pagination
@@ -173,10 +211,21 @@ export default class TransactionQueryBuilder {
       before?: string | null;
       order: string;
       limit: number;
+      maxHeightFromDb: number;
     },
   ) {
-    const { blockHash, chainId, maxHeight, minHeight, minimumDepth, limit, order, after, before } =
-      params;
+    const {
+      blockHash,
+      chainId,
+      maxHeight,
+      minHeight,
+      minimumDepth,
+      limit,
+      order,
+      after,
+      before,
+      maxHeightFromDb,
+    } = params;
 
     // Determine if block-based filtering is the primary access pattern
     const isBlockQueryFirst = blockHash || minHeight || maxHeight || minimumDepth || chainId;
@@ -189,9 +238,11 @@ export default class TransactionQueryBuilder {
     // Build query conditions based on the primary access pattern
     if (isBlockQueryFirst) {
       // Start with block conditions when block filtering is primary
-      const { blockParams, blocksConditions: bConditions } = this.createBlockConditions(params, [
-        limit,
-      ]);
+      const { blockParams, blocksConditions: bConditions } = this.createBlockConditions(
+        params,
+        [limit],
+        maxHeightFromDb,
+      );
 
       const { params: txParams, conditions: txConditions } = this.createTransactionConditions(
         { ...params, after, before },
@@ -210,6 +261,7 @@ export default class TransactionQueryBuilder {
       const { blocksConditions: bConditions, blockParams } = this.createBlockConditions(
         params,
         txParams,
+        maxHeightFromDb,
       );
 
       queryParams.push(...blockParams);
@@ -231,27 +283,26 @@ export default class TransactionQueryBuilder {
           t.id AS id,
           t.creationtime AS "creationTime",
           t.hash AS "hashTransaction",
-          td.nonce AS "nonceTransaction",
-          td.sigs AS sigs,
-          td.continuation AS continuation,
+          NULL AS "nonceTransaction",
+          NULL AS sigs,
+          NULL AS continuation,
           t.num_events AS "eventCount",
-          td.pactid AS "pactId",
-          td.proof AS proof,
-          td.rollback AS rollback,
+          NULL AS "pactId",
+          NULL AS proof,
+          NULL AS rollback,
           t.txid AS txid,
           b.height AS "height",
           b."hash" AS "blockHash",
           b."chainId" AS "chainId",
-          td.gas AS "gas",
-          td.step AS step,
-          td.data AS data,
-          td.code AS code,
+          NULL AS "gas",
+          NULL AS step,
+          NULL AS data,
+          NULL AS code,
           t.logs AS "logs",
           t.result AS "result",
           t.requestkey AS "requestKey"
         FROM filtered_block b
         JOIN "Transactions" t ON b.id = t."blockId"
-        ${params.isCoinbase ? 'LEFT ' : ''} JOIN "TransactionDetails" td ON t.id = td."transactionId"
         ${transactionsConditions}
         ORDER BY t.creationtime ${order}, t.id ${order}
         LIMIT $1
@@ -269,29 +320,26 @@ export default class TransactionQueryBuilder {
           t.id AS id,
           t.creationtime AS "creationTime",
           t.hash AS "hashTransaction",
-          td.nonce AS "nonceTransaction",
-          td.sigs AS sigs,
-          td.continuation AS continuation,
+          NULL AS "nonceTransaction",
+          NULL AS sigs,
+          NULL AS continuation,
           t.num_events AS "eventCount",
-          td.pactid AS "pactId",
-          td.proof AS proof,
-          td.rollback AS rollback,
+          NULL AS "pactId",
+          NULL AS proof,
+          NULL AS rollback,
           t.txid AS txid,
           b.height AS "height",
           b."hash" AS "blockHash",
           b."chainId" AS "chainId",
-          td.gas AS "gas",
-          td.step AS step,
-          td.data AS data,
-          td.code AS code,
-          td.nonce,
-          td.sigs,
+          NULL AS "gas",
+          NULL AS step,
+          NULL AS data,
+          NULL AS code,
           t.logs AS "logs",
           t.result AS "result",
           t.requestkey AS "requestKey"
         FROM filtered_transactions t
         JOIN "Blocks" b ON b.id = t."blockId"
-        ${params.isCoinbase ? 'LEFT ' : ''} JOIN "TransactionDetails" td ON t.id = td."transactionId"
         ${blocksConditions}
         LIMIT $1
       `;
@@ -327,6 +375,10 @@ export default class TransactionQueryBuilder {
       whereCondition = ` WHERE (t.creationtime, t.id) > ($2, $3)`;
     }
 
+    if (!params.isCoinbase) {
+      whereCondition += ` AND t.sender != 'coinbase'`;
+    }
+
     whereCondition += ` AND b.canonical = true`;
 
     let query = `
@@ -334,27 +386,26 @@ export default class TransactionQueryBuilder {
         t.id AS id,
         t.creationtime AS "creationTime",
         t.hash AS "hashTransaction",
-        td.nonce AS "nonceTransaction",
-        td.sigs AS sigs,
-        td.continuation AS continuation,
+        NULL AS "nonceTransaction",
+        NULL AS sigs,
+        NULL AS continuation,
         t.num_events AS "eventCount",
-        td.pactid AS "pactId",
-        td.proof AS proof,
-        td.rollback AS rollback,
+        NULL AS "pactId",
+        NULL AS proof,
+        NULL AS rollback,
         t.txid AS txid,
         b.height AS "height",
         b."hash" AS "blockHash",
         b."chainId" AS "chainId",
-        td.gas AS "gas",
-        td.step AS step,
-        td.data AS data,
-        td.code AS code,
+        NULL AS "gas",
+        NULL AS step,
+        NULL AS data,
+        NULL AS code,
         t.logs AS "logs",
         t.result AS "result",
         t.requestkey AS "requestKey"
       FROM "Transactions" t
       JOIN "Blocks" b ON b.id = t."blockId"
-      ${params.isCoinbase ? 'LEFT ' : ''} JOIN "TransactionDetails" td ON t.id = td."transactionId"
       ${whereCondition}
       ORDER BY t.creationtime ${params.order}, t.id ${params.order}
       LIMIT $1
