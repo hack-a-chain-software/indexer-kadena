@@ -18,7 +18,7 @@ import Block, { BlockAttributes } from '@/models/block';
 import TransactionModel, { TransactionAttributes } from '@/models/transaction';
 import Event, { EventAttributes } from '@/models/event';
 import Transfer, { TransferAttributes } from '@/models/transfer';
-import { getNftTransfers, getCoinTransfers } from './transfers';
+import { getNftTransfers, getCoinTransfers } from '../utils/transfers';
 import { Op, Transaction } from 'sequelize';
 import Signer from '@/models/signer';
 import Guard from '@/models/guard';
@@ -204,12 +204,8 @@ export async function processTransaction(
   const eventsAttributes = mapToEventModel(eventsData, transactionAttributes);
 
   // Process transfers for both fungible and non-fungible tokens
-  const transfersCoinAttributes = await getCoinTransfers(eventsData, transactionAttributes);
-  const transfersNftAttributes = await getNftTransfers(
-    transactionAttributes.chainId,
-    eventsData,
-    transactionAttributes,
-  );
+  const transfersCoinAttributes = getCoinTransfers(eventsData, transactionAttributes);
+  const transfersNftAttributes = getNftTransfers(eventsData, transactionAttributes);
 
   // Combine all transfers and filter out invalid ones
   const transfersAttributes = [transfersCoinAttributes, transfersNftAttributes]

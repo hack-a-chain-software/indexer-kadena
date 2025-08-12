@@ -9,8 +9,6 @@
  * 1. NFT Transfers - Non-fungible token transfers with unique token IDs
  * 2. Coin Transfers - Fungible token transfers of standard coins like KDA
  *
- * It also manages contract synchronization for the tokens involved in transfers,
- * ensuring that contract information is properly stored and referenced.
  */
 
 import { TransactionAttributes, TransactionCreationAttributes } from '@/models/transaction';
@@ -20,24 +18,20 @@ import { TransferAttributes } from '@/models/transfer';
  * Filters and processes NFT transfer events from a payload's event data. It identifies NFT transfer events based on
  * predefined criteria (e.g., event name and parameter structure), and constructs transfer attribute objects for each.
  *
- * @param {number} chainId - The ID of the blockchain chain.
  * @param {Array} eventsData - The array of event data from a transaction payload.
  * @param {TransactionAttributes} transactionAttributes - Transaction attributes associated with the events.
- * @returns {Promise<TransferAttributes[]>} A Promise that resolves to an array of transfer attributes specifically for NFT transfers.
+ * @returns {TransferAttributes[]} An array of transfer attributes specifically for NFT transfers.
  *
  * NFT transfers are identified by:
  * - TRANSFER event name
  * - 4 parameters: tokenId, from account, to account, and amount
  * - Parameters having the expected types (string, string, string, number)
  *
- * TODO: [OPTIMIZATION] Consider implementing batch processing for transactions with many NFT transfers
- * to reduce database operations.
  */
 export function getNftTransfers(
-  chainId: number,
   eventsData: any,
   transactionAttributes: TransactionAttributes,
-) {
+): TransferAttributes[] {
   // Define constants for identifying NFT transfer events
   // NFT transfers must have the event name "TRANSFER"
   const TRANSFER_NFT_SIGNATURE = 'TRANSFER';
@@ -61,14 +55,14 @@ export function getNftTransfers(
     typeof eventData.params[0] == 'string' &&
     typeof eventData.params[1] == 'string' &&
     typeof eventData.params[2] == 'string' &&
-    typeof eventData.params[3] == 'number';
+    isAmountInCorrectFormat(eventData.params[3], transactionAttributes.requestkey);
 
   // Process each event that matches the NFT transfer signature
-  const transferPromises = eventsData
+  const transfers = eventsData
     // Filter the events array to only include valid NFT transfers
     .filter(transferNftSignature)
-    // Map each matching event to a promise that resolves to a TransferAttributes object
-    .map(async (eventData: any): Promise<TransferAttributes> => {
+    // Map each matching event to a TransferAttributes object
+    .map((eventData: any) => {
       // Extract the parameters from the event data
       const params = eventData.params;
       // param[0] is the token ID (the unique identifier for this NFT)
@@ -78,7 +72,7 @@ export function getNftTransfers(
       // param[2] is the receiver's account address
       const to_acct = params[2];
       // param[3] is the amount being transferred (usually 1.0 for NFTs)
-      const amount = params[3];
+      const amount = getAmount(params[3]);
 
       // Get the full module name (including namespace if present)
       // This identifies which smart contract/module is handling the NFT
@@ -110,11 +104,10 @@ export function getNftTransfers(
         type: 'poly-fungible',
         // The position of this transfer within the transaction's events
         orderIndex: eventData.orderIndex,
-      } as TransferAttributes;
+      };
     }) as TransferAttributes[];
 
-  // Wait for all transfer processing promises to complete and return the results
-  return Promise.all(transferPromises);
+  return transfers;
 }
 
 /**
@@ -123,20 +116,18 @@ export function getNftTransfers(
  *
  * @param {Array} eventsData - The array of event data from a transaction payload.
  * @param {TransactionAttributes} transactionAttributes - Transaction attributes associated with the events.
- * @returns {Promise<TransferAttributes[]>} A Promise that resolves to an array of transfer attributes specifically for coin transfers.
+ * @returns {TransferAttributes[]} A Promise that resolves to an array of transfer attributes specifically for coin transfers.
  *
  * Coin transfers are identified by:
  * - TRANSFER event name
  * - 3 parameters: from account, to account, and amount
  * - Parameters having the expected types (string, string, number)
  *
- * TODO: [OPTIMIZATION] The contract precision query could be optimized by implementing a more efficient
- * caching mechanism or by pre-fetching common contracts.
  */
 export function getCoinTransfers(
   eventsData: any,
   transactionAttributes: TransactionCreationAttributes,
-) {
+): TransferAttributes[] {
   // Define constants for identifying coin transfer events
   // Coin transfers must have the event name "TRANSFER"
   const TRANSFER_COIN_SIGNATURE = 'TRANSFER';
@@ -158,14 +149,14 @@ export function getCoinTransfers(
     eventData.params.length == TRANSFER_COIN_PARAMS_LENGTH &&
     typeof eventData.params[0] == 'string' &&
     typeof eventData.params[1] == 'string' &&
-    typeof eventData.params[2] == 'number';
+    isAmountInCorrectFormat(eventData.params[2], transactionAttributes.requestkey);
 
   // Process each event that matches the coin transfer signature
-  const transferPromises = eventsData
+  const transfers = eventsData
     // Filter the events array to only include valid coin transfers
     .filter(transferCoinSignature)
-    // Map each matching event to a promise that resolves to a TransferAttributes object
-    .map(async (eventData: any): Promise<TransferAttributes> => {
+    // Map each matching event to a TransferAttributes object
+    .map((eventData: any) => {
       // Get the full module name (including namespace if present)
       // This identifies which token module is being transferred (e.g., 'coin', 'fungible-v2', etc.)
       const modulename = eventData.module.namespace
@@ -179,7 +170,7 @@ export function getCoinTransfers(
       // param[1] is the receiver's account address
       const to_acct = params[1];
       // param[2] is the amount being transferred
-      const amount = params[2];
+      const amount = getAmount(params[2]);
 
       // Create and return a transfer object with all the extracted information
       return {
@@ -205,9 +196,40 @@ export function getCoinTransfers(
         type: 'fungible',
         // The position of this transfer within the transaction's events
         orderIndex: eventData.orderIndex,
-      } as TransferAttributes;
+      };
     }) as TransferAttributes[];
 
-  // Wait for all transfer processing promises to complete and return the results
-  return Promise.all(transferPromises);
+  return transfers;
+}
+
+/**
+ * Parses and validates an amount value from various formats.
+ * Returns the parsed amount if valid, or null if invalid.
+ *
+ * @param amount - The amount value to parse (number, decimal object, or integer object)
+ * @returns The parsed amount as number/string, or null if invalid
+ */
+function parseAmount(amount: any, requestKey?: string): number | string | null {
+  if (typeof amount === 'number') {
+    return amount;
+  }
+
+  if (amount?.decimal && typeof amount.decimal === 'string') {
+    return amount.decimal;
+  }
+
+  if (amount?.integer && typeof amount.integer === 'string') {
+    return amount.integer;
+  }
+
+  return null;
+}
+
+function isAmountInCorrectFormat(amount: any, requestKey: string): boolean {
+  return parseAmount(amount, requestKey) !== null;
+}
+
+function getAmount(amount: any): number | string {
+  const parsedAmount = parseAmount(amount);
+  return parsedAmount !== null ? parsedAmount : 0;
 }

@@ -21,10 +21,10 @@ func GetCoinTransfers(
 		if event.Name == TransferCoinSignature && len(event.Params) == TransferCoinParamsLength {
 			fromAcct, ok1 := event.Params[0].(string)
 			toAcct, ok2 := event.Params[1].(string)
-			amount, ok3 := convertToFloat64(event, 2)
+			amount, valid := GetAmountForTransfer(event.Params[2])
 
 			// Ensure all parameters are of the expected types
-			if !ok1 || !ok2 || !ok3 {
+			if !ok1 || !ok2 || !valid {
 				log.Printf("Skipping event due to invalid parameter types: %+v\n", requestKey)
 				continue
 			}
