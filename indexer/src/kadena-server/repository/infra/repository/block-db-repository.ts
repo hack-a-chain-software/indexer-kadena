@@ -35,6 +35,8 @@ import { MEMORY_CACHE } from '../../../../cache/init';
 import { NODE_INFO_KEY } from '../../../../cache/keys';
 import { GetNodeInfo } from '../../application/network-repository';
 import { TransactionOutput } from '../../application/transaction-repository';
+import { fungibleAccountValidator } from '@/kadena-server/repository/infra/schema-validator/fungible-account-validator';
+import { fungibleChainAccountValidator } from '@/kadena-server/repository/infra/schema-validator/fungible-chain-account-validator';
 
 /**
  * Database implementation of the BlockRepository interface
@@ -345,14 +347,15 @@ export default class BlockDbRepository implements BlockRepository {
       code: `(${balanceRow.module}.details \"${balanceRow.account}\")`,
     });
 
-    return {
-      id: balanceRow.id.toString(),
+    const fungibleAccount = fungibleChainAccountValidator.validate({
       accountName: balanceRow.account,
-      balance: Number(balanceRow.balance),
-      chainId: balanceRow.chainId.toString(),
-      fungibleName: balanceRow.module,
+      balance: balanceRow.balance,
+      chainId: balanceRow.chainId,
+      module: balanceRow.module,
       guard: formatGuard_NODE(res),
-    };
+    });
+
+    return fungibleAccount;
   }
 
   /**
@@ -685,24 +688,6 @@ export default class BlockDbRepository implements BlockRepository {
   }
 
   /**
-   * Counts the total number of events in a specific block
-   *
-   * This method performs a COUNT query to determine how many events
-   * were emitted during the transactions in a particular block.
-   *
-   * @param blockHash - The hash of the block to count events for
-   * @returns Promise resolving to the total count of events in the block
-   */
-  async getTotalCountOfBlockEvents(blockHash: string): Promise<number> {
-    const block = await BlockModel.findOne({
-      where: { hash: blockHash },
-      attributes: ['transactionsCount'],
-    });
-
-    return block?.transactionsCount || 0;
-  }
-
-  /**
    * Counts the total number of transactions in a specific block
    *
    * This method performs a COUNT query to determine how many transactions
@@ -921,28 +906,6 @@ export default class BlockDbRepository implements BlockRepository {
     const { rows } = await rootPgPool.query(query, [height, chainId]);
 
     return rows.map(row => blockValidator.validate(row));
-  }
-
-  async getBlockNParent(depth: number, hash: string): Promise<string | undefined> {
-    const query = `
-      WITH RECURSIVE BlockAncestors AS (
-        SELECT hash, parent, 1 AS depth, height
-        FROM "Blocks"
-        WHERE hash = $1
-        UNION ALL
-        SELECT b.hash, b.parent, d.depth + 1 AS depth, b.height
-        FROM BlockAncestors d
-        JOIN "Blocks" b ON d.parent = b.hash
-        WHERE d.depth < $2
-      )
-      SELECT parent as hash, depth
-      FROM BlockAncestors
-      ORDER BY depth DESC
-      LIMIT 1;
-    `;
-    const { rows } = await rootPgPool.query(query, [hash, depth]);
-
-    return rows?.[0]?.hash;
   }
 
   async getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]> {
