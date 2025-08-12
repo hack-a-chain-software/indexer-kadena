@@ -1,3 +1,4 @@
+import { Transaction } from 'sequelize';
 import { Block, FungibleChainAccount, InputMaybe, PageInfo } from '../../config/graphql-types';
 import { PaginationsParams } from '../pagination';
 import { ConnectionEdge } from '../types';
@@ -30,10 +31,6 @@ export interface GetLatestBlocksParams {
   lastBlockId?: number;
   chainIds?: string[];
   quantity: number;
-}
-
-export interface UpdateCanonicalStatusParams {
-  blocks: { hash: string; canonical: boolean }[];
 }
 
 export type BlockOutput = Omit<
@@ -91,9 +88,16 @@ export default interface BlockRepository {
     id?: string,
   ): Promise<BlockOutput[]>;
 
-  getBlocksWithSameHeight(height: number, chainId: string): Promise<BlockOutput[]>;
-  getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]>;
-  updateCanonicalStatus(params: UpdateCanonicalStatusParams): Promise<void>;
+  getBlocksWithSameHeight(
+    height: number,
+    chainId: string,
+    tx?: Transaction,
+  ): Promise<BlockOutput[]>;
+  getBlocksWithHeightHigherThan(
+    height: number,
+    chainId: string,
+    tx?: Transaction,
+  ): Promise<BlockOutput[]>;
 
   // dataloader
   getBlocksByEventIds(eventIds: string[]): Promise<BlockOutput[]>;
