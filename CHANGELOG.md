@@ -1,5 +1,22 @@
 # Changelog
 
+## Jul 28 - Aug 13, 2025
+
+- refactor: removed unnecessary environment variables and made some previously required variables optional
+- refactor: allowed to backfill a number of chains in parallel
+- refactor: added workaround to use only migrations in database updates
+- refactor: updated orphan blocks to start from the canonical tip instead of the 5th parent; added a counter table for blocks and transactions based on this mechanism
+- refactor: added a total gas counter for a specific block and for each chain
+- fix: fungible account queries must return null if an account doesn't exist
+- feat: added transfers field in non fungible account queries
+- fix: sequelize transaction not being finalized in streaming
+- refactor: removed unnecessary KDA/USD price update logs when running graphql service
+- fix: bugs and improvements on transactions query
+- feat: allowed to fetch nft transfers on transfers query
+- feat: added regression tests to compare hackachain and kadena graphql apis after a code change
+- fix: started to track transfers where amount is in a object format
+- fix: missing transaction details fetching on the all transactions query case
+
 ## May 21 - Jul 25, 2025
 
 - docs: DEXs API documentation
