@@ -114,9 +114,10 @@ export default class TransactionDbRepository implements TransactionRepository {
 
       // Execute the query with the constructed parameters
       const { rows } = await rootPgPool.query(query, queryParams);
+      const rowsWithDetails = await this.mergeRowsWithDetails(rows);
 
       // Transform database rows into GraphQL-compatible edges with cursors
-      const edges = rows.map(row => ({
+      const edges = rowsWithDetails.map(row => ({
         cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
         node: transactionValidator.validate(row),
       }));
