@@ -17,6 +17,7 @@ describe('TransactionQueryBuilder', () => {
     it('should build a basic query with minimal parameters', () => {
       const { query, queryParams } = queryBuilder.buildTransactionsQuery({
         ...baseParams,
+        maxHeightFromDb: 1000,
       });
 
       // Verify query contains the expected structure
@@ -33,6 +34,7 @@ describe('TransactionQueryBuilder', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
           blockHash: 'test-block-hash',
+          maxHeightFromDb: 1000,
         });
 
         // Should use block-first approach
@@ -45,6 +47,7 @@ describe('TransactionQueryBuilder', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
           chainId: '5',
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_block AS');
@@ -56,6 +59,7 @@ describe('TransactionQueryBuilder', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
           minHeight: 1000,
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_block AS');
@@ -67,6 +71,7 @@ describe('TransactionQueryBuilder', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
           maxHeight: 2000,
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_block AS');
@@ -80,6 +85,7 @@ describe('TransactionQueryBuilder', () => {
           blockHash: 'test-block-hash',
           chainId: '5',
           minHeight: 1000,
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_block AS');
@@ -95,6 +101,7 @@ describe('TransactionQueryBuilder', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
           accountName: 'test-account',
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
@@ -106,6 +113,7 @@ describe('TransactionQueryBuilder', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
           requestKey: 'test-request-key',
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
@@ -117,6 +125,7 @@ describe('TransactionQueryBuilder', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
           fungibleName: 'coin',
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
@@ -131,6 +140,7 @@ describe('TransactionQueryBuilder', () => {
           ...baseParams,
           accountName: 'test-account',
           hasTokenId: true,
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
@@ -147,6 +157,7 @@ describe('TransactionQueryBuilder', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
           after: '1633046400000:11',
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
@@ -158,6 +169,7 @@ describe('TransactionQueryBuilder', () => {
         const { query, queryParams } = queryBuilder.buildTransactionsQuery({
           ...baseParams,
           before: '1633046400000:11',
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
@@ -170,6 +182,7 @@ describe('TransactionQueryBuilder', () => {
           ...baseParams,
           after: '1633046400000:11',
           before: '1633132800000:12',
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
@@ -186,6 +199,7 @@ describe('TransactionQueryBuilder', () => {
           blockHash: 'test-block-hash',
           accountName: 'test-account',
           after: '1633046400000:11',
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_block AS');
@@ -201,6 +215,7 @@ describe('TransactionQueryBuilder', () => {
           accountName: 'test-account',
           requestKey: 'test-request-key',
           after: '1633046400000:11',
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_transactions AS');
@@ -225,6 +240,7 @@ describe('TransactionQueryBuilder', () => {
           accountName: 'test-account',
           after: '1633046400000:11',
           before: '1633132800000:11',
+          maxHeightFromDb: 1000,
         });
 
         expect(query).toContain('WITH filtered_block AS');

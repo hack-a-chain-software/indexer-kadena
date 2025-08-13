@@ -19,6 +19,7 @@ export interface GetTotalCountParams {
   fungibleName?: string | null;
   requestKey?: string | null;
   transactionId?: string | null;
+  hasTokenId?: boolean | null;
 }
 
 export interface GetCrossChainTransferByPactIdParams {

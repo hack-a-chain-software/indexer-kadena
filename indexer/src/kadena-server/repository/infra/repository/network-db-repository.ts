@@ -122,7 +122,7 @@ export default class NetworkDbRepository implements NetworkRepository {
    */
   async getNetworkStatistics() {
     const totalTransactionsCountQuery = `
-      SELECT last_value as "totalTransactionsCount" from "Transactions_id_seq"
+      SELECT sum("canonicalTransactions") as "totalTransactionsCount" from "Counters"
     `;
 
     const { rows: totalTransactionsCountRows } = await rootPgPool.query(

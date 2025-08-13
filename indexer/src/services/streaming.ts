@@ -19,7 +19,6 @@ import EventSource from 'eventsource';
 import { uint64ToInt64 } from '@/utils/int-uint-64';
 import Block, { BlockAttributes } from '@/models/block';
 import { sequelize } from '@/config/database';
-import StreamingError from '@/models/streaming-error';
 import { backfillGuards } from './guards';
 import { Transaction } from 'sequelize';
 import { PriceUpdaterService } from './price/price-updater.service';
@@ -29,6 +28,7 @@ import {
   checkCanonicalPathForAllChains,
   startMissingBlocksBeforeStreamingProcess,
 } from '@/services/missing';
+import { EventAttributes } from '@/models/event';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
@@ -78,35 +78,23 @@ export async function startStreaming() {
   // Handle connection errors
   eventSource.onerror = (error: any) => {
     console.error('[ERROR][NET][CONN_LOST] EventSource connection error:', error);
-    // TODO: [OPTIMIZATION] Add reconnection logic with exponential backoff here
   };
 
   const processBlock = async (block: any) => {
     const blockIdentifier = block.header.hash;
-    try {
-      if (blocksRecentlyProcessed.has(blockIdentifier)) {
-        await defineCanonicalInStreaming(blockIdentifier);
-        return;
-      }
 
+    if (blocksRecentlyProcessed.has(blockIdentifier)) {
+      await defineCanonicalInStreaming(blockIdentifier);
+      return;
+    }
+
+    const tx = await sequelize.transaction();
+    try {
       // Process the block payload (transactions, miner data, etc.)
       const payload = processPayload(block.payloadWithOutputs);
 
-      // Create a database transaction for atomic operations
-      const tx = await sequelize.transaction();
-
       // Save the block data and process its transactions
-      const blockData = await saveBlock({ header: block.header, payload }, tx);
-
-      // If saving fails, log the error and rollback the transaction
-      if (blockData === null) {
-        await StreamingError.create({
-          hash: block.header.hash,
-          chainId: block.header.chainId,
-        });
-        await tx.rollback();
-        return;
-      }
+      await saveBlock({ header: block.header, payload, canonical: null }, tx);
 
       if (!initialChainGapsAlreadyFilled.has(block.header.chainId)) {
         initialChainGapsAlreadyFilled.add(block.header.chainId);
@@ -122,8 +110,8 @@ export async function startStreaming() {
       await defineCanonicalInStreaming(block.header.hash);
       blocksRecentlyProcessed.add(blockIdentifier);
     } catch (error) {
+      await tx.rollback();
       console.error('[ERROR][DATA][DATA_CORRUPT] Failed to process block event:', error);
-      // TODO: [OPTIMIZATION] Add better error handling and recovery logic
     }
   };
 
@@ -227,10 +215,13 @@ export function processPayload(payload: any) {
  * TODO: [OPTIMIZATION] Consider implementing batch processing for high transaction volumes
  * to improve database performance.
  */
-export async function saveBlock(parsedData: any, tx?: Transaction): Promise<void> {
+export async function saveBlock(
+  parsedData: any,
+  tx?: Transaction,
+): Promise<EventAttributes[] | null> {
   const headerData = parsedData.header;
   const payloadData = parsedData.payload;
-  const canonical = parsedData.canonical ?? false;
+  const canonical = parsedData.canonical;
   const transactions = payloadData.transactions || [];
 
   try {
@@ -263,8 +254,9 @@ export async function saveBlock(parsedData: any, tx?: Transaction): Promise<void
     });
 
     // Process the block's transactions and events
-    await processPayloadKey(createdBlock, payloadData, tx);
+    return processPayloadKey(createdBlock, payloadData, tx);
   } catch (error) {
     console.error(`[ERROR][DB][DATA_CORRUPT] Failed to save block to database:`, error);
+    return null;
   }
 }

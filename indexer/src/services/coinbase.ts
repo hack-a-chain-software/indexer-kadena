@@ -17,10 +17,11 @@ import TransactionModel, { TransactionCreationAttributes } from '@/models/transa
 import Transfer, { TransferAttributes } from '@/models/transfer';
 import { Transaction } from 'sequelize';
 import Event, { EventAttributes } from '@/models/event';
-import { getCoinTransfers } from './transfers';
+import { getCoinTransfers } from '../utils/transfers';
 import Signer from '@/models/signer';
 import Guard from '@/models/guard';
 import { mapToEventModel } from '@/models/mappers/event-mapper';
+import { increaseCounters } from '@/services/counters';
 
 /**
  * Interface representing the structured data of a coinbase transaction.
@@ -53,7 +54,7 @@ interface CoinbaseTransactionData {
 export async function addCoinbaseTransactions(
   rows: Array<any>,
   tx: Transaction,
-): Promise<EventAttributes[]> {
+): Promise<{ events: EventAttributes[]; transfers: TransferAttributes[] }> {
   // Process coinbase data from each block in parallel
   const fetchPromises = rows.map(async row => {
     const output = await processCoinbaseTransaction(row.coinbase, {
@@ -110,7 +111,7 @@ export async function addCoinbaseTransactions(
     transaction: tx,
   });
 
-  return eventsToAdd;
+  return { events: eventsToAdd, transfers: transfersToAdd };
 }
 
 /**
@@ -154,7 +155,7 @@ export async function processCoinbaseTransaction(
   } as TransactionCreationAttributes;
 
   // Process coin transfers associated with the coinbase transaction
-  const transfersCoinAttributes = await getCoinTransfers(eventsData, transactionAttributes);
+  const transfersCoinAttributes = getCoinTransfers(eventsData, transactionAttributes);
 
   const eventsAttributes = mapToEventModel(eventsData, transactionAttributes);
 

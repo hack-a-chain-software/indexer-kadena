@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"go-backfill/config"
 	"log"
 	"strings"
 	"time"
@@ -133,7 +134,11 @@ func ProcessPayloads(blocks []BlockInfo) ([]ProcessedPayload, error) {
 		processedPayloads = append(processedPayloads, processedPayload)
 	}
 
-	log.Printf("Processed payloads in %fs\n", time.Since(startTime).Seconds())
+	env := config.GetConfig()
+	if env.IsSingleChain {
+		log.Printf("Processed payloads in %fs\n", time.Since(startTime).Seconds())
+	}
+
 	return processedPayloads, nil
 }
 

@@ -44,5 +44,12 @@ export const blocksFromDepthQueryResolver: QueryResolvers<ResolverContext>['bloc
       node: buildBlockOutput(e.node),
     }));
 
-    return { edges, pageInfo: output.pageInfo };
+    return {
+      edges,
+      pageInfo: output.pageInfo,
+      totalCount: -1,
+      // Include all filter parameters to support field resolvers that need this context
+      chainIds,
+      minimumDepth,
+    };
   };

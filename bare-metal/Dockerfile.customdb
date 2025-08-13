@@ -1,13 +1,12 @@
 FROM postgres:17
 
-# Install pgBackRest and dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        pgbackrest \
-        openssh-client \
-        gettext-base \
-        ssh \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update
+RUN apt-get install -y libbz2-dev libpq-dev libyaml-dev curl git gcc libssl-dev libxml2-dev libperl-dev zlib1g-dev pkg-config meson ninja-build liblz4-dev openssh-client gettext-base ssh cron && rm -rf /var/lib/apt/lists/*
+
+# install pgbackrest 2.56.0
+RUN curl -L -o pgbackrest-2.56.0.tar.gz https://github.com/pgbackrest/pgbackrest/archive/refs/tags/release/2.56.0.tar.gz
+RUN tar -xzf pgbackrest-2.56.0.tar.gz
+RUN cd pgbackrest-release-2.56.0 && meson setup builddir && ninja -C builddir && ninja -C builddir install && hash -r
 
 # Create folders for pgBackRest and adjust permissions
 RUN mkdir -p /tmp/pgbackrest /var/log/pgbackrest && \
@@ -18,6 +17,10 @@ RUN mkdir -p /tmp/pgbackrest /var/log/pgbackrest && \
 COPY pgbackrest.conf.generated /etc/pgbackrest.conf
 RUN chown postgres:postgres /etc/pgbackrest.conf && \
     chmod 600 /etc/pgbackrest.conf
+
+# Create the pgbackrest backup logs folder and adjust permissions
+RUN mkdir -p /var/lib/postgresql/pgbackrest-logs && \
+    chown postgres:postgres /var/lib/postgresql/pgbackrest-logs
 
 # Create the .ssh folder and copy the SSH keys
 RUN mkdir -p /var/lib/postgresql/.ssh

@@ -14,22 +14,22 @@
  * 6. Extracting guard information for security validation
  */
 
-import { BlockAttributes } from '@/models/block';
+import Block, { BlockAttributes } from '@/models/block';
 import TransactionModel, { TransactionAttributes } from '@/models/transaction';
 import Event, { EventAttributes } from '@/models/event';
 import Transfer, { TransferAttributes } from '@/models/transfer';
-import { getNftTransfers, getCoinTransfers } from './transfers';
-import { Transaction } from 'sequelize';
+import { getNftTransfers, getCoinTransfers } from '../utils/transfers';
+import { Op, Transaction } from 'sequelize';
 import Signer from '@/models/signer';
 import Guard from '@/models/guard';
 import { handleSingleQuery } from '@/utils/raw-query';
 import { sequelize } from '@/config/database';
 import { addCoinbaseTransactions } from './coinbase';
-import { getRequiredEnvString } from '@/utils/helpers';
 import TransactionDetails, { TransactionDetailsAttributes } from '@/models/transaction-details';
 import { mapToEventModel } from '@/models/mappers/event-mapper';
 import { processPairCreationEvents } from './pair';
 import { Decimal } from 'decimal.js';
+import { increaseCounters } from '@/services/counters';
 
 // Constants for array indices in the transaction data structure
 const TRANSACTION_INDEX = 0;
@@ -74,17 +74,44 @@ export async function processPayloadKey(
   const transactions = payloadData.transactions || [];
 
   // Process all regular transactions in parallel
-  const transactionPromises = transactions.map((transactionInfo: any) => {
-    return processTransaction(transactionInfo, block, tx);
-  });
-  const normalTransactions = (await Promise.all(transactionPromises)).flat();
+  const transactionPromises: Array<Promise<TransactionResult>> = transactions.map(
+    (transactionInfo: any) => processTransaction(transactionInfo, block, tx),
+  );
+
+  const transactionResults = await Promise.all(transactionPromises);
+  const normalEvents = transactionResults.map(t => t.events).flat();
 
   // Process coinbase transactions (mining rewards)
-  const coinbase = await addCoinbaseTransactions([block], tx!);
-  const coinbaseTransactions = (await Promise.all(coinbase)).flat();
+  const coinbaseResult = await addCoinbaseTransactions([block], tx!);
+  const coinbaseEvents = coinbaseResult.events;
+
+  const totalGasUsed = transactionResults.reduce((acc, t) => {
+    const gasUsed = new Decimal(t.gas).mul(t.gasprice).toNumber();
+    return acc.plus(gasUsed);
+  }, new Decimal(0));
+
+  await increaseCounters({
+    canonicalBlocksCount: 1,
+    orphansBlocksCount: 0,
+    canonicalTransactionsCount: transactionPromises.length,
+    orphanTransactionsCount: 0,
+    chainId: block.chainId,
+    totalGasUsed: totalGasUsed.toNumber(),
+    tx,
+  });
+
+  await Block.update(
+    {
+      totalGasUsed: sequelize.literal(`COALESCE("totalGasUsed", 0) + ${totalGasUsed}`),
+    },
+    {
+      transaction: tx,
+      where: { id: { [Op.eq]: block.id } },
+    },
+  );
 
   // Combine all events from both transaction types
-  return [...normalTransactions, ...coinbaseTransactions];
+  return [...normalEvents, ...coinbaseEvents];
 }
 
 /**
@@ -105,11 +132,19 @@ export async function processPayloadKey(
  * TODO: [OPTIMIZATION] The balance insert operation uses a raw SQL query which could potentially
  * be vulnerable to SQL injection. Consider using parameterized queries or ORM methods.
  */
+
+export interface TransactionResult {
+  events: EventAttributes[];
+  transfers: TransferAttributes[];
+  gas: string;
+  gasprice: string;
+}
+
 export async function processTransaction(
   transactionArray: any,
   block: BlockAttributes,
   tx?: Transaction,
-): Promise<EventAttributes[]> {
+): Promise<TransactionResult> {
   const transactionInfo = transactionArray[TRANSACTION_INDEX];
   const receiptInfo = transactionArray[RECEIPT_INDEX];
 
@@ -169,12 +204,8 @@ export async function processTransaction(
   const eventsAttributes = mapToEventModel(eventsData, transactionAttributes);
 
   // Process transfers for both fungible and non-fungible tokens
-  const transfersCoinAttributes = await getCoinTransfers(eventsData, transactionAttributes);
-  const transfersNftAttributes = await getNftTransfers(
-    transactionAttributes.chainId,
-    eventsData,
-    transactionAttributes,
-  );
+  const transfersCoinAttributes = getCoinTransfers(eventsData, transactionAttributes);
+  const transfersNftAttributes = getNftTransfers(eventsData, transactionAttributes);
 
   // Combine all transfers and filter out invalid ones
   const transfersAttributes = [transfersCoinAttributes, transfersNftAttributes]
@@ -296,7 +327,12 @@ export async function processTransaction(
     const balances = [...balancesFrom, ...balancesTo, ...marmaladeBalances];
 
     if (balances.length === 0) {
-      return eventsWithTransactionId;
+      return {
+        events: eventsWithTransactionId,
+        transfers: transfersWithTransactionId,
+        gas: transactionDetailsAttributes.gas,
+        gasprice: transactionDetailsAttributes.gasprice,
+      };
     }
 
     // Create values string for SQL insert
@@ -319,7 +355,12 @@ export async function processTransaction(
       transaction: tx,
     });
 
-    return eventsWithTransactionId;
+    return {
+      events: eventsWithTransactionId,
+      transfers: transfersWithTransactionId,
+      gas: transactionDetailsAttributes.gas,
+      gasprice: transactionDetailsAttributes.gasprice,
+    };
   } catch (error) {
     console.error(
       `[ERROR][DB][DATA_CORRUPT] Failed to save transaction ${transactionInfo.hash}: ${error}`,

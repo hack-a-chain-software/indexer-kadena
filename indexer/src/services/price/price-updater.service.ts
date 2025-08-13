@@ -26,7 +26,6 @@ export class PriceUpdaterService {
       const response = await axios.get(this.DIA_API_URL);
       const price = response.data.Price;
       this.priceService.setKdaUsdPrice(price);
-      console.log(`[INFO][PRICE] Updated KDA/USD price to: $${price}`);
     } catch (error) {
       console.error('[ERROR][PRICE] Failed to update KDA/USD price:', error);
     }

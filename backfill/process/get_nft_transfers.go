@@ -21,7 +21,7 @@ func GetNftTransfers(network string, chainId int, events []fetch.Event, reqKey s
 
 			fromAcct, ok2 := event.Params[1].(string)
 			toAcct, ok3 := event.Params[2].(string)
-			amount, ok4 := convertToFloat64(event, 3)
+			amount, ok4 := GetAmountForTransfer(event.Params[3])
 
 			if !ok2 || !ok3 || !ok4 {
 				log.Printf("Invalid NFT transfer parameters in event: %+v\n", event)
@@ -42,7 +42,6 @@ func GetNftTransfers(network string, chainId int, events []fetch.Event, reqKey s
 				HasTokenId:    tokenId != nil,
 				TokenId:       tokenId,
 				Type:          "poly-fungible",
-				ContractId:    nil,
 				OrderIndex:    len(transfers),
 			}
 

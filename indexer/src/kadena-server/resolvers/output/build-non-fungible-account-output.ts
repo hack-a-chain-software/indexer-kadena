@@ -10,6 +10,7 @@
 import {
   NonFungibleAccount,
   NonFungibleAccountTransactionsConnection,
+  NonFungibleAccountTransfersConnection,
 } from '../../config/graphql-types';
 import { INonFungibleAccount } from '../../repository/application/balance-repository';
 import { NftInfo } from '../../repository/gateway/pact-gateway';
@@ -61,5 +62,6 @@ export const buildNonFungibleAccount = (
     // for resolvers
     chainAccounts: [],
     transactions: {} as NonFungibleAccountTransactionsConnection,
+    transfers: {} as NonFungibleAccountTransfersConnection,
   };
 };

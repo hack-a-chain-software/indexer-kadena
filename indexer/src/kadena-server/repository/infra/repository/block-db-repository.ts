@@ -23,6 +23,7 @@ import BlockRepository, {
   GetBlocksFromDepthParams,
   GetCompletedBlocksParams,
   GetLatestBlocksParams,
+  GetTotalCountParams,
   UpdateCanonicalStatusParams,
 } from '../../application/block-repository';
 import { getPageInfo, getPaginationParams } from '../../pagination';
@@ -34,6 +35,8 @@ import { MEMORY_CACHE } from '../../../../cache/init';
 import { NODE_INFO_KEY } from '../../../../cache/keys';
 import { GetNodeInfo } from '../../application/network-repository';
 import { TransactionOutput } from '../../application/transaction-repository';
+import { fungibleAccountValidator } from '@/kadena-server/repository/infra/schema-validator/fungible-account-validator';
+import { fungibleChainAccountValidator } from '@/kadena-server/repository/infra/schema-validator/fungible-chain-account-validator';
 
 /**
  * Database implementation of the BlockRepository interface
@@ -142,6 +145,8 @@ export default class BlockDbRepository implements BlockRepository {
         queryParams.push(lastHeight, lastId);
         conditions.push(`(height, id) > ($${queryParams.length - 1}, $${queryParams.length})`);
       }
+
+      conditions.push(`canonical = true`);
 
       const query = `
         SELECT *
@@ -280,7 +285,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.coinbase as "coinbase",
         b.adjacents as "adjacents",
         b.parent as "parent",
-        b.canonical as "canonical"
+        b.canonical as "canonical",
+        b."transactionsCount" as "transactionsCount"
       FROM "Blocks" b
       WHERE b.height ${before ? '<=' : '>='} $2
       ${conditions}
@@ -341,14 +347,15 @@ export default class BlockDbRepository implements BlockRepository {
       code: `(${balanceRow.module}.details \"${balanceRow.account}\")`,
     });
 
-    return {
-      id: balanceRow.id.toString(),
+    const fungibleAccount = fungibleChainAccountValidator.validate({
       accountName: balanceRow.account,
-      balance: Number(balanceRow.balance),
-      chainId: balanceRow.chainId.toString(),
-      fungibleName: balanceRow.module,
+      balance: balanceRow.balance,
+      chainId: balanceRow.chainId,
+      module: balanceRow.module,
       guard: formatGuard_NODE(res),
-    };
+    });
+
+    return fungibleAccount;
   }
 
   /**
@@ -363,6 +370,18 @@ export default class BlockDbRepository implements BlockRepository {
   async getChainIds() {
     const nodeInfo = MEMORY_CACHE.get(NODE_INFO_KEY) as GetNodeInfo;
     return nodeInfo.nodeChains.map(chainId => Number(chainId));
+  }
+
+  async getTotalCount(params: GetTotalCountParams) {
+    const { chainIds, minimumDepth = 0 } = params;
+    const chainIdsToUse = chainIds?.length ? chainIds : await this.getChainIds();
+    const query = `
+      SELECT sum("canonicalBlocks") as "totalCount"
+      FROM "Counters"
+      WHERE "chainId" = ANY($1)
+    `;
+    const { rows } = await rootPgPool.query(query, [chainIdsToUse]);
+    return parseInt(rows[0].totalCount, 10) - minimumDepth * chainIdsToUse.length;
   }
 
   /**
@@ -561,7 +580,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.adjacents as "adjacents",
         b.parent as "parent",
         b.canonical as "canonical",
-        t.id as "transactionId"
+        t.id as "transactionId",
+        b."transactionsCount" as "transactionsCount"
         FROM "Blocks" b
         JOIN "Transactions" t ON b.id = t."blockId"
         WHERE t.id = ANY($1::int[])`,
@@ -609,7 +629,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.coinbase as "coinbase",
         b.adjacents as "adjacents",
         b.parent as "parent",
-        b.canonical as "canonical"
+        b.canonical as "canonical",
+        b."transactionsCount" as "transactionsCount"
         FROM "Blocks" b
         WHERE b.hash = ANY($1::text[])`,
       [hashes],
@@ -664,24 +685,6 @@ export default class BlockDbRepository implements BlockRepository {
     });
 
     return block?.height || 0;
-  }
-
-  /**
-   * Counts the total number of events in a specific block
-   *
-   * This method performs a COUNT query to determine how many events
-   * were emitted during the transactions in a particular block.
-   *
-   * @param blockHash - The hash of the block to count events for
-   * @returns Promise resolving to the total count of events in the block
-   */
-  async getTotalCountOfBlockEvents(blockHash: string): Promise<number> {
-    const block = await BlockModel.findOne({
-      where: { hash: blockHash },
-      attributes: ['transactionsCount'],
-    });
-
-    return block?.transactionsCount || 0;
   }
 
   /**
@@ -903,28 +906,6 @@ export default class BlockDbRepository implements BlockRepository {
     const { rows } = await rootPgPool.query(query, [height, chainId]);
 
     return rows.map(row => blockValidator.validate(row));
-  }
-
-  async getBlockNParent(depth: number, hash: string): Promise<string | undefined> {
-    const query = `
-      WITH RECURSIVE BlockAncestors AS (
-        SELECT hash, parent, 1 AS depth, height
-        FROM "Blocks"
-        WHERE hash = $1
-        UNION ALL
-        SELECT b.hash, b.parent, d.depth + 1 AS depth, b.height
-        FROM BlockAncestors d
-        JOIN "Blocks" b ON d.parent = b.hash
-        WHERE d.depth < $2
-      )
-      SELECT parent as hash, depth
-      FROM BlockAncestors
-      ORDER BY depth DESC
-      LIMIT 1;
-    `;
-    const { rows } = await rootPgPool.query(query, [hash, depth]);
-
-    return rows?.[0]?.hash;
   }
 
   async getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]> {

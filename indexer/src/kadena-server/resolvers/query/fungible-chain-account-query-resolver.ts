@@ -11,6 +11,8 @@ export const fungibleChainAccountQueryResolver: QueryResolvers<ResolverContext>[
       [chainId.toString()],
     );
 
+    if (!account) return null;
+
     const output = buildFungibleChainAccount(account);
     return output;
   };

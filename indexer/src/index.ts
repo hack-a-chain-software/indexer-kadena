@@ -4,9 +4,7 @@
  * The indexer supports multiple operation modes:
  * - Streaming blockchain data
  * - Running GraphQL server
- * - Backfilling guards
- * - Processing missing blocks
- * - Database initialization
+ * - Backfilling token pairs
  */
 
 import dotenv from 'dotenv';
@@ -15,8 +13,6 @@ console.info('[INFO][INFRA][INFRA_CONFIG] Loading environment variables...');
 dotenv.config();
 
 import { program } from 'commander';
-import { closeDatabase } from './config/database';
-import { initializeDatabase } from './config/init';
 import { startGraphqlServer } from './kadena-server/server';
 import { startStreaming } from './services/streaming';
 import { backfillPairEvents } from './services/pair';
@@ -30,7 +26,6 @@ import { PriceUpdaterService } from '@/services/price/price-updater.service';
 program
   .option('-s, --streaming', 'Start streaming blockchain data')
   .option('-t, --graphql', 'Start GraphQL server based on kadena schema')
-  .option('-z, --database', 'Init the database')
   .option('-p, --backfillPairs', 'Backfill the pairs');
 
 program.parse(process.argv);
@@ -54,12 +49,6 @@ async function main() {
   try {
     setupAssociations();
     PriceUpdaterService.getInstance();
-
-    if (options.database) {
-      await initializeDatabase();
-      await closeDatabase();
-      process.exit(0);
-    }
 
     if (options.streaming) {
       await startStreaming();

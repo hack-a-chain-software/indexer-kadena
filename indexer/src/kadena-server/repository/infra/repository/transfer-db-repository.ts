@@ -65,6 +65,7 @@ export default class TransferDbRepository implements TransferRepository {
       orderIndex,
       requestKey,
       moduleHash,
+      hasTokenId,
     } = params;
 
     const { limit, order, after, before } = getPaginationParams({
@@ -73,7 +74,7 @@ export default class TransferDbRepository implements TransferRepository {
       first,
       last,
     });
-    const queryParams: (string | number)[] = [limit];
+    const queryParams: (string | number | boolean)[] = [limit];
     let conditions = '';
 
     if (accountName) {
@@ -82,16 +83,27 @@ export default class TransferDbRepository implements TransferRepository {
       conditions += `\n${op} (transfers.from_acct = $${queryParams.length} OR transfers.to_acct = $${queryParams.length})`;
     }
 
-    if (after) {
-      queryParams.push(after);
+    if (hasTokenId) {
+      queryParams.push('marmalade-v2.ledger');
+      queryParams.push('marmalade.ledger');
       const op = operator(queryParams.length);
-      conditions += `\n${op} transfers.id < $${queryParams.length}`;
+      conditions += `\n${op} transfers.modulename IN ($${queryParams.length - 1}, $${queryParams.length})`;
+    }
+
+    if (after) {
+      const [creationTime, id] = after.split(':');
+      queryParams.push(creationTime);
+      const op = operator(queryParams.length);
+      queryParams.push(id);
+      conditions += `\n${op} (t.creationtime, t.id) < ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
     if (before) {
-      queryParams.push(before);
+      const [creationTime, id] = before.split(':');
+      queryParams.push(creationTime);
       const op = operator(queryParams.length);
-      conditions += `\n${op} transfers.id > $${queryParams.length}`;
+      queryParams.push(id);
+      conditions += `\n${op} (t.creationtime, t.id) > ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
     if (chainId) {
@@ -147,7 +159,7 @@ export default class TransferDbRepository implements TransferRepository {
         join "Transfers" transfers on transfers."transactionId" = t.id
         left join "TransactionDetails" td on t.id = td."transactionId"
         ${conditions}
-        ORDER BY transfers.id ${order}
+        ORDER BY t."creationtime" ${order}, transfers.id ${order}
         LIMIT $1
       `;
     } else if (requestKey) {
@@ -177,47 +189,11 @@ export default class TransferDbRepository implements TransferRepository {
         join "Transfers" transfers on transfers."transactionId" = t.id
         left join "TransactionDetails" td on t.id = td."transactionId"
         ${conditions}
-        ORDER BY transfers.id ${order}
-        LIMIT $1
-      `;
-    } else if (accountName) {
-      query = `
-        WITH filtered_transfers AS (
-          SELECT id, amount, "transactionId", "from_acct", "to_acct", modulename, modulehash, requestkey, "orderIndex"
-          FROM "Transfers" transfers
-          ${conditions}
-          ORDER BY transfers.id ${order}
-          LIMIT ALL
-        )
-        select transfers.id as id,
-        transfers.amount as "transferAmount",
-        t."chainId" as "chainId",
-        t."creationtime" as "creationTime",
-        t.id as "transactionId",
-        b.height as "height",
-        b.hash as "blockHash",
-        transfers."from_acct" as "senderAccount",
-        transfers."to_acct" as "receiverAccount",
-        transfers.modulename as "moduleName",
-        transfers.modulehash as "moduleHash",
-        transfers.requestkey as "requestKey",
-        transfers."orderIndex" as "orderIndex",
-        td.pactid as "pactId"
-        from filtered_transfers transfers
-        join "Transactions" t on t.id = transfers."transactionId"
-        join "Blocks" b on b."id" = t."blockId"
-        left join "TransactionDetails" td on t.id = td."transactionId"
+        ORDER BY t."creationtime" ${order}, transfers.id ${order}
         LIMIT $1
       `;
     } else {
       query = `
-        WITH filtered_transfers AS (
-          SELECT id, amount, "transactionId", "from_acct", "to_acct", modulename, modulehash, requestkey, "orderIndex"
-          FROM "Transfers" transfers
-          ${conditions}
-          ORDER BY transfers.id ${order}
-          LIMIT $1
-        )
         select transfers.id as id,
         transfers.amount as "transferAmount",
         t."chainId" as "chainId",
@@ -232,17 +208,20 @@ export default class TransferDbRepository implements TransferRepository {
         transfers.requestkey as "requestKey",
         transfers."orderIndex" as "orderIndex",
         td.pactid as "pactId"
-        from filtered_transfers transfers
+        from "Transfers" transfers
         join "Transactions" t on t.id = transfers."transactionId"
         join "Blocks" b on b."id" = t."blockId"
         left join "TransactionDetails" td on t.id = td."transactionId"
+        ${conditions}
+        ORDER BY t."creationtime" ${order}, transfers.id ${order}
+        LIMIT $1
       `;
     }
 
     const { rows } = await rootPgPool.query(query, queryParams);
 
     const edges = rows.map(row => ({
-      cursor: row.id.toString(),
+      cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
       node: transferSchemaValidator.validate(row),
     }));
 
@@ -332,7 +311,8 @@ export default class TransferDbRepository implements TransferRepository {
       return transfersCount;
     }
 
-    const { blockHash, accountName, chainId, transactionId, fungibleName, requestKey } = params;
+    const { blockHash, accountName, chainId, transactionId, fungibleName, requestKey, hasTokenId } =
+      params;
     const queryParams: (string | number)[] = [];
     let conditions = '';
 
@@ -366,6 +346,13 @@ export default class TransferDbRepository implements TransferRepository {
       queryParams.push(fungibleName);
       const op = localOperator(queryParams.length);
       conditions += `${op} trans.modulename = $${queryParams.length}`;
+    }
+
+    if (hasTokenId) {
+      queryParams.push('marmalade-v2.ledger');
+      queryParams.push('marmalade.ledger');
+      const op = localOperator(queryParams.length);
+      conditions += `${op} trans.modulename IN ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
     if (requestKey) {

@@ -20,7 +20,6 @@ type TransferAttributes struct {
 	HasTokenId    bool      `json:"hasTokenId"`
 	TokenId       *string   `json:"tokenId"`
 	Type          string    `json:"type"`
-	ContractId    *string   `json:"contractId"`
 	OrderIndex    int       `json:"orderIndex"`
 	CreatedAt     time.Time `json:"createdAt"`
 	UpdatedAt     time.Time `json:"updatedAt"`
@@ -33,8 +32,8 @@ func SaveTransfersToDatabase(transfers []TransferAttributes, db pgx.Tx) error {
 
 	query := `
 		INSERT INTO "Transfers" 
-		("transactionId", amount, "chainId", from_acct, modulehash, modulename, requestkey, to_acct, "hasTokenId", "tokenId", "type", "contractId", "orderIndex", "createdAt", "updatedAt", canonical)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+		("transactionId", amount, "chainId", from_acct, modulehash, modulename, requestkey, to_acct, "hasTokenId", "tokenId", "type", "orderIndex", "createdAt", "updatedAt", canonical)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 	`
 
 	now := time.Now()
@@ -54,7 +53,6 @@ func SaveTransfersToDatabase(transfers []TransferAttributes, db pgx.Tx) error {
 			transfer.HasTokenId,
 			transfer.TokenId,
 			transfer.Type,
-			transfer.ContractId,
 			transfer.OrderIndex,
 			now,
 			now,

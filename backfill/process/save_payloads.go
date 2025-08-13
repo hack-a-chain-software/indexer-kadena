@@ -3,9 +3,11 @@ package process
 import (
 	"context"
 	"fmt"
+	"go-backfill/config"
 	"go-backfill/fetch"
 	"go-backfill/repository"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -71,6 +73,7 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 	}
 
 	var transactionIdsToSave [][]int64
+	var totalGasUsedInChain float64 = 0
 	for index, processedPayload := range processedPayloads {
 		var blockId = blockIds[index]
 		var currBlock = blocks[index]
@@ -88,6 +91,22 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		if err != nil {
 			return Counters{}, DataSizeTracker{}, fmt.Errorf("saving transaction details for block %d -> %w", currBlock.Height, err)
 		}
+
+		var totalGasUsedInBlock float64 = 0
+		for _, txDetail := range txDetails {
+			gas, err := strconv.ParseFloat(txDetail.Gas, 64)
+			if err != nil {
+				return Counters{}, DataSizeTracker{}, fmt.Errorf("parsing gas for block %d: %w", currBlock.Height, err)
+			}
+			gasPrice, err := strconv.ParseFloat(txDetail.GasPrice, 64)
+			if err != nil {
+				return Counters{}, DataSizeTracker{}, fmt.Errorf("parsing gas price for block %d: %w", currBlock.Height, err)
+			}
+			totalGasUsedInBlock += gas * gasPrice
+		}
+
+		repository.SaveTotalGasUsed(tx, totalGasUsedInBlock, blockId)
+		totalGasUsedInChain += totalGasUsedInBlock
 
 		txsSize := approximateSize(txs)
 		dataSizeTracker.TransactionsKB += txsSize
@@ -155,13 +174,24 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		counters.Signers += len(signers)
 	}
 
+	repository.SaveCounters(tx, repository.CounterAttributes{
+		ChainId:              chainId,
+		TotalGasUsed:         totalGasUsedInChain,
+		CanonicalBlocksCount: len(blocks),
+		// ignore coinbase transactions on the canonical transaction counter
+		CanonicalTransactionsCount: counters.Transactions - len(blocks),
+	})
+
+	env := config.GetConfig()
+	if env.IsSingleChain {
+		log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
+	}
+
 	log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
 
-	commitStartTime := time.Now()
 	if err := tx.Commit(context.Background()); err != nil {
 		return Counters{}, DataSizeTracker{}, fmt.Errorf("committing transaction: %w", err)
 	}
-	log.Printf("DB commit took %fs\n", time.Since(commitStartTime).Seconds())
 
 	dataSizeTracker.TransactionsKB /= 1024
 	dataSizeTracker.EventsKB /= 1024
