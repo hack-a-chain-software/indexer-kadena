@@ -697,7 +697,7 @@ export default class BlockDbRepository implements BlockRepository {
       `SELECT COUNT(*) as "totalCount"
         FROM "Blocks" b
         JOIN "Transactions" t ON t."blockId" = b.id
-        WHERE b.hash = $1`,
+        WHERE b.hash = $1 AND t.sender != 'coinbase'`,
       [blockHash],
     );
 
