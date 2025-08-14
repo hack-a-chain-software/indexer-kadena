@@ -120,7 +120,8 @@ export const transactionsFixture015 = {
               payload: {},
             },
             result: {
-              badResult: null,
+              badResult:
+                '{"info":"<toplevel>:0","type":"EvalError","message":"Continuation error: verifyCont: No pact exec found in command result","callStack":[]}',
               goodResult: null,
               continuation: null,
             },
@@ -181,7 +182,7 @@ export const transactionsFixture015 = {
             },
             result: {
               badResult: null,
-              goodResult: '""',
+              goodResult: null,
               continuation: null,
             },
           },
@@ -198,7 +199,8 @@ export const transactionsFixture015 = {
               payload: {},
             },
             result: {
-              badResult: null,
+              badResult:
+                '{"info":"<toplevel>:0","type":"EvalError","message":"Requested defpact execution already completed for defpact id: wRIHh2YTtUwqph9KQM5D...","callStack":[]}',
               goodResult: null,
               continuation: null,
             },
@@ -219,7 +221,7 @@ export const transactionsFixture015 = {
             },
             result: {
               badResult: null,
-              goodResult: '""',
+              goodResult: null,
               continuation: null,
             },
           },
@@ -256,7 +258,8 @@ export const transactionsFixture015 = {
               payload: {},
             },
             result: {
-              badResult: null,
+              badResult:
+                '{"info":"<toplevel>:0","type":"EvalError","message":"Continuation error: verifyCont: No pact exec found in command result","callStack":[]}',
               goodResult: null,
               continuation: null,
             },
@@ -277,7 +280,7 @@ export const transactionsFixture015 = {
             },
             result: {
               badResult: null,
-              goodResult: '""',
+              goodResult: null,
               continuation: null,
             },
           },
@@ -297,7 +300,7 @@ export const transactionsFixture015 = {
             },
             result: {
               badResult: null,
-              goodResult: '""',
+              goodResult: null,
               continuation: null,
             },
           },
@@ -437,7 +440,7 @@ export const transactionsFixture015 = {
             },
             result: {
               badResult: null,
-              goodResult: '""',
+              goodResult: null,
               continuation: null,
             },
           },
@@ -497,7 +500,7 @@ export const transactionsFixture015 = {
             },
             result: {
               badResult: null,
-              goodResult: '""',
+              goodResult: null,
               continuation: null,
             },
           },

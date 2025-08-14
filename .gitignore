@@ -3,6 +3,9 @@ dist/
 data/
 draft/
 .env
+.env.testing
+.env.mainnet01
+.env.testnet04
 .terraform
 .terraform.lock.hcl
 .terraform.tfstate.lock.info
@@ -12,3 +15,4 @@ draft/
 indexer/indexer
 .cursor
 indexer/tests/logs/*
+indexer/tests/integration/api-parity/logs/*
