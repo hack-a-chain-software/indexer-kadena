@@ -556,6 +556,7 @@ type QueryEventsConnectionEdge {
 type QueryBlocksFromHeightConnection {
   edges: [QueryBlocksFromHeightConnectionEdge!]!
   pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type QueryBlocksFromHeightConnectionEdge {

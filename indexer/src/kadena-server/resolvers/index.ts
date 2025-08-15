@@ -101,6 +101,7 @@ import { transfersNonFungibleAccountResolver } from '@/kadena-server/resolvers/f
 import { totalCountNonFungibleAccountTransfersConnectionResolver } from '@/kadena-server/resolvers/fields/non-fungible-account/transfers-connection/total-count-non-fungible-account-transfers-connection-resolver';
 import { transfersNonFungibleChainAccountResolver } from '@/kadena-server/resolvers/fields/non-fungible-chain-account/transfers-non-fungible-chain-account-resolver';
 import { totalCountNonFungibleChainAccountTransfersConnectionResolver } from '@/kadena-server/resolvers/fields/non-fungible-chain-account/transfers-connection/total-count-non-fungible-chain-account-transfers-connection-resolver';
+import { totalCountQueryBlocksFromHeightConnectionResolver } from '@/kadena-server/resolvers/fields/query-blocks-from-height-connection/total-count-query-blocks-from-height-connection-resolver';
 /**
  * Complete resolver map for the GraphQL API
  *
@@ -237,6 +238,9 @@ export const resolvers: Resolvers<ResolverContext> = {
   TransactionCommand: {
     signers: signersTransactionCommandResolver, // add dataloader
     meta: metaTransactionCommandResolver, // add dataloader
+  },
+  QueryBlocksFromHeightConnection: {
+    totalCount: totalCountQueryBlocksFromHeightConnectionResolver,
   },
   QueryBlocksFromDepthConnection: {
     totalCount: totalCountQueryBlocksFromDepthConnectionResolver,
