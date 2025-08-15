@@ -959,6 +959,7 @@ export type QueryTransactionsArgs = {
   before?: InputMaybe<Scalars['String']['input']>;
   blockHash?: InputMaybe<Scalars['String']['input']>;
   chainId?: InputMaybe<Scalars['String']['input']>;
+  code?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   fungibleName?: InputMaybe<Scalars['String']['input']>;
   isCoinbase?: InputMaybe<Scalars['Boolean']['input']>;

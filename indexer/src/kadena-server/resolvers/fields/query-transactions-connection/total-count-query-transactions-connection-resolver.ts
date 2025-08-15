@@ -20,6 +20,7 @@ const schema = zod.object({
   minimumDepth: zod.number().nullable().optional(),
   requestKey: zod.string().nullable().optional(),
   isCoinbase: zod.boolean().nullable().optional(),
+  transactionCode: zod.string().nullable().optional(),
 });
 
 /**
@@ -43,7 +44,13 @@ export const totalCountQueryTransactionsConnectionResolver: QueryTransactionsCon
       fungibleName,
       requestKey,
       isCoinbase,
+      transactionCode,
     } = schema.parse(parent);
+
+    if (transactionCode) {
+      throw new Error('Total count is not supported for transactions with code.');
+    }
+
     const output = await context.transactionRepository.getTransactionsCount({
       accountName,
       blockHash,

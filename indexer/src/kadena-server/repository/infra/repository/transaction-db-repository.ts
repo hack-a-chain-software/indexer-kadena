@@ -126,9 +126,30 @@ export default class TransactionDbRepository implements TransactionRepository {
       return pageInfo;
     }
 
-    const maxHeightFromDb = (await rootPgPool.query(`SELECT max(height) FROM "Blocks"`)).rows[0]
-      .max;
+    if (rest.transactionCode) {
+      const { query, queryParams } = this.queryBuilder.buildTransactionByCodeQuery({
+        after,
+        before,
+        order,
+        limit,
+        transactionCode: rest.transactionCode,
+      });
 
+      // Execute the query with the constructed parameters
+      const { rows } = await rootPgPool.query(query, queryParams);
+
+      // Transform database rows into GraphQL-compatible edges with cursors
+      const edges = rows.map(row => ({
+        cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
+        node: transactionValidator.validate(row),
+      }));
+
+      const pageInfo = getPageInfo({ edges, order, limit, after, before });
+      return pageInfo;
+    }
+
+    const maxHeightQuery = `SELECT max(height) FROM "Blocks"`;
+    const maxHeightFromDb = (await rootPgPool.query(maxHeightQuery)).rows[0].max;
     // If no minimumDepth is specified, we can use the normal query approach
     if (!rest.minimumDepth) {
       // Build and execute the query using the query builder
