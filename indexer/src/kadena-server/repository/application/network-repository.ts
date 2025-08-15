@@ -23,9 +23,12 @@ export interface GetNodeInfo {
 
 type AllInfo = NetworkStatistics & HashRateAndTotalDifficulty & GetNodeInfo;
 
+export type CurrentChainHeights = Record<string, number>;
+
 export default interface NetworkRepository {
   getNetworkStatistics(): Promise<NetworkStatistics>;
   getHashRateAndTotalDifficulty(chainIds: number[]): Promise<HashRateAndTotalDifficulty>;
   getNodeInfo(): Promise<GetNodeInfo>;
   getAllInfo(): Promise<AllInfo>;
+  getCurrentChainHeights(): Promise<CurrentChainHeights>;
 }

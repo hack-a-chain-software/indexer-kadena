@@ -358,7 +358,7 @@ export default class TransactionDbRepository implements TransactionRepository {
    * @returns Promise resolving to matching transactions
    */
   async getTransactionsByRequestKey(params: GetTransactionsByRequestKey) {
-    const { requestKey, blockHash, minimumDepth } = params;
+    const { requestKey, blockHash, minimumDepth, currentChainHeights } = params;
     const queryParams: (string | number)[] = [requestKey];
     let conditions = '';
 
@@ -381,6 +381,7 @@ export default class TransactionDbRepository implements TransactionRepository {
       b.height as "height",
       b."hash" as "blockHash",
       b."chainId" as "chainId",
+      b.canonical as canonical,
       t.result as "result",
       td.gas as "gas",
       td.step as step,
@@ -397,17 +398,14 @@ export default class TransactionDbRepository implements TransactionRepository {
 
     const { rows } = await rootPgPool.query(query, queryParams);
 
-    let transactions: TransactionOutput[] = [...rows];
+    const canonicalTxs = rows.filter(r => r.canonical === true);
+    const orphanedTxs = rows.filter(r => r.canonical === false);
+    let transactions: TransactionOutput[] = [...canonicalTxs, ...orphanedTxs];
 
     if (minimumDepth) {
-      const blockRepository = new BlockDbRepository();
-      const blockHashToDepth = await blockRepository.createBlockDepthMap(
-        rows.map(row => ({ hash: row.blockHash })),
-        'hash',
-        minimumDepth,
+      const filteredTxs = rows.filter(
+        row => currentChainHeights[row.chainId] - row.height >= minimumDepth,
       );
-
-      const filteredTxs = rows.filter(event => blockHashToDepth[event.blockHash] >= minimumDepth);
       transactions = [...filteredTxs];
     }
 

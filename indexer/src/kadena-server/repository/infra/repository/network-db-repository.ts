@@ -10,6 +10,7 @@
 import { Op } from 'sequelize';
 import BlockModel from '../../../../models/block';
 import NetworkRepository, {
+  CurrentChainHeights,
   GetNodeInfo,
   HashRateAndTotalDifficulty,
   NetworkStatistics,
@@ -213,6 +214,21 @@ export default class NetworkDbRepository implements NetworkRepository {
     const data = await response.json();
 
     const output = nodeInfoValidator.validate(data);
+    return output;
+  }
+
+  async getCurrentChainHeights(): Promise<CurrentChainHeights> {
+    const heightsQuery = `
+      SELECT "chainId", "canonicalBlocks" FROM "Counters" ORDER BY "canonicalBlocks"
+    `;
+
+    const { rows } = await rootPgPool.query(heightsQuery);
+
+    const output = rows.reduce((acc, row) => {
+      acc[row.chainId] = row.canonicalBlocks;
+      return acc;
+    }, {} as CurrentChainHeights);
+
     return output;
   }
 
