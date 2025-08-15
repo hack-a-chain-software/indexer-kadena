@@ -22,12 +22,8 @@ import { sequelize } from '@/config/database';
 import { backfillGuards } from './guards';
 import { Transaction } from 'sequelize';
 import { PriceUpdaterService } from './price/price-updater.service';
-import { defineCanonicalInStreaming } from '@/services/define-canonical';
-import {
-  fillChainGapsBeforeDefiningCanonicalBaseline,
-  checkCanonicalPathForAllChains,
-  startMissingBlocksBeforeStreamingProcess,
-} from '@/services/missing';
+import { defineCanonicalBaseline } from '@/services/define-canonical';
+import { startMissingBlocksBeforeStreamingProcess } from '@/services/missing';
 import { EventAttributes } from '@/models/event';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
@@ -57,7 +53,6 @@ export async function startStreaming() {
 
   const nextBlocksToProcess: any[] = [];
   const blocksRecentlyProcessed = new Set<string>();
-  const initialChainGapsAlreadyFilled = new Set<string>();
 
   // Initialize price updater
   PriceUpdaterService.getInstance();
@@ -84,35 +79,32 @@ export async function startStreaming() {
     const blockIdentifier = block.header.hash;
 
     if (blocksRecentlyProcessed.has(blockIdentifier)) {
-      await defineCanonicalInStreaming(blockIdentifier);
+      await defineCanonicalBaseline(
+        block.header.hash,
+        block.header.parent,
+        block.header.height,
+        block.header.chainId,
+      );
       return;
     }
 
     const tx = await sequelize.transaction();
     try {
-      // Process the block payload (transactions, miner data, etc.)
       const payload = processPayload(block.payloadWithOutputs);
-
-      // Save the block data and process its transactions
       await saveBlock({ header: block.header, payload, canonical: null }, tx);
-
-      if (!initialChainGapsAlreadyFilled.has(block.header.chainId)) {
-        initialChainGapsAlreadyFilled.add(block.header.chainId);
-        await fillChainGapsBeforeDefiningCanonicalBaseline({
-          chainId: block.header.chainId,
-          lastHeight: block.header.height,
-          tx,
-        });
-      }
-
       await tx.commit();
-
-      await defineCanonicalInStreaming(block.header.hash);
       blocksRecentlyProcessed.add(blockIdentifier);
     } catch (error) {
       await tx.rollback();
-      console.error('[ERROR][DATA][DATA_CORRUPT] Failed to process block event:', error);
+      return;
     }
+
+    await defineCanonicalBaseline(
+      block.header.hash,
+      block.header.parent,
+      block.header.height,
+      block.header.chainId,
+    );
   };
 
   const processBlocks = async () => {
@@ -138,26 +130,18 @@ export async function startStreaming() {
       await processBlock(block);
     }
 
-    blocksToProcess.length = 0;
-
     setTimeout(processBlocks, 1000);
   };
 
   setInterval(
     () => {
       blocksRecentlyProcessed.clear();
-      console.log('[INFO][SYNC][STREAMING] blocksRecentlyProcessed cleared');
     },
-    1000 * 60 * 60 * 1,
+    1000 * 60 * 60 * 1, // 1 hour
   );
 
   processBlocks();
-
-  // Run guard backfilling immediately on startup
   backfillGuards();
-
-  // Schedule a periodic check of canonical path for all chains every 1 hour
-  setInterval(checkCanonicalPathForAllChains, 1000 * 60 * 60 * 1);
 }
 
 /**

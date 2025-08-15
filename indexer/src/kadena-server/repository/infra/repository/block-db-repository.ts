@@ -14,7 +14,7 @@
  * - Optimized batch retrieval through DataLoader patterns
  */
 
-import { Op, QueryTypes } from 'sequelize';
+import { Op, QueryTypes, Transaction } from 'sequelize';
 import { rootPgPool, sequelize } from '../../../../config/database';
 import BlockModel from '../../../../models/block';
 import BlockRepository, {
@@ -24,7 +24,6 @@ import BlockRepository, {
   GetCompletedBlocksParams,
   GetLatestBlocksParams,
   GetTotalCountParams,
-  UpdateCanonicalStatusParams,
 } from '../../application/block-repository';
 import { getPageInfo, getPaginationParams } from '../../pagination';
 import { blockValidator } from '../schema-validator/block-schema-validator';
@@ -890,61 +889,35 @@ export default class BlockDbRepository implements BlockRepository {
     return Object.assign({}, ...maxHeightsArray);
   }
 
-  async getBlocksWithSameHeight(height: number, chainId: string): Promise<BlockOutput[]> {
-    const query = `
-      SELECT b.*
-      FROM "Blocks" b
-      WHERE b."height" = $1 AND b."chainId" = $2
-    `;
+  async getBlocksWithSameHeight(
+    height: number,
+    chainId: string,
+    tx?: Transaction,
+  ): Promise<BlockOutput[]> {
+    const blocks = await BlockModel.findAll({
+      where: {
+        height,
+        chainId,
+      },
+      transaction: tx,
+    });
 
-    const { rows } = await rootPgPool.query(query, [height, chainId]);
-
-    return rows.map(row => blockValidator.validate(row));
+    return blocks.map(row => blockValidator.mapFromSequelize(row));
   }
 
-  async getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]> {
-    const query = `
-      SELECT b.*
-      FROM "Blocks" b
-      WHERE b.height > $1 AND b."chainId" = $2;
-    `;
+  async getBlocksWithHeightHigherThan(
+    height: number,
+    chainId: string,
+    tx?: Transaction,
+  ): Promise<BlockOutput[]> {
+    const blocks = await BlockModel.findAll({
+      where: {
+        height: { [Op.gt]: height },
+        chainId,
+      },
+      transaction: tx,
+    });
 
-    const { rows } = await rootPgPool.query(query, [height, chainId]);
-
-    return rows.map(row => blockValidator.validate(row));
-  }
-
-  async updateCanonicalStatus(params: UpdateCanonicalStatusParams) {
-    const canonicalHashes = params.blocks
-      .filter(change => change.canonical)
-      .map(change => change.hash);
-    const nonCanonicalHashes = params.blocks
-      .filter(change => !change.canonical)
-      .map(change => change.hash);
-
-    await rootPgPool.query('BEGIN');
-    try {
-      if (canonicalHashes.length > 0) {
-        const canonicalQuery = `
-          UPDATE "Blocks"
-          SET "canonical" = true
-          WHERE hash = ANY($1)
-        `;
-        await rootPgPool.query(canonicalQuery, [canonicalHashes]);
-      }
-
-      if (nonCanonicalHashes.length > 0) {
-        const nonCanonicalQuery = `
-          UPDATE "Blocks"
-          SET "canonical" = false
-          WHERE hash = ANY($1)
-        `;
-        await rootPgPool.query(nonCanonicalQuery, [nonCanonicalHashes]);
-      }
-      await rootPgPool.query('COMMIT');
-    } catch (error) {
-      await rootPgPool.query('ROLLBACK');
-      throw error;
-    }
+    return blocks.map(row => blockValidator.mapFromSequelize(row));
   }
 }
