@@ -52,6 +52,7 @@ export type Block = Node & {
   /** The proof of work hash. */
   powHash: Scalars['String']['output'];
   target: Scalars['String']['output'];
+  totalGasUsed: Scalars['Decimal']['output'];
   /** Default page size is 20. */
   transactions: BlockTransactionsConnection;
   weight: Scalars['String']['output'];
@@ -2104,6 +2105,7 @@ export type BlockResolvers<
   payloadHash?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   powHash?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   target?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalGasUsed?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
   transactions?: Resolver<
     ResolversTypes['BlockTransactionsConnection'],
     ParentType,
