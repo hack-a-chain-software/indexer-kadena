@@ -13,11 +13,9 @@ export async function startMissingBlocksBeforeStreamingProcess() {
     const chainIdDiffs = await checkBigBlockGapsForAllChains();
     await fillChainGaps(chainIdDiffs);
   } catch (error) {
-    console.error(
-      `[ERROR][SYNC][MISSING] Error starting missing blocks before streaming process:`,
-      error,
-    );
-    throw error;
+    throw new Error(
+      `[ERROR][SYNC][MISSING] Error starting missing blocks before streaming process:
+      ${(error as Error)?.message}`);
   }
 }
 

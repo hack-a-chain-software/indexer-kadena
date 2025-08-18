@@ -58,6 +58,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
 
   if (type === 'Block') {
     // Resolve Block node - only requires the block hash as a parameter
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const output = await context.blockRepository.getBlockByHash(params);
     if (!output) {
       throw new Error('[ERROR][DB][DATA_MISSING] Block not found.');
@@ -68,6 +69,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
   if (type === 'Event') {
     // Resolve Event node - requires blockHash, orderIndex, and requestKey
     const [blockHash, orderIndex, requestKey] = JSON.parse(params);
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const output = await context.eventRepository.getEvent({
       hash: blockHash,
       orderIndex,
@@ -79,6 +81,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
   if (type === 'FungibleAccount') {
     // Resolve FungibleAccount node - requires account name
     const [_fungible, accountName] = JSON.parse(params);
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const output = await context.balanceRepository.getAccountInfo_NODE(accountName);
     return buildFungibleAccount(output);
   }
@@ -86,6 +89,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
   if (type === 'FungibleChainAccount') {
     // Resolve FungibleChainAccount node - requires chainId, fungibleName, and accountName
     const [chainId, fungibleName, accountName] = JSON.parse(params);
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const output = await context.balanceRepository.getChainsAccountInfo_NODE(
       accountName,
       fungibleName,
@@ -97,6 +101,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
   if (type === 'Transaction') {
     // Resolve Transaction node - requires blockHash and requestKey
     const [blockHash, requestKey] = JSON.parse(params);
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const output = await context.transactionRepository.getTransactionsByRequestKey({
       requestKey,
       blockHash,
@@ -112,6 +117,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
   if (type === 'Transfer') {
     // Resolve Transfer node - requires blockHash, chainId, orderIndex, moduleHash, and requestKey
     const [blockHash, chainId, orderIndex, moduleHash, requestKey] = JSON.parse(params);
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const output = await context.transferRepository.getTransfers({
       blockHash,
       chainId,
@@ -127,6 +133,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
   if (type === 'Signer') {
     // Resolve Signer node - requires requestKey and orderIndex
     const [requestKey, orderIndex] = JSON.parse(params);
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const [output] = await context.transactionRepository.getSigners({ requestKey, orderIndex });
     return output;
   }
@@ -134,10 +141,12 @@ export const getNode = async (context: ResolverContext, id: string) => {
   if (type === 'NonFungibleAccount') {
     // Resolve NonFungibleAccount node - requires account name
     // Also fetches additional NFT information from the blockchain
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const account = await context.balanceRepository.getNonFungibleAccountInfo(params);
 
     if (!account) return null;
 
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const nftsInfo = await context.pactGateway.getNftsInfo(
       account.accountName,
       account.nonFungibleTokenBalances,
@@ -150,6 +159,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
     // Resolve NonFungibleChainAccount node - requires chainId and accountName
     // Also fetches additional NFT information from the blockchain
     const [chainId, accountName] = JSON.parse(params);
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const account = await context.balanceRepository.getNonFungibleChainAccountInfo(
       accountName,
       chainId,
@@ -157,6 +167,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
 
     if (!account) return null;
 
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const nftsInfo = await context.pactGateway.getNftsInfo(
       account.accountName,
       account.nonFungibleTokenBalances,
@@ -168,6 +179,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
     // Resolve NonFungibleTokenBalance node - requires tokenId, accountName, and chainId
     // Also fetches additional NFT token information from the blockchain
     const [tokenId, accountName, chainId] = JSON.parse(params);
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const account = await context.balanceRepository.getNonFungibleTokenBalance(
       accountName,
       chainId,
@@ -176,6 +188,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
 
     if (!account) return null;
 
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const [nftsInfo] = await context.pactGateway.getNftsInfo(account.accountName, [account]);
 
     return {
@@ -197,6 +210,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
   if (type === 'Pool') {
     // Resolve Pool node - requires poolId
     const [poolId] = JSON.parse(params);
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const output = await context.poolRepository.getPool({ id: poolId } as QueryPoolArgs);
     return output;
   }

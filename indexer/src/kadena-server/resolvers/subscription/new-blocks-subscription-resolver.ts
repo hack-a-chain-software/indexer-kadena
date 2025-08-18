@@ -47,6 +47,7 @@ async function* iteratorFn({
   let lastBlockId: number | undefined;
 
   while (context.signal) {
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const newBlocks = await context.blockRepository.getLatestBlocks({
       creationTime: startingTimestamp,
       lastBlockId,
