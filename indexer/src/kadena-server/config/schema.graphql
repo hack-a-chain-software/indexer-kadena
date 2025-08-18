@@ -627,6 +627,7 @@ type Block implements Node {
   canonical: Boolean!
 
   parent: Block @complexity(value: 1)
+  totalGasUsed: Decimal!
   """
   Default page size is 20.
   """

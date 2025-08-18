@@ -285,7 +285,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.adjacents as "adjacents",
         b.parent as "parent",
         b.canonical as "canonical",
-        b."transactionsCount" as "transactionsCount"
+        b."transactionsCount" as "transactionsCount",
+        b."totalGasUsed" as "totalGasUsed"
       FROM "Blocks" b
       WHERE b.height ${before ? '<=' : '>='} $2
       ${conditions}
@@ -574,7 +575,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.parent as "parent",
         b.canonical as "canonical",
         t.id as "transactionId",
-        b."transactionsCount" as "transactionsCount"
+        b."transactionsCount" as "transactionsCount",
+        b."totalGasUsed" as "totalGasUsed"
         FROM "Blocks" b
         JOIN "Transactions" t ON b.id = t."blockId"
         WHERE t.id = ANY($1::int[])`,
@@ -623,7 +625,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.adjacents as "adjacents",
         b.parent as "parent",
         b.canonical as "canonical",
-        b."transactionsCount" as "transactionsCount"
+        b."transactionsCount" as "transactionsCount",
+        b."totalGasUsed" as "totalGasUsed"
         FROM "Blocks" b
         WHERE b.hash = ANY($1::text[])`,
       [hashes],
