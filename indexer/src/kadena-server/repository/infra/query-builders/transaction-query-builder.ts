@@ -413,4 +413,69 @@ export default class TransactionQueryBuilder {
 
     return { query, queryParams };
   }
+
+  buildTransactionByCodeQuery(params: {
+    after?: string | null;
+    before?: string | null;
+    order: string;
+    limit: number;
+    transactionCode: string;
+  }) {
+    let whereCondition = `\nWHERE td.code::text LIKE '%' || $2::text || '%' AND b.canonical = $3`;
+    let queryParams: (string | number | boolean)[] = [params.limit, params.transactionCode, true];
+
+    if (!params.after && !params.before && params.order === 'DESC') {
+      const currentTime = Date.now() - 10000000;
+      queryParams.push(currentTime, 0);
+      whereCondition += `\nAND t.creationtime > $${queryParams.length - 1} AND t.id > $${queryParams.length}`;
+    }
+
+    if (params.after) {
+      const [creationTime, id] = params.after.split(':');
+      queryParams.push(creationTime, id);
+      whereCondition += `\nAND (t.creationtime, t.id) < ($${queryParams.length - 1}, $${queryParams.length})`;
+    }
+    if (params.before) {
+      const [creationTime, id] = params.before.split(':');
+      queryParams.push(creationTime, id);
+      whereCondition += `\nAND (t.creationtime, t.id) > ($${queryParams.length - 1}, $${queryParams.length})`;
+    }
+
+    const query = `
+      WITH filtered_transactions AS (
+        SELECT t.*, td.code, td.nonce, td.sigs, td.continuation, td.pactid, td.proof, td.rollback, td.gas, td.step, td.data, b.height, b.hash as "blockHash"
+        FROM "Transactions" t
+        JOIN "TransactionDetails" td ON t.id = td."transactionId"
+        JOIN "Blocks" b ON b.id = t."blockId"
+        ${whereCondition}
+        ORDER BY t.creationtime ${params.order}, t.id ${params.order}
+      )
+      SELECT
+        t.id AS id,
+        t.creationtime AS "creationTime",
+        t.hash AS "hashTransaction",
+        t.nonce AS "nonceTransaction",
+        t.sigs AS sigs,
+        t.continuation AS continuation,
+        t.num_events AS "eventCount",
+        t.pactid AS "pactId",
+        t.proof AS proof,
+        t.rollback AS rollback,
+        t.txid AS txid,
+        t.height AS "height",
+        t."blockHash" AS "blockHash",
+        t."chainId" AS "chainId",
+        t.gas AS "gas",
+        t.step AS step,
+        t.data AS data,
+        t.code AS code,
+        t.logs AS "logs",
+        t.result AS "result",
+        t.requestkey AS "requestKey"
+      FROM filtered_transactions t
+      LIMIT $1
+    `;
+
+    return { query, queryParams };
+  }
 }
