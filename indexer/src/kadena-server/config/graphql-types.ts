@@ -1008,6 +1008,7 @@ export type QueryBlocksFromHeightConnection = {
   __typename?: 'QueryBlocksFromHeightConnection';
   edges: Array<QueryBlocksFromHeightConnectionEdge>;
   pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
 };
 
 export type QueryBlocksFromHeightConnectionEdge = {
@@ -3061,6 +3062,7 @@ export type QueryBlocksFromHeightConnectionResolvers<
     ContextType
   >;
   pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
