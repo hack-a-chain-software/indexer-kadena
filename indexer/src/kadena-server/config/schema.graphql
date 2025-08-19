@@ -1050,6 +1050,14 @@ type NetworkInfo {
   nodePackageVersion: String!
   nodeServiceDate: DateTime
   nodeLatestBehaviorHeight: Int!
+  countersOfEachChain: [CountersOfEachChain!]! @complexity(value: 1)
+}
+
+type CountersOfEachChain {
+  chainId: String!
+  blocksCount: Int!
+  transactionCount: Int!
+  totalGasUsed: String!
 }
 
 type GenesisHeight {

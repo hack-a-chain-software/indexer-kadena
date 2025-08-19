@@ -131,6 +131,14 @@ export type ContinuationPayload = {
   step?: Maybe<Scalars['Int']['output']>;
 };
 
+export type CountersOfEachChain = {
+  __typename?: 'CountersOfEachChain';
+  blocksCount: Scalars['Int']['output'];
+  chainId: Scalars['String']['output'];
+  totalGasUsed: Scalars['String']['output'];
+  transactionCount: Scalars['Int']['output'];
+};
+
 /** DEX metrics including TVL, volume, and pool count */
 export type DexMetrics = {
   __typename?: 'DexMetrics';
@@ -394,6 +402,7 @@ export type NetworkInfo = {
   apiVersion: Scalars['String']['output'];
   /** The number of circulating coins. */
   coinsInCirculation: Scalars['Float']['output'];
+  countersOfEachChain: Array<CountersOfEachChain>;
   genesisHeights: Array<GenesisHeight>;
   /** The network hash rate. */
   networkHashRate: Scalars['Float']['output'];
@@ -1551,6 +1560,7 @@ export type ResolversTypes = {
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   ChartDataPoint: ResolverTypeWrapper<ChartDataPoint>;
   ContinuationPayload: ResolverTypeWrapper<ContinuationPayload>;
+  CountersOfEachChain: ResolverTypeWrapper<CountersOfEachChain>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
   Decimal: ResolverTypeWrapper<Scalars['Decimal']['output']>;
   DexMetrics: ResolverTypeWrapper<DexMetrics>;
@@ -1846,6 +1856,7 @@ export type ResolversParentTypes = {
   Boolean: Scalars['Boolean']['output'];
   ChartDataPoint: ChartDataPoint;
   ContinuationPayload: ContinuationPayload;
+  CountersOfEachChain: CountersOfEachChain;
   DateTime: Scalars['DateTime']['output'];
   Decimal: Scalars['Decimal']['output'];
   DexMetrics: DexMetrics;
@@ -2196,6 +2207,18 @@ export type ContinuationPayloadResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type CountersOfEachChainResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['CountersOfEachChain'] = ResolversParentTypes['CountersOfEachChain'],
+> = {
+  blocksCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  chainId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalGasUsed?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  transactionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export interface DateTimeScalarConfig
   extends GraphQLScalarTypeConfig<ResolversTypes['DateTime'], any> {
   name: 'DateTime';
@@ -2509,6 +2532,11 @@ export type NetworkInfoResolvers<
 > = {
   apiVersion?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   coinsInCirculation?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  countersOfEachChain?: Resolver<
+    Array<ResolversTypes['CountersOfEachChain']>,
+    ParentType,
+    ContextType
+  >;
   genesisHeights?: Resolver<Array<ResolversTypes['GenesisHeight']>, ParentType, ContextType>;
   networkHashRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   networkHost?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -3537,6 +3565,7 @@ export type Resolvers<ContextType = any> = {
   BlockTransactionsConnectionEdge?: BlockTransactionsConnectionEdgeResolvers<ContextType>;
   ChartDataPoint?: ChartDataPointResolvers<ContextType>;
   ContinuationPayload?: ContinuationPayloadResolvers<ContextType>;
+  CountersOfEachChain?: CountersOfEachChainResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Decimal?: GraphQLScalarType;
   DexMetrics?: DexMetricsResolvers<ContextType>;
