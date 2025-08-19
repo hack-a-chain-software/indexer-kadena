@@ -27,6 +27,13 @@ export type Scalars = {
   Decimal: { input: any; output: any };
 };
 
+export type BalanceNode = {
+  __typename?: 'BalanceNode';
+  balance: Scalars['String']['output'];
+  chainId: Scalars['String']['output'];
+  module: Scalars['String']['output'];
+};
+
 /** A unit of information that stores a set of verified transactions. */
 export type Block = Node & {
   __typename?: 'Block';
@@ -713,6 +720,8 @@ export type PoolTransactionsConnection = {
 
 export type Query = {
   __typename?: 'Query';
+  /** Retrieve live balances for a given account with optional filtering by chains and module. Default page size is 20. */
+  balance: QueryBalanceConnection;
   /** Retrieve a block by hash. */
   block?: Maybe<Block>;
   /** Retrieve blocks by chain and minimal depth. Default page size is 20. */
@@ -793,6 +802,16 @@ export type Query = {
   transactionsByPublicKey: QueryTransactionsByPublicKeyConnection;
   /** Retrieve transfers. Default page size is 20. */
   transfers: QueryTransfersConnection;
+};
+
+export type QueryBalanceArgs = {
+  accountName: Scalars['String']['input'];
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  chainIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  module?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type QueryBlockArgs = {
@@ -998,6 +1017,19 @@ export type QueryTransfersArgs = {
   isNFT?: InputMaybe<Scalars['Boolean']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
   requestKey?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Connection type for balance query results. */
+export type QueryBalanceConnection = {
+  __typename?: 'QueryBalanceConnection';
+  edges: Array<QueryBalanceConnectionEdge>;
+  pageInfo: PageInfo;
+};
+
+export type QueryBalanceConnectionEdge = {
+  __typename?: 'QueryBalanceConnectionEdge';
+  cursor: Scalars['String']['output'];
+  node: BalanceNode;
 };
 
 export type QueryBlocksFromDepthConnection = {
@@ -1531,6 +1563,7 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  BalanceNode: ResolverTypeWrapper<BalanceNode>;
   BigInt: ResolverTypeWrapper<Scalars['BigInt']['output']>;
   Block: ResolverTypeWrapper<
     Omit<Block, 'events' | 'minerAccount' | 'parent' | 'transactions'> & {
@@ -1708,6 +1741,8 @@ export type ResolversTypes = {
   PoolTransactionType: PoolTransactionType;
   PoolTransactionsConnection: ResolverTypeWrapper<PoolTransactionsConnection>;
   Query: ResolverTypeWrapper<{}>;
+  QueryBalanceConnection: ResolverTypeWrapper<QueryBalanceConnection>;
+  QueryBalanceConnectionEdge: ResolverTypeWrapper<QueryBalanceConnectionEdge>;
   QueryBlocksFromDepthConnection: ResolverTypeWrapper<
     Omit<QueryBlocksFromDepthConnection, 'edges'> & {
       edges: Array<ResolversTypes['QueryBlocksFromDepthConnectionEdge']>;
@@ -1833,6 +1868,7 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
+  BalanceNode: BalanceNode;
   BigInt: Scalars['BigInt']['output'];
   Block: Omit<Block, 'events' | 'minerAccount' | 'parent' | 'transactions'> & {
     events: ResolversParentTypes['BlockEventsConnection'];
@@ -1980,6 +2016,8 @@ export type ResolversParentTypes = {
   PoolTransactionEdge: PoolTransactionEdge;
   PoolTransactionsConnection: PoolTransactionsConnection;
   Query: {};
+  QueryBalanceConnection: QueryBalanceConnection;
+  QueryBalanceConnectionEdge: QueryBalanceConnectionEdge;
   QueryBlocksFromDepthConnection: Omit<QueryBlocksFromDepthConnection, 'edges'> & {
     edges: Array<ResolversParentTypes['QueryBlocksFromDepthConnectionEdge']>;
   };
@@ -2086,6 +2124,16 @@ export type ComplexityDirectiveResolver<
   ContextType = any,
   Args = ComplexityDirectiveArgs,
 > = DirectiveResolverFn<Result, Parent, ContextType, Args>;
+
+export type BalanceNodeResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['BalanceNode'] = ResolversParentTypes['BalanceNode'],
+> = {
+  balance?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  chainId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  module?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
 
 export interface BigIntScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['BigInt'], any> {
   name: 'BigInt';
@@ -2878,6 +2926,12 @@ export type QueryResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query'],
 > = {
+  balance?: Resolver<
+    ResolversTypes['QueryBalanceConnection'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryBalanceArgs, 'accountName'>
+  >;
   block?: Resolver<
     Maybe<ResolversTypes['Block']>,
     ParentType,
@@ -3052,6 +3106,26 @@ export type QueryResolvers<
     ContextType,
     Partial<QueryTransfersArgs>
   >;
+};
+
+export type QueryBalanceConnectionResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['QueryBalanceConnection'] = ResolversParentTypes['QueryBalanceConnection'],
+> = {
+  edges?: Resolver<Array<ResolversTypes['QueryBalanceConnectionEdge']>, ParentType, ContextType>;
+  pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type QueryBalanceConnectionEdgeResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['QueryBalanceConnectionEdge'] = ResolversParentTypes['QueryBalanceConnectionEdge'],
+> = {
+  cursor?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  node?: Resolver<ResolversTypes['BalanceNode'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type QueryBlocksFromDepthConnectionResolvers<
@@ -3556,6 +3630,7 @@ export type UserGuardResolvers<
 };
 
 export type Resolvers<ContextType = any> = {
+  BalanceNode?: BalanceNodeResolvers<ContextType>;
   BigInt?: GraphQLScalarType;
   Block?: BlockResolvers<ContextType>;
   BlockEventsConnection?: BlockEventsConnectionResolvers<ContextType>;
@@ -3612,6 +3687,8 @@ export type Resolvers<ContextType = any> = {
   PoolTransactionEdge?: PoolTransactionEdgeResolvers<ContextType>;
   PoolTransactionsConnection?: PoolTransactionsConnectionResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  QueryBalanceConnection?: QueryBalanceConnectionResolvers<ContextType>;
+  QueryBalanceConnectionEdge?: QueryBalanceConnectionEdgeResolvers<ContextType>;
   QueryBlocksFromDepthConnection?: QueryBlocksFromDepthConnectionResolvers<ContextType>;
   QueryBlocksFromDepthConnectionEdge?: QueryBlocksFromDepthConnectionEdgeResolvers<ContextType>;
   QueryBlocksFromHeightConnection?: QueryBlocksFromHeightConnectionResolvers<ContextType>;

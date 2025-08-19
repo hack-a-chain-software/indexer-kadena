@@ -96,6 +96,15 @@ export type TokenOutput = Token;
 export interface GetTokensParams extends PaginationsParams {}
 
 /**
+ * Parameters for fetching account balances with pagination and filters.
+ */
+export interface GetAccountBalancesParams extends PaginationsParams {
+  accountName: string;
+  chainIds?: string[] | null;
+  module?: string | null;
+}
+
+/**
  * Interface defining the contract for balance data access.
  * Implementations of this interface handle the details of retrieving
  * balance data from specific storage mechanisms (e.g., database or blockchain node).
@@ -152,6 +161,14 @@ export default interface BalanceRepository {
   getTokens(params: GetTokensParams): Promise<{
     pageInfo: PageInfo;
     edges: ConnectionEdge<TokenOutput>[];
+  }>;
+
+  /**
+   * Retrieves live balances for an account with optional module and chain filters, paginated.
+   */
+  getAccountBalances(params: GetAccountBalancesParams): Promise<{
+    pageInfo: PageInfo;
+    edges: ConnectionEdge<{ module: string; chainId: string; balance: string }>[];
   }>;
 
   /**
