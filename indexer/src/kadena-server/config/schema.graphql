@@ -121,6 +121,19 @@ type Subscription {
 
 type Query {
   """
+  Retrieve live balances for a given account with optional filtering by chains and module. Default page size is 20.
+  """
+  balance(
+    accountName: String!
+    chainIds: [String!]
+    module: String
+    after: String
+    before: String
+    first: Int
+    last: Int
+  ): QueryBalanceConnection! @complexity(value: 1, multipliers: ["first", "last"])
+
+  """
   Retrieve a block by hash.
   """
   block(hash: String!): Block @complexity(value: 1)
@@ -417,6 +430,25 @@ type Query {
   Get prices for all tokens in a protocol
   """
   tokenPrices(protocolAddress: String): [TokenPrice!]! @complexity(value: 1)
+}
+
+"""
+Connection type for balance query results.
+"""
+type QueryBalanceConnection {
+  edges: [QueryBalanceConnectionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type QueryBalanceConnectionEdge {
+  cursor: String!
+  node: BalanceNode!
+}
+
+type BalanceNode {
+  module: String!
+  chainId: String!
+  balance: String!
 }
 
 """

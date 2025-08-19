@@ -467,6 +467,98 @@ export default class BalanceDbRepository implements BalanceRepository {
     return pageInfo;
   }
 
+  /**
+   * Retrieves live balances for an account with optional module and chain filters, paginated.
+   */
+  async getAccountBalances(params: {
+    accountName: string;
+    chainIds?: string[] | null;
+    module?: string | null;
+    after?: string | null;
+    before?: string | null;
+    first?: number | null;
+    last?: number | null;
+  }) {
+    const { accountName, chainIds, module } = params;
+    const { limit, order, after, before } = getPaginationParams(params);
+
+    const queryParams: any[] = [accountName, limit];
+    let conditions = 'WHERE b.account = $1';
+
+    if (module) {
+      queryParams.push(module);
+      conditions += ` AND b.module = $${queryParams.length}`;
+    }
+
+    if (chainIds && chainIds.length) {
+      queryParams.push(chainIds);
+      conditions += ` AND b."chainId" = ANY($${queryParams.length})`;
+    }
+
+    if (after) {
+      queryParams.push(after);
+      conditions += ` AND b.id < $${queryParams.length}`;
+    }
+
+    if (before) {
+      queryParams.push(before);
+      conditions += ` AND b.id > $${queryParams.length}`;
+    }
+
+    // If module specified, return at most one row per chain (latest by id)
+    let query = '';
+    if (module) {
+      query = `
+        WITH ranked AS (
+          SELECT b.id, b."chainId", b.module, b.account,
+                 ROW_NUMBER() OVER (PARTITION BY b."chainId" ORDER BY b.id DESC) AS rn
+          FROM "Balances" b
+          ${conditions}
+        )
+        SELECT id, "chainId", module, account
+        FROM ranked
+        WHERE rn = 1
+        ORDER BY id ${order}
+        LIMIT $2
+      `;
+    } else {
+      // Without module, allow multiple modules per chain
+      query = `
+        SELECT b.id, b."chainId", b.module, b.account
+        FROM "Balances" b
+        ${conditions}
+        ORDER BY b.id ${order}
+        LIMIT $2
+      `;
+    }
+
+    const { rows } = await rootPgPool.query(query, queryParams);
+
+    // Query node for balances in parallel
+    const nodeQueries = rows.map(async row => {
+      const res = await handleSingleQuery({
+        chainId: String(row.chainId),
+        code: `(${row.module}.details \"${row.account}\")`,
+      });
+      const balance = formatBalance_NODE(res).toString();
+      return {
+        cursor: row.id.toString(),
+        node: { module: row.module, chainId: String(row.chainId), balance },
+      };
+    });
+
+    const edges = await Promise.all(nodeQueries);
+    const { pageInfo, edges: edgesProcessed } = getPageInfo({
+      order,
+      limit,
+      edges,
+      after,
+      before,
+    });
+
+    return { pageInfo, edges: edgesProcessed };
+  }
+
   private async processAccounts(
     rows: { account: string; chainId: string }[],
     fungibleName: string,
