@@ -10,6 +10,7 @@
 import { Op } from 'sequelize';
 import BlockModel from '../../../../models/block';
 import NetworkRepository, {
+  CountersOfEachChain,
   CurrentChainHeights,
   GetNodeInfo,
   HashRateAndTotalDifficulty,
@@ -25,7 +26,11 @@ import { rootPgPool } from '../../../../config/database';
 import { nodeInfoValidator } from '../schema-validator/node-info-validator';
 import { getRequiredEnvString } from '../../../../utils/helpers';
 import { MEMORY_CACHE } from '../../../../cache/init';
-import { HASH_RATE_AND_TOTAL_DIFFICULTY_KEY, NETWORK_STATISTICS_KEY } from '../../../../cache/keys';
+import {
+  COUNTERS_OF_EACH_CHAIN_KEY,
+  HASH_RATE_AND_TOTAL_DIFFICULTY_KEY,
+  NETWORK_STATISTICS_KEY,
+} from '../../../../cache/keys';
 import { getCirculationNumber } from '../../../../utils/coin-circulation';
 
 // Configuration values from environment variables
@@ -232,6 +237,27 @@ export default class NetworkDbRepository implements NetworkRepository {
     return output;
   }
 
+  async getCountersOfEachChain(): Promise<CountersOfEachChain[]> {
+    const countersQuery = `
+      SELECT "chainId", "canonicalBlocks", "canonicalTransactions", "totalGasUsed"
+      FROM "Counters"
+      ORDER BY "chainId"
+    `;
+
+    const { rows } = await rootPgPool.query(countersQuery);
+
+    const output = rows.map(row => {
+      return {
+        chainId: row.chainId,
+        blocksCount: row.canonicalBlocks,
+        transactionCount: row.canonicalTransactions,
+        totalGasUsed: row.totalGasUsed,
+      };
+    });
+
+    return output;
+  }
+
   /**
    * Retrieves all network information from cache
    *
@@ -247,7 +273,15 @@ export default class NetworkDbRepository implements NetworkRepository {
     const HashRateAndTotalDifficulty = MEMORY_CACHE.get(
       HASH_RATE_AND_TOTAL_DIFFICULTY_KEY,
     ) as HashRateAndTotalDifficulty;
+    const countersOfEachChain = MEMORY_CACHE.get(
+      COUNTERS_OF_EACH_CHAIN_KEY,
+    ) as CountersOfEachChain[];
 
-    return { ...nodeInfo, ...networkStatistics, ...HashRateAndTotalDifficulty };
+    return {
+      ...nodeInfo,
+      ...networkStatistics,
+      ...HashRateAndTotalDifficulty,
+      countersOfEachChain,
+    };
   }
 }

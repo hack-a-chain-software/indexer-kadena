@@ -24,3 +24,9 @@ export const NETWORK_STATISTICS_KEY = 'NETWORK_STATISTICS_KEY';
  * Used to store and retrieve information about the blockchain node
  */
 export const NODE_INFO_KEY = 'NODE_INFO_KEY';
+
+/**
+ * Key for caching counters of each chain data
+ * Used to store and retrieve information about the numbers of entities in each chain
+ */
+export const COUNTERS_OF_EACH_CHAIN_KEY = 'COUNTERS_OF_EACH_CHAIN_KEY';

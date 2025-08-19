@@ -16,7 +16,12 @@
 
 import { ResolverContext } from '../kadena-server/config/apollo-server-config';
 import NodeCache from 'node-cache';
-import { HASH_RATE_AND_TOTAL_DIFFICULTY_KEY, NETWORK_STATISTICS_KEY, NODE_INFO_KEY } from './keys';
+import {
+  COUNTERS_OF_EACH_CHAIN_KEY,
+  HASH_RATE_AND_TOTAL_DIFFICULTY_KEY,
+  NETWORK_STATISTICS_KEY,
+  NODE_INFO_KEY,
+} from './keys';
 import { HashRateAndTotalDifficulty } from '../kadena-server/repository/application/network-repository';
 
 /**
@@ -108,6 +113,22 @@ export default async function initCache(context: ResolverContext) {
     }
   }
 
+  /**
+   * Fetches and caches information about the blockchain node
+   *
+   * This includes node version, connectivity status, and other
+   * node-specific information that helps monitor the node's health.
+   */
+
+  async function getCountersOfEachChain() {
+    try {
+      const counters = await networkRepository.getCountersOfEachChain();
+      MEMORY_CACHE.set(COUNTERS_OF_EACH_CHAIN_KEY, counters);
+    } catch (err) {
+      console.error('[ERROR][CACHE][CONN_TIMEOUT] Failed to get counters of each chain', err);
+    }
+  }
+
   // Initialize the hash rate cache with a default value
   // The -1 value indicates that real data hasn't been loaded yet
   MEMORY_CACHE.set(HASH_RATE_AND_TOTAL_DIFFICULTY_KEY, {
@@ -124,6 +145,7 @@ export default async function initCache(context: ResolverContext) {
     await getNetworkStatistics();
     await getNodeInfo();
     await getHashRateAndTotalDifficulty();
+    await getCountersOfEachChain();
   };
 
   // Populate cache with initial data
