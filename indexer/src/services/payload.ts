@@ -248,7 +248,19 @@ export async function processTransaction(
     try {
       await processPairCreationEvents(eventsWithTransactionId, tx);
     } catch (error) {
-      console.error('Error processing pair creation events:', error);
+      // These events are not critical for transaction persistence; log with identifiers and emit a metric-like log
+      const requestKey = transactionAttributes.requestkey;
+      const txHash = transactionInfo.hash;
+      const chainId = transactionAttributes.chainId;
+      console.error(
+        `[ERROR][PAIR][PROCESSING] Error processing pair creation events: ${
+          error instanceof Error ? error.message : String(error)
+        } | blockId=${block.id} requestKey=${requestKey} txHash=${txHash} chainId=${chainId}`,
+      );
+      // Metric-style log for monitoring data loss of pair events
+      console.warn(
+        `[METRIC][DATA_LOSS][PAIR_EVENTS] count=1 blockId=${block.id} requestKey=${requestKey} txHash=${txHash} chainId=${chainId}`,
+      );
     }
 
     const signers = (cmdData.signers ?? []).map((signer: any, index: number) => ({
