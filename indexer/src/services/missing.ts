@@ -274,9 +274,8 @@ async function checkCanonicalPathStartingFromSpecificBlock(
   }
 
   if (ancestors.length < CANONICAL_BASE_LINE_LENGTH) {
-    throw new Error(
-      `[INFO][SYNC][MISSING] Failed to build complete canonical path after ${maxAttempts} attempts. Only found ${ancestors.length} blocks.`,
-    );
+    console.info(`[INFO][SYNC][MISSING] Failed to build complete canonical path after ${maxAttempts} attempts. Only found ${ancestors.length} blocks.`);
+    return false;
   }
 
   return attempts > 0;
