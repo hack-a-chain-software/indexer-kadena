@@ -84,6 +84,8 @@ export interface GetTransactionsCountParams {
 export interface GetTransactionsByRequestKey {
   /** The request key to search for */
   requestKey: string;
+  /** Current heights of each chain */
+  currentChainHeights: Record<string, number>;
   /** Optional block hash to narrow the search */
   blockHash?: string | null;
   /** Optional minimum confirmation depth requirement */
