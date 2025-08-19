@@ -133,6 +133,10 @@ export default class TransferDbRepository implements TransferRepository {
     let query = '';
 
     if (blockHash) {
+      if (requestKey) {
+        queryParams.push(requestKey);
+        conditions += `\nAND t.requestkey = $${queryParams.length}`;
+      }
       queryParams.push(blockHash);
       query = `
         WITH filtered_block AS (
@@ -163,6 +167,11 @@ export default class TransferDbRepository implements TransferRepository {
         LIMIT $1
       `;
     } else if (requestKey) {
+      if (blockHash) {
+        queryParams.push(blockHash);
+        conditions += `\nAND b.hash = $${queryParams.length}`;
+      }
+
       queryParams.push(requestKey);
       query = `
         WITH filtered_transaction AS (

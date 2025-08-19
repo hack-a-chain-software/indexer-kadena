@@ -102,10 +102,7 @@ const nonFungibleAccountFragment = `
     accountName
     chainId
     guard {
-      ... on KeysetGuard {
-        keys
-        predicate
-      }
+      raw
     }
     info {
       precision
@@ -127,10 +124,7 @@ const nonFungibleChainAccountFragment = `
     accountName
     chainId
     guard {
-      ... on KeysetGuard {
-        keys
-        predicate
-      }
+      raw
     }
     id
     info {
@@ -150,10 +144,7 @@ const nonFungibleTokenBalanceFragment = `
   balance
   chainId
   guard {
-    ... on KeysetGuard {
-      keys
-      predicate
-    }
+    raw
   }
   id
   info {
@@ -205,6 +196,9 @@ export const transactionFragment = `
   }
   hash
   id
+  orphanedTransactions {
+    id
+  }
   result {
     ... on TransactionResult {
       badResult
