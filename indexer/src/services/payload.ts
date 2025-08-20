@@ -248,12 +248,12 @@ export async function processTransaction(
     }));
     await Event.bulkCreate(eventsWithTransactionId, { transaction: tx });
 
-    // Process pair creation events
-    try {
-      await processPairCreationEvents(eventsWithTransactionId, tx);
-    } catch (error) {
-      console.error('Error processing pair creation events:', error);
-    }
+    // // Process pair creation events
+    // try {
+    //   await processPairCreationEvents(eventsWithTransactionId, tx);
+    // } catch (error) {
+    //   console.error('Error processing pair creation events:', error);
+    // }
 
     const signers = (cmdData.signers ?? []).map((signer: any, index: number) => ({
       address: signer.address,

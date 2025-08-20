@@ -47,6 +47,7 @@ const options = program.opts();
  */
 async function main() {
   try {
+    console.info('Starting v1.0.2.1');
     setupAssociations();
     PriceUpdaterService.getInstance();
 

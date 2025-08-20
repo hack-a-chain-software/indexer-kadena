@@ -364,6 +364,12 @@ export default class TransactionQueryBuilder {
       whereCondition = ` WHERE t.creationtime > $2 AND t.id > $3`;
     }
 
+    if (!params.after && !params.before && params.order === 'ASC') {
+      const currentTime = 1572404687 + 1000;
+      queryParams.push(currentTime, 1000);
+      whereCondition = ` WHERE t.creationtime < $2 AND t.id < $3`;
+    }
+
     if (params.after) {
       const [creationTime, id] = params.after.split(':');
       queryParams.push(creationTime, id);

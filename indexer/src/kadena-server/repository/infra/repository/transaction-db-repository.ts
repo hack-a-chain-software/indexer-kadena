@@ -92,7 +92,14 @@ export default class TransactionDbRepository implements TransactionRepository {
    * @returns Promise resolving to paginated transaction results
    */
   async getTransactions(params: GetTransactionsParams) {
-    const { after: afterEncoded, before: beforeEncoded, first, last, ...rest } = params;
+    const {
+      after: afterEncoded,
+      before: beforeEncoded,
+      isCoinbase: isCoinbaseParam,
+      first,
+      last,
+      ...rest
+    } = params;
 
     // Process pagination parameters
     const { limit, order, after, before } = getPaginationParams({
@@ -109,7 +116,7 @@ export default class TransactionDbRepository implements TransactionRepository {
         order,
         after,
         before,
-        isCoinbase: rest.isCoinbase,
+        isCoinbase: isCoinbaseParam,
       });
 
       // Execute the query with the constructed parameters
