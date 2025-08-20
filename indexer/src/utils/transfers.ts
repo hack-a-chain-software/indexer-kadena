@@ -32,80 +32,70 @@ export function getNftTransfers(
   eventsData: any,
   transactionAttributes: TransactionAttributes,
 ): TransferAttributes[] {
-  // Define constants for identifying NFT transfer events
-  // NFT transfers must have the event name "TRANSFER"
-  const TRANSFER_NFT_SIGNATURE = 'TRANSFER';
-  // NFT transfers must have exactly 4 parameters
-  const TRANSFER_NFT_PARAMS_LENGTH = 4;
+  // Define constants for identifying RECONCILE events only
+  const RECONCILE_SIGNATURE = 'RECONCILE';
+  // RECONCILE events must have exactly 4 parameters
+  const RECONCILE_PARAMS_LENGTH = 4;
 
   /**
-   * Define a predicate function to identify valid NFT transfer events
-   * This function checks if an event matches the NFT transfer signature by:
-   * 1. Verifying the event name is "TRANSFER"
+   * Define a predicate function to identify valid RECONCILE events
+   * RECONCILE events have a specific parameter structure:
+   * 1. Verifying the event name is "RECONCILE"
    * 2. Checking it has exactly 4 parameters
-   * 3. Validating that the parameters are of the correct types:
+   * 3. Validating parameter structure:
    *    - First param (tokenId): must be a string
-   *    - Second param (from_acct): must be a string
-   *    - Third param (to_acct): must be a string
-   *    - Fourth param (amount): must be a number
+   *    - Second param (amount): must be a number
+   *    - Third param: must be an object with account field
+   *    - Fourth param: must be an object with account field
    */
-  const transferNftSignature = (eventData: any) =>
-    eventData.name == TRANSFER_NFT_SIGNATURE &&
-    eventData.params.length == TRANSFER_NFT_PARAMS_LENGTH &&
+  const reconcileSignature = (eventData: any) =>
+    eventData.name == RECONCILE_SIGNATURE &&
+    eventData.params.length == RECONCILE_PARAMS_LENGTH &&
+    (eventData.module.namespace == 'marmalade-v2' || eventData.module.namespace == 'marmalade') &&
     typeof eventData.params[0] == 'string' &&
-    typeof eventData.params[1] == 'string' &&
-    typeof eventData.params[2] == 'string' &&
-    isAmountInCorrectFormat(eventData.params[3], transactionAttributes.requestkey);
+    isAmountInCorrectFormat(eventData.params[1]) &&
+    typeof eventData.params[2] == 'object' &&
+    eventData.params[2]?.hasOwnProperty('account') &&
+    typeof eventData.params[3] == 'object' &&
+    eventData.params[3]?.hasOwnProperty('account');
 
-  // Process each event that matches the NFT transfer signature
-  const transfers = eventsData
-    // Filter the events array to only include valid NFT transfers
-    .filter(transferNftSignature)
-    // Map each matching event to a TransferAttributes object
-    .map((eventData: any) => {
-      // Extract the parameters from the event data
-      const params = eventData.params;
-      // param[0] is the token ID (the unique identifier for this NFT)
-      const tokenId = params[0];
-      // param[1] is the sender's account address
-      const from_acct = params[1];
-      // param[2] is the receiver's account address
-      const to_acct = params[2];
-      // param[3] is the amount being transferred (usually 1.0 for NFTs)
-      const amount = getAmount(params[3]);
+  // Process RECONCILE events only
+  const transfers = eventsData.filter(reconcileSignature).map((eventData: any) => {
+    // RECONCILE events have specific parameter structure:
+    // params[0] = tokenId (string)
+    // params[1] = amount
+    // params[2] = {account: fromAcct, current: X, previous: Y}
+    // params[3] = {account: toAcct, current: X, previous: Y}
+    const params = eventData.params;
 
-      // Get the full module name (including namespace if present)
-      // This identifies which smart contract/module is handling the NFT
-      const modulename = eventData.module.namespace
-        ? `${eventData.module.namespace}.${eventData.module.name}`
-        : eventData.module.name;
+    // param[0] is the token ID
+    const tokenId = params[0];
+    // param[1] is the amount being transferred
+    const amount = getAmount(params[1]);
+    // param[2].account is the sender's account address
+    const from_acct = params[2]?.account || '';
+    // param[3].account is the receiver's account address
+    const to_acct = params[3]?.account || '';
 
-      // Create and return a transfer object with all the extracted information
-      return {
-        // Set the amount being transferred
-        amount: amount,
-        // The blockchain chain ID where this transfer occurred
-        chainId: transactionAttributes.chainId,
-        // The sender's account address
-        from_acct: from_acct,
-        // The hash of the module that processed this transfer
-        modulehash: eventData.moduleHash,
-        // The name of the module that processed this transfer
-        modulename: modulename,
-        // The unique request key of the transaction
-        requestkey: transactionAttributes.requestkey,
-        // The receiver's account address
-        to_acct: to_acct,
-        // Flag indicating this is a token with a unique ID (true for NFTs)
-        hasTokenId: true,
-        // The unique identifier for this specific NFT
-        tokenId: tokenId,
-        // The type of token being transferred (poly-fungible for NFTs)
-        type: 'poly-fungible',
-        // The position of this transfer within the transaction's events
-        orderIndex: eventData.orderIndex,
-      };
-    }) as TransferAttributes[];
+    // Get the full module name (including namespace if present)
+    const modulename = eventData.module.namespace
+      ? `${eventData.module.namespace}.${eventData.module.name}`
+      : eventData.module.name;
+
+    return {
+      amount: amount,
+      chainId: transactionAttributes.chainId,
+      from_acct: from_acct,
+      modulehash: eventData.moduleHash,
+      modulename: modulename,
+      requestkey: transactionAttributes.requestkey,
+      to_acct: to_acct,
+      hasTokenId: true,
+      tokenId: tokenId,
+      type: 'poly-fungible',
+      orderIndex: eventData.orderIndex,
+    };
+  }) as TransferAttributes[];
 
   return transfers;
 }
@@ -149,7 +139,7 @@ export function getCoinTransfers(
     eventData.params.length == TRANSFER_COIN_PARAMS_LENGTH &&
     typeof eventData.params[0] == 'string' &&
     typeof eventData.params[1] == 'string' &&
-    isAmountInCorrectFormat(eventData.params[2], transactionAttributes.requestkey);
+    isAmountInCorrectFormat(eventData.params[2]);
 
   // Process each event that matches the coin transfer signature
   const transfers = eventsData
@@ -209,7 +199,7 @@ export function getCoinTransfers(
  * @param amount - The amount value to parse (number, decimal object, or integer object)
  * @returns The parsed amount as number/string, or null if invalid
  */
-function parseAmount(amount: any, requestKey?: string): number | string | null {
+function parseAmount(amount: any): number | string | null {
   if (typeof amount === 'number') {
     return amount;
   }
@@ -225,8 +215,8 @@ function parseAmount(amount: any, requestKey?: string): number | string | null {
   return null;
 }
 
-function isAmountInCorrectFormat(amount: any, requestKey: string): boolean {
-  return parseAmount(amount, requestKey) !== null;
+function isAmountInCorrectFormat(amount: any): boolean {
+  return parseAmount(amount) !== null;
 }
 
 function getAmount(amount: any): number | string {

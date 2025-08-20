@@ -178,7 +178,7 @@ export async function processTransaction(
     hash: transactionInfo.hash,
     result: receiptInfo.result || null,
     logs: receiptInfo.logs || null,
-    num_events: eventsData ? eventsData.length : 0,
+    num_events: eventsData.length,
     requestkey: receiptInfo.reqKey,
     sender: cmdData?.meta?.sender || null,
     txid: receiptInfo.txId ? receiptInfo.txId.toString() : null,
