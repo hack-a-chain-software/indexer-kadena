@@ -1056,6 +1056,11 @@ type Transfer implements Node {
   receiverAccount: String!
   requestKey: String!
   senderAccount: String!
+
+  """
+  The token id if this is a poly-fungible transfer.
+  """
+  tokenId: String
   """
   The transaction that initiated this transfer.
   """
