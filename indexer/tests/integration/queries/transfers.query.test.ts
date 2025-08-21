@@ -1,5 +1,6 @@
 import { GraphQLClient } from 'graphql-request';
 import { getTransfersQuery, getTransfersQueryTwo } from '../builders/transfers.builder';
+import { getNftTransfersQuery } from '../builders/nft-transfers.builder';
 import { transfersFixture001 } from '../fixtures/transfers/transfers.fixture.001';
 import { transfersFixture002 } from '../fixtures/transfers/transfers.fixture.002';
 import { transfersFixture003 } from '../fixtures/transfers/transfers.fixture.003';
@@ -11,6 +12,7 @@ import { transfersFixture008 } from '../fixtures/transfers/transfers.fixture.008
 import { transfersFixture009 } from '../fixtures/transfers/transfers.fixture.009';
 import { transfersFixture010 } from '../fixtures/transfers/transfers.fixture.010';
 import { transfersFixture011 } from '../fixtures/transfers/transfers.fixture.011';
+import { transfersFixture012 } from '../fixtures/transfers/transfers.fixture.012';
 
 const client = new GraphQLClient(process.env.API_URL ?? 'http://localhost:3001/graphql');
 
@@ -130,19 +132,30 @@ describe('Transfers', () => {
   });
 
   it('#011 - accountName + isNFT + after + first', async () => {
-    const query = getTransfersQueryTwo({
+    const query = getNftTransfersQuery({
       accountName: 'k:ef4a368a2d66e50ae885e981cd6e139a0bcb8b469e5ad18ebc55a477dbdefdec',
       isNFT: true,
-      after: 'MTczOTA0ODQ0MjozNjg1OTYw',
-      first: 5,
+      after: 'MTczOTA0ODQ0MjozODM2Mzg1NDg=',
+      first: 25,
     });
 
     const data = await client.request(query);
     expect(transfersFixture011.data).toMatchObject(data);
   });
 
-  it('#012 - isNFT + fungibleName', async () => {
-    const query = getTransfersQueryTwo({
+  it('#012 - isNFT + after + first', async () => {
+    const query = getNftTransfersQuery({
+      isNFT: true,
+      after: 'MTc1NTQ0NDc2MTozODM3NTkxNDk=',
+      first: 25,
+    });
+
+    const data = await client.request(query);
+    expect(transfersFixture012.data).toMatchObject(data);
+  });
+
+  it('#013 - isNFT + fungibleName', async () => {
+    const query = getNftTransfersQuery({
       isNFT: true,
       fungibleName: 'k:ef4a368a2d66e50ae885e981cd6e139a0bcb8b469e5ad18ebc55a477dbdefdec',
     });

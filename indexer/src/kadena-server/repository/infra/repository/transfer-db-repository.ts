@@ -85,8 +85,8 @@ export default class TransferDbRepository implements TransferRepository {
 
     if (hasTokenId) {
       queryParams.push('marmalade-v2.ledger');
-      queryParams.push('marmalade.ledger');
       const op = operator(queryParams.length);
+      queryParams.push('marmalade.ledger');
       conditions += `\n${op} transfers.modulename IN ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
@@ -157,7 +157,8 @@ export default class TransferDbRepository implements TransferRepository {
         transfers.modulehash as "moduleHash",
         transfers.requestkey as "requestKey",
         transfers."orderIndex" as "orderIndex",
-        td.pactid as "pactId"
+        td.pactid as "pactId",
+        transfers."tokenId" as "tokenId"
         from filtered_block b
         join "Transactions" t on b.id = t."blockId"
         join "Transfers" transfers on transfers."transactionId" = t.id
@@ -192,7 +193,8 @@ export default class TransferDbRepository implements TransferRepository {
         transfers.modulehash as "moduleHash",
         transfers.requestkey as "requestKey",
         transfers."orderIndex" as "orderIndex",
-        td.pactid as "pactId"
+        td.pactid as "pactId",
+        transfers."tokenId" as "tokenId"
         from filtered_transaction t
         join "Blocks" b on b.id = t."blockId"
         join "Transfers" transfers on transfers."transactionId" = t.id
@@ -216,7 +218,8 @@ export default class TransferDbRepository implements TransferRepository {
         transfers.modulehash as "moduleHash",
         transfers.requestkey as "requestKey",
         transfers."orderIndex" as "orderIndex",
-        td.pactid as "pactId"
+        td.pactid as "pactId",
+        transfers."tokenId" as "tokenId"
         from "Transfers" transfers
         join "Transactions" t on t.id = transfers."transactionId"
         join "Blocks" b on b."id" = t."blockId"
@@ -430,7 +433,8 @@ export default class TransferDbRepository implements TransferRepository {
       transfers.modulehash as "moduleHash",
       transfers.requestkey as "requestKey",
       transfers."orderIndex" as "orderIndex",
-      td.pactid as "pactId"
+      td.pactid as "pactId",
+      transfers."tokenId" as "tokenId"
       from "Blocks" b
       join "Transactions" transactions on b.id = transactions."blockId"
       join "Transfers" transfers on transfers."transactionId" = transactions.id 

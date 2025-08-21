@@ -1434,6 +1434,8 @@ export type Transfer = Node & {
   receiverAccount: Scalars['String']['output'];
   requestKey: Scalars['String']['output'];
   senderAccount: Scalars['String']['output'];
+  /** The token id if this is a poly-fungible transfer. */
+  tokenId?: Maybe<Scalars['String']['output']>;
   /** The transaction that initiated this transfer. */
   transaction?: Maybe<Transaction>;
 };
@@ -3701,6 +3703,7 @@ export type TransferResolvers<
   receiverAccount?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   requestKey?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   senderAccount?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  tokenId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   transaction?: Resolver<Maybe<ResolversTypes['Transaction']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
