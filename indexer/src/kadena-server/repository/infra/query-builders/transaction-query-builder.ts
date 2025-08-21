@@ -421,14 +421,8 @@ export default class TransactionQueryBuilder {
     limit: number;
     transactionCode: string;
   }) {
-    let whereCondition = `\nWHERE td.code::text LIKE '%' || $2::text || '%' AND b.canonical = $3`;
-    let queryParams: (string | number | boolean)[] = [params.limit, params.transactionCode, true];
-
-    if (!params.after && !params.before && params.order === 'DESC') {
-      const currentTime = Date.now() - 10000000;
-      queryParams.push(currentTime, 0);
-      whereCondition += `\nAND t.creationtime > $${queryParams.length - 1} AND t.id > $${queryParams.length}`;
-    }
+    let whereCondition = `\nWHERE td.code::text LIKE '%' || $2 || '%' AND t.sender != 'coinbase'`;
+    let queryParams: (string | number | boolean)[] = [params.limit, params.transactionCode];
 
     if (params.after) {
       const [creationTime, id] = params.after.split(':');
@@ -442,38 +436,24 @@ export default class TransactionQueryBuilder {
     }
 
     const query = `
-      WITH filtered_transactions AS (
-        SELECT t.*, td.code, td.nonce, td.sigs, td.continuation, td.pactid, td.proof, td.rollback, td.gas, td.step, td.data, b.height, b.hash as "blockHash"
-        FROM "Transactions" t
-        JOIN "TransactionDetails" td ON t.id = td."transactionId"
+      SELECT
+        t.id AS id,
+        t.requestkey AS "requestKey",
+        t."chainId" AS "chainId",
+        t.creationtime AS "creationTime",
+        t.sender AS "sender",
+        td.gas AS "gas",
+        td.gaslimit AS "gasLimit",
+        td.gasprice AS "gasPrice",
+        t.result AS "result",
+        b.height AS "height",
+        b.canonical AS "canonical"
+        FROM "TransactionDetails" td
+        JOIN "Transactions" t ON t.id = td."transactionId"
         JOIN "Blocks" b ON b.id = t."blockId"
         ${whereCondition}
         ORDER BY t.creationtime ${params.order}, t.id ${params.order}
-      )
-      SELECT
-        t.id AS id,
-        t.creationtime AS "creationTime",
-        t.hash AS "hashTransaction",
-        t.nonce AS "nonceTransaction",
-        t.sigs AS sigs,
-        t.continuation AS continuation,
-        t.num_events AS "eventCount",
-        t.pactid AS "pactId",
-        t.proof AS proof,
-        t.rollback AS rollback,
-        t.txid AS txid,
-        t.height AS "height",
-        t."blockHash" AS "blockHash",
-        t."chainId" AS "chainId",
-        t.gas AS "gas",
-        t.step AS step,
-        t.data AS data,
-        t.code AS code,
-        t.logs AS "logs",
-        t.result AS "result",
-        t.requestkey AS "requestKey"
-      FROM filtered_transactions t
-      LIMIT $1
+        LIMIT $1
     `;
 
     return { query, queryParams };

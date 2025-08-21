@@ -25,6 +25,10 @@ import { ConnectionEdge } from '../types';
  */
 export type GetTransactionsParams = GetTransactionsCountParams & PaginationsParams;
 
+export type GetTransactionsByPactCodeParams = PaginationsParams & {
+  pactCode: string;
+};
+
 /**
  * Parameters for fetching transactions by a specific public key.
  * Extends pagination parameters to support page-based data access.
@@ -109,6 +113,18 @@ export type TransactionOutput = Omit<Transaction, 'cmd'> & {
   blockHeight: number;
 };
 
+export type TransactionByPactCodeOutput = {
+  creationTime: string;
+  requestKey: string;
+  chainId: string;
+  height: string;
+  canonical: boolean;
+  gas: string;
+  gasLimit: string;
+  gasPrice: string;
+  sender: string;
+};
+
 /**
  * Transaction metadata as returned by the repository.
  * Direct mapping to the GraphQL TransactionMeta type.
@@ -136,6 +152,18 @@ export default interface TransactionRepository {
   getTransactions(params: GetTransactionsParams): Promise<{
     pageInfo: PageInfo;
     edges: ConnectionEdge<TransactionOutput>[];
+  }>;
+
+  /**
+   * Retrieves transactions by pact code with pagination.
+   *
+   * @param params - Pact code and pagination parameters
+   * @returns Promise resolving to paginated transaction results
+   */
+
+  getTransactionsByPactCode(params: GetTransactionsByPactCodeParams): Promise<{
+    pageInfo: PageInfo;
+    edges: ConnectionEdge<TransactionByPactCodeOutput>[];
   }>;
 
   /**

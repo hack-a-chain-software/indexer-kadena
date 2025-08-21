@@ -20,6 +20,7 @@
 import { rootPgPool } from '../../../../config/database';
 import TransactionRepository, {
   GetSignersParams,
+  GetTransactionsByPactCodeParams,
   GetTransactionsByPublicKeyParams,
   GetTransactionsByRequestKey,
   GetTransactionsCountParams,
@@ -118,28 +119,6 @@ export default class TransactionDbRepository implements TransactionRepository {
 
       // Transform database rows into GraphQL-compatible edges with cursors
       const edges = rowsWithDetails.map(row => ({
-        cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
-        node: transactionValidator.validate(row),
-      }));
-
-      const pageInfo = getPageInfo({ edges, order, limit, after, before });
-      return pageInfo;
-    }
-
-    if (rest.transactionCode) {
-      const { query, queryParams } = this.queryBuilder.buildTransactionByCodeQuery({
-        after,
-        before,
-        order,
-        limit,
-        transactionCode: rest.transactionCode,
-      });
-
-      // Execute the query with the constructed parameters
-      const { rows } = await rootPgPool.query(query, queryParams);
-
-      // Transform database rows into GraphQL-compatible edges with cursors
-      const edges = rows.map(row => ({
         cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
         node: transactionValidator.validate(row),
       }));
@@ -273,6 +252,41 @@ export default class TransactionDbRepository implements TransactionRepository {
     return lastTransactions;
   }
 
+  /**
+   * Retrieves transactions by pact code with pagination.
+   *
+   * @param params - Pact code and pagination parameters
+   * @returns Promise resolving to paginated transaction results
+   */
+  async getTransactionsByPactCode(params: GetTransactionsByPactCodeParams) {
+    const { after: afterEncoded, before: beforeEncoded, first, last, pactCode } = params;
+
+    // Process pagination parameters
+    const { limit, order, after, before } = getPaginationParams({
+      after: afterEncoded,
+      before: beforeEncoded,
+      first,
+      last,
+    });
+
+    const { query, queryParams } = this.queryBuilder.buildTransactionByCodeQuery({
+      after,
+      before,
+      order,
+      limit,
+      transactionCode: pactCode,
+    });
+
+    const { rows } = await rootPgPool.query(query, queryParams);
+
+    // Create edges for paginated result and apply sorting
+    const edges = rows.slice(0, limit).map(tx => ({
+      cursor: `${tx.creationTime.toString()}:${tx.id.toString()}`,
+      node: tx,
+    }));
+
+    return getPageInfo({ edges, order, limit, after, before });
+  }
   /**
    * Retrieves a transaction associated with a specific transfer.
    * This method finds the transaction that contains a specific transfer by ID.
