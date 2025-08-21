@@ -751,10 +751,6 @@ export default class TransactionDbRepository implements TransactionRepository {
       [eventIds],
     );
 
-    if (rows.length !== eventIds.length) {
-      throw new Error('There was an issue fetching blocks for event IDs.');
-    }
-
     const transactionMap = rows.reduce(
       (acum, row) => ({
         ...acum,
