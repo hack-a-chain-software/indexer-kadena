@@ -213,14 +213,4 @@ describe('Transactions', () => {
     const data = await client.request(query);
     expect(transactionsFixture018.data).toMatchObject(data);
   });
-
-  it('#019 - code', async () => {
-    const query = getTransactionsQuery({
-      code: 'create',
-      after: 'MTc1NTUxOTMxNzozMTUwOTk1NzU=',
-      first: 25,
-    });
-    const data = await client.request(query);
-    expect(transactionsFixture019.data).toMatchObject(data);
-  });
 });

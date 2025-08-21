@@ -339,6 +339,17 @@ type Query {
   ): QueryTransactionsByPublicKeyConnection! @complexity(value: 1, multipliers: ["first", "last"])
 
   """
+  Retrieve all transactions by a given pact code.
+  """
+  transactionsByPactCode(
+    after: String
+    before: String
+    first: Int
+    last: Int
+    pactCode: String!
+  ): QueryTransactionsByPactCodeConnection! @complexity(value: 1, multipliers: ["first", "last"])
+
+  """
   Retrieve transfers. Default page size is 20.
   """
   transfers(
@@ -430,6 +441,28 @@ type Query {
   Get prices for all tokens in a protocol
   """
   tokenPrices(protocolAddress: String): [TokenPrice!]! @complexity(value: 1)
+}
+
+type QueryTransactionsByPactCodeConnection {
+  edges: [QueryTransactionsByPactCodeConnectionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type QueryTransactionsByPactCodeConnectionEdge {
+  cursor: String!
+  node: TransactionSummary!
+}
+
+type TransactionSummary {
+  requestKey: String!
+  height: String!
+  chainId: String!
+  canonical: Boolean!
+  creationTime: String!
+  sender: String!
+  gas: String!
+  gasLimit: String!
+  gasPrice: String!
 }
 
 """
