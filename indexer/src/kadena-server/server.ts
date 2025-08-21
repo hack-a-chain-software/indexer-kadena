@@ -411,13 +411,13 @@ export async function startGraphqlServer() {
       onConnect: ctx => {
         const ip = ctx.extra.request.socket.remoteAddress || 'unknown';
         activeConnections++;
-        console.log('New connection -> ', ip, 'Total connections opened:', activeConnections);
+        console.info('New connection -> ', ip, 'Total connections opened:', activeConnections);
         return true; // Allow the connection
       },
       onDisconnect: ctx => {
         const ip = ctx.extra.request.socket.remoteAddress || 'unknown';
         activeConnections--;
-        console.log('Closed connection -> ', ip, 'Total connections opened:', activeConnections);
+        console.info('Closed connection -> ', ip, 'Total connections opened:', activeConnections);
       },
     },
     wsServer,

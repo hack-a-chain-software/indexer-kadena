@@ -91,12 +91,12 @@ export async function startStreaming() {
 
     const tx = await sequelize.transaction();
     try {
-            // Process the block payload (transactions, miner data, etc.)
-            const payload = processPayload(block.payloadWithOutputs);
+      // Process the block payload (transactions, miner data, etc.)
+      const payload = processPayload(block.payloadWithOutputs);
 
-            // Save the block data and process its transactions
-            // TODO: [CONSISTENCY] Validate saveBlock result; if null/failed, handle with rollback + DLQ + metric to avoid partial commits
-            await saveBlock({ header: block.header, payload, canonical: null }, tx);
+      // Save the block data and process its transactions
+      // TODO: [CONSISTENCY] Validate saveBlock result; if null/failed, handle with rollback + DLQ + metric to avoid partial commits
+      await saveBlock({ header: block.header, payload, canonical: null }, tx);
 
       if (!initialChainGapsAlreadyFilled.has(block.header.chainId)) {
         initialChainGapsAlreadyFilled.add(block.header.chainId);
@@ -151,7 +151,7 @@ export async function startStreaming() {
   setInterval(
     () => {
       blocksRecentlyProcessed.clear();
-      console.log('[INFO][SYNC][STREAMING] blocksRecentlyProcessed cleared');
+      console.info('[INFO][SYNC][STREAMING] blocksRecentlyProcessed cleared');
     },
     1000 * 60 * 60 * 1,
   );
