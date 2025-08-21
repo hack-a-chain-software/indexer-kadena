@@ -694,7 +694,7 @@ type Block implements Node {
   canonical: Boolean!
 
   parent: Block @complexity(value: 1)
-  totalGasUsed: Decimal!
+  totalGasUsedInKda: Decimal!
   """
   Default page size is 20.
   """
@@ -1122,7 +1122,7 @@ type CountersOfEachChain {
   chainId: String!
   blocksCount: Int!
   transactionCount: Int!
-  totalGasUsed: String!
+  totalGasUsedInKda: String!
 }
 
 type GenesisHeight {

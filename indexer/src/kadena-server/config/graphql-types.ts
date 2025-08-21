@@ -59,7 +59,7 @@ export type Block = Node & {
   /** The proof of work hash. */
   powHash: Scalars['String']['output'];
   target: Scalars['String']['output'];
-  totalGasUsed: Scalars['Decimal']['output'];
+  totalGasUsedInKda: Scalars['Decimal']['output'];
   /** Default page size is 20. */
   transactions: BlockTransactionsConnection;
   weight: Scalars['String']['output'];
@@ -142,7 +142,7 @@ export type CountersOfEachChain = {
   __typename?: 'CountersOfEachChain';
   blocksCount: Scalars['Int']['output'];
   chainId: Scalars['String']['output'];
-  totalGasUsed: Scalars['String']['output'];
+  totalGasUsedInKda: Scalars['String']['output'];
   transactionCount: Scalars['Int']['output'];
 };
 
@@ -2207,7 +2207,7 @@ export type BlockResolvers<
   payloadHash?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   powHash?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   target?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  totalGasUsed?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
+  totalGasUsedInKda?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
   transactions?: Resolver<
     ResolversTypes['BlockTransactionsConnection'],
     ParentType,
@@ -2303,7 +2303,7 @@ export type CountersOfEachChainResolvers<
 > = {
   blocksCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   chainId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  totalGasUsed?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalGasUsedInKda?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   transactionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };

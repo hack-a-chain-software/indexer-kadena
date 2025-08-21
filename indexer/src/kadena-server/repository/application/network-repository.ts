@@ -25,7 +25,7 @@ export interface CountersOfEachChain {
   chainId: string;
   blocksCount: number;
   transactionCount: number;
-  totalGasUsed: string;
+  totalGasUsedInKda: string;
 }
 
 type AllInfo = NetworkStatistics &

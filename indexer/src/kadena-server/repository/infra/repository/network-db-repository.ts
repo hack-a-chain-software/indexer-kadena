@@ -251,7 +251,7 @@ export default class NetworkDbRepository implements NetworkRepository {
         chainId: row.chainId,
         blocksCount: row.canonicalBlocks,
         transactionCount: row.canonicalTransactions,
-        totalGasUsed: row.totalGasUsed,
+        totalGasUsedInKda: row.totalGasUsed,
       };
     });
 

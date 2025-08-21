@@ -101,7 +101,7 @@ const validate = (row: any): BlockOutput => {
     })),
     numTransactions: res.transactionsCount,
     blockId: res.id,
-    totalGasUsed: res.totalGasUsed ?? '0',
+    totalGasUsedInKda: res.totalGasUsed ?? '0',
   };
 };
 
@@ -139,7 +139,7 @@ const mapFromSequelize = (blockModel: BlockAttributes): BlockOutput => {
     })),
     numTransactions: blockModel.transactionsCount,
     blockId: blockModel.id,
-    totalGasUsed: blockModel.totalGasUsed ?? '0',
+    totalGasUsedInKda: blockModel.totalGasUsed ?? '0',
   };
 };
 
