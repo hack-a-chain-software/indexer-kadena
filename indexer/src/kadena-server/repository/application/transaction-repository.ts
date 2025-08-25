@@ -77,8 +77,6 @@ export interface GetTransactionsCountParams {
   hasTokenId?: boolean | null;
   /** Filter by coinbase */
   isCoinbase?: boolean | null;
-  /** Filter by transaction code */
-  transactionCode?: string | null;
 }
 
 /**

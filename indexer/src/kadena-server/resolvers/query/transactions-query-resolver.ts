@@ -60,21 +60,6 @@ export const transactionsQueryResolver: QueryResolvers<ResolverContext>['transac
     isCoinbase,
   } = args;
 
-  const hasNoParamsSet = Object.values({
-    accountName,
-    blockHash,
-    chainId,
-    fungibleName,
-    requestKey,
-    maxHeight,
-    minHeight,
-    minimumDepth,
-    isCoinbase,
-  }).every(v => isNullOrUndefined(v));
-  if (args.code && !hasNoParamsSet) {
-    throw new Error('Code parameter cannot be composed with other filters');
-  }
-
   // Call the repository layer to retrieve the filtered and paginated transactions
   // Pass all parameters through to maintain complete filtering flexibility
   const output = await context.transactionRepository.getTransactions({
@@ -87,7 +72,6 @@ export const transactionsQueryResolver: QueryResolvers<ResolverContext>['transac
     minHeight,
     minimumDepth,
     isCoinbase,
-    transactionCode: args.code,
     first,
     last,
     before,
@@ -122,6 +106,5 @@ export const transactionsQueryResolver: QueryResolvers<ResolverContext>['transac
     isCoinbase,
     fungibleName,
     requestKey,
-    transactionCode: args.code,
   };
 };
