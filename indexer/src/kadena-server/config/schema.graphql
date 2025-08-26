@@ -324,7 +324,6 @@ type Query {
     minimumDepth: Int
     requestKey: String
     isCoinbase: Boolean
-    code: String
   ): QueryTransactionsConnection! @complexity(value: 1, multipliers: ["first", "last"])
 
   """
