@@ -868,9 +868,10 @@ export type QueryEventsArgs = {
   maxHeight?: InputMaybe<Scalars['Int']['input']>;
   minHeight?: InputMaybe<Scalars['Int']['input']>;
   minimumDepth?: InputMaybe<Scalars['Int']['input']>;
+  moduleName?: InputMaybe<Scalars['String']['input']>;
   orderIndex?: InputMaybe<Scalars['Int']['input']>;
   parametersFilter?: InputMaybe<Scalars['String']['input']>;
-  qualifiedEventName: Scalars['String']['input'];
+  qualifiedEventName?: InputMaybe<Scalars['String']['input']>;
   requestKey?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -3017,7 +3018,7 @@ export type QueryResolvers<
     ResolversTypes['QueryEventsConnection'],
     ParentType,
     ContextType,
-    RequireFields<QueryEventsArgs, 'qualifiedEventName'>
+    Partial<QueryEventsArgs>
   >;
   fungibleAccount?: Resolver<
     Maybe<ResolversTypes['FungibleAccount']>,

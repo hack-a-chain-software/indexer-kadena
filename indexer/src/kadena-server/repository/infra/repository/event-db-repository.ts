@@ -31,6 +31,7 @@ import { ConnectionEdge } from '../../types';
 import { eventValidator } from '../schema-validator/event-schema-validator';
 import EventQueryBuilder from '../query-builders/event-query-builder';
 import BlockDbRepository from './block-db-repository';
+import { isNullOrUndefined } from '@/utils/helpers';
 
 /**
  * Database implementation of the EventRepository interface
@@ -125,6 +126,7 @@ export default class EventDbRepository implements EventRepository {
         e."orderIndex" as "orderIndex",
         e.module as "moduleName",
         e.params as parameters,
+        e.creationtime as "creationTime",
         b.hash as "blockHash"
       FROM "Blocks" b
       JOIN "Transactions" t ON b.id = t."blockId"
@@ -138,7 +140,7 @@ export default class EventDbRepository implements EventRepository {
     const { rows } = await rootPgPool.query(query, queryParams);
 
     const edges = rows.map(row => ({
-      cursor: row.id.toString(),
+      cursor: `${row.creationTime}:${row.id}`,
       node: eventValidator.validate(row),
     }));
 
@@ -187,11 +189,12 @@ export default class EventDbRepository implements EventRepository {
    * @param params - Object containing qualified event name and various filtering options
    * @returns Promise resolving to page info and event edges
    */
-  async getEventsWithQualifiedName(
+  async getEvents(
     params: GetEventsParams,
   ): Promise<{ pageInfo: PageInfo; edges: ConnectionEdge<EventOutput>[] }> {
     const {
       qualifiedEventName,
+      moduleName,
       blockHash,
       chainId,
       after: afterEncoded,
@@ -204,6 +207,10 @@ export default class EventDbRepository implements EventRepository {
       requestKey,
     } = params;
 
+    if (qualifiedEventName && moduleName) {
+      throw new Error('qualifiedEventName and moduleName cannot be used together.');
+    }
+
     const { limit, order, after, before } = getPaginationParams({
       after: afterEncoded,
       before: beforeEncoded,
@@ -213,8 +220,9 @@ export default class EventDbRepository implements EventRepository {
 
     // If no minimumDepth is specified, we can use the normal query approach
     if (!minimumDepth) {
-      const { query, queryParams } = this.queryBuilder.buildEventsWithQualifiedNameQuery({
+      const { query, queryParams } = this.queryBuilder.buildEventQuery({
         qualifiedEventName,
+        module: moduleName,
         limit,
         order,
         after,
@@ -228,46 +236,31 @@ export default class EventDbRepository implements EventRepository {
 
       const { rows } = await rootPgPool.query(query, queryParams);
 
-      // Determine cursor based on whether we're using height-based or id-based filtering
-      const isHeightChainOrBlockHash = Boolean(minHeight || maxHeight || blockHash || chainId);
-
       const edges = rows.map(row => ({
-        cursor: isHeightChainOrBlockHash ? row.height.toString() : row.id.toString(),
+        cursor: `${row.creationTime}:${row.id}`,
         node: eventValidator.validate(row),
       }));
 
       return getPageInfo({ edges, order, limit, after, before });
     }
 
-    // When minimumDepth is specified, handle batch fetching and depth filtering
-    const isHeightChainOrBlockHash = Boolean(minHeight || maxHeight || blockHash || chainId);
-
     let allFilteredEvents: any[] = [];
-    let lastCursor: string | null = null;
+    let lastCursor: string | null = afterEncoded ?? null;
     let hasMoreEvents = true;
     const batchSize = Math.max(limit * 3, 50); // Fetch more than needed for depth filtering
 
     // Continue fetching batches until we have enough events that meet depth requirement
     while (allFilteredEvents.length < limit && hasMoreEvents) {
-      // Parse cursor based on filtering mode
-      let afterCursor = lastCursor;
-      let heightCursor = null;
-
-      if (lastCursor && isHeightChainOrBlockHash) {
-        heightCursor = parseInt(lastCursor, 10);
-        afterCursor = null;
-      }
-
-      // Build and execute query for this batch
-      const { query, queryParams } = this.queryBuilder.buildEventsWithQualifiedNameQuery({
+      const { query, queryParams } = this.queryBuilder.buildEventQuery({
         qualifiedEventName,
+        module: moduleName,
         limit: batchSize,
         order,
-        after: afterCursor,
-        before,
+        after: afterEncoded,
+        before: beforeEncoded,
         blockHash,
         chainId,
-        minHeight: heightCursor || minHeight,
+        minHeight,
         maxHeight,
         requestKey,
       });
@@ -299,15 +292,13 @@ export default class EventDbRepository implements EventRepository {
       // Update cursor for next batch
       if (eventBatch.length > 0) {
         const lastEvent = eventBatch[eventBatch.length - 1];
-        lastCursor = isHeightChainOrBlockHash
-          ? lastEvent.height.toString()
-          : lastEvent.id.toString();
+        lastCursor = `${lastEvent.creationTime}:${lastEvent.id}`;
       }
     }
 
     // Create edges for paginated result
     const edges = allFilteredEvents.slice(0, limit).map(event => ({
-      cursor: isHeightChainOrBlockHash ? event.height.toString() : event.id.toString(),
+      cursor: `${event.creationTime}:${event.id}`,
       node: eventValidator.validate(event),
     }));
 
@@ -327,63 +318,94 @@ export default class EventDbRepository implements EventRepository {
   async getTotalEventsCount(params: GetTotalEventsCount): Promise<number> {
     const {
       qualifiedEventName,
+      moduleName,
       blockHash,
       chainId,
       minHeight,
       maxHeight,
-      minimumDepth,
       requestKey,
+      minimumDepth,
     } = params;
-
-    const splitted = qualifiedEventName.split('.');
-    const name = splitted.pop() ?? '';
-    const module = splitted.join('.');
 
     const queryParams: (string | number)[] = [];
     let conditions = '';
 
-    queryParams.push(module);
-    conditions += `WHERE e.module = $${queryParams.length}`;
-    queryParams.push(name);
-    conditions += `\nAND e.name = $${queryParams.length}`;
+    const localOperator = (paramsLength: number) => (paramsLength > 1 ? `\nAND` : '\nWHERE');
+
+    const isJoinBlock =
+      !isNullOrUndefined(blockHash) ||
+      !isNullOrUndefined(minHeight) ||
+      !isNullOrUndefined(maxHeight) ||
+      !isNullOrUndefined(minimumDepth);
+    const isJoinTransaction = !isNullOrUndefined(requestKey) || isJoinBlock;
+    let totalCountQuery = `
+      select count (*) as count
+      from "Events" e
+    `;
+
+    if (isJoinBlock) {
+      totalCountQuery += `\njoin "Transactions" t on e."transactionId" = t.id`;
+      totalCountQuery += `\n join "Blocks" b on b.id = t."blockId"`;
+    } else if (isJoinTransaction) {
+      totalCountQuery += `\njoin "Transactions" t on e."transactionId" = t.id`;
+    }
+
+    if (qualifiedEventName) {
+      const splitted = qualifiedEventName.split('.');
+      const name = splitted.pop() ?? '';
+      const module = splitted.join('.');
+
+      queryParams.push(module);
+      const opModule = localOperator(queryParams.length);
+      conditions += `${opModule} e.module = $${queryParams.length}`;
+      queryParams.push(name);
+      const opName = localOperator(queryParams.length);
+      conditions += `${opName} e.name = $${queryParams.length}`;
+    }
+
+    if (moduleName) {
+      queryParams.push(moduleName);
+      const opModule = localOperator(queryParams.length);
+      conditions += `${opModule} e.module = $${queryParams.length}`;
+    }
 
     if (blockHash) {
       queryParams.push(blockHash);
-      conditions += `\nAND b.hash = $${queryParams.length}`;
+      const opBlockHash = localOperator(queryParams.length);
+      conditions += `${opBlockHash} b.hash = $${queryParams.length}`;
     }
 
     if (chainId) {
       queryParams.push(chainId);
-      conditions += `\nAND b."chainId" = $${queryParams.length}`;
+      const opChainId = localOperator(queryParams.length);
+      conditions += `${opChainId} e."chainId" = $${queryParams.length}`;
     }
 
     if (minHeight) {
       queryParams.push(minHeight);
-      conditions += `\nAND b."height" >= $${queryParams.length}`;
+      const opMinHeight = localOperator(queryParams.length);
+      conditions += `${opMinHeight} b."height" >= $${queryParams.length}`;
     }
 
     if (maxHeight) {
       queryParams.push(maxHeight);
-      conditions += `\nAND b."height" <= $${queryParams.length}`;
+      const opMaxHeight = localOperator(queryParams.length);
+      conditions += `${opMaxHeight} b."height" <= $${queryParams.length}`;
     }
 
     if (minimumDepth) {
       queryParams.push(minimumDepth);
-      conditions += `\nAND b."height" <= $${queryParams.length}`;
+      const opMinimumDepth = localOperator(queryParams.length);
+      conditions += `${opMinimumDepth} b."height" <= $${queryParams.length}`;
     }
 
     if (requestKey) {
       queryParams.push(requestKey);
-      conditions += `\nAND t.requestkey = $${queryParams.length}`;
+      const opRequestKey = localOperator(queryParams.length);
+      conditions += `${opRequestKey} t.requestkey = $${queryParams.length}`;
     }
 
-    const totalCountQuery = `
-      select count (*) as count
-      from "Events" e
-      join "Transactions" t on e."transactionId" = t.id 
-      join "Blocks" b on b.id = t."blockId"
-      ${conditions}
-    `;
+    totalCountQuery += `\n${conditions}`;
 
     const { rows: countResult } = await rootPgPool.query(totalCountQuery, queryParams);
     const totalCount = parseInt(countResult[0].count, 10);
@@ -434,6 +456,7 @@ export default class EventDbRepository implements EventRepository {
         e."orderIndex" as "orderIndex",
         e.name as name,
         e.params as parameters,
+        e.creationtime as "creationTime",
         b.hash as "blockHash"
       from "Events" e
       join "Transactions" t on e."transactionId" = t.id 
@@ -447,7 +470,7 @@ export default class EventDbRepository implements EventRepository {
     const { rows } = await rootPgPool.query(query, queryParams);
 
     const edges = rows.map(row => ({
-      cursor: row.id.toString(),
+      cursor: `${row.creationTime}:${row.id}`,
       node: eventValidator.validate(row),
     }));
 

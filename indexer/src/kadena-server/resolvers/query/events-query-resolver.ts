@@ -52,8 +52,9 @@ export const eventsQueryResolver: QueryResolvers<ResolverContext>['events'] = as
     minimumDepth,
     requestKey,
     qualifiedEventName,
+    moduleName,
   } = args;
-  const output = await context.eventRepository.getEventsWithQualifiedName({
+  const output = await context.eventRepository.getEvents({
     qualifiedEventName,
     after,
     before,
@@ -65,6 +66,7 @@ export const eventsQueryResolver: QueryResolvers<ResolverContext>['events'] = as
     minHeight,
     minimumDepth,
     requestKey,
+    moduleName,
   });
 
   const edges = output.edges.map(e => ({
@@ -84,5 +86,6 @@ export const eventsQueryResolver: QueryResolvers<ResolverContext>['events'] = as
     minimumDepth,
     requestKey,
     qualifiedEventName,
+    moduleName,
   };
 };

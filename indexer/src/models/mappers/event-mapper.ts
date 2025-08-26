@@ -19,6 +19,7 @@ export const mapToEventModel = (
         : eventData.module.name,
       requestkey: transactionAttributes.requestkey,
       orderIndex: eventData.orderIndex,
+      creationtime: transactionAttributes.creationtime,
     } as EventAttributes;
   }) as EventAttributes[];
 
