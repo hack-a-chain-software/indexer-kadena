@@ -34,6 +34,7 @@ import { signerMetaValidator } from '../schema-validator/signer-schema-validator
 import BlockDbRepository from './block-db-repository';
 import TransactionQueryBuilder from '../query-builders/transaction-query-builder';
 import { isNullOrUndefined } from '@/utils/helpers';
+import { transactionSummaryValidator } from '@/kadena-server/repository/infra/schema-validator/transaction-summary-schema-validator';
 
 /**
  * Database-specific implementation of the TransactionRepository interface.
@@ -279,10 +280,9 @@ export default class TransactionDbRepository implements TransactionRepository {
 
     const { rows } = await rootPgPool.query(query, queryParams);
 
-    // Create edges for paginated result and apply sorting
     const edges = rows.slice(0, limit).map(tx => ({
       cursor: `${tx.creationTime.toString()}:${tx.id.toString()}`,
-      node: tx,
+      node: transactionSummaryValidator.validate(tx),
     }));
 
     return getPageInfo({ edges, order, limit, after, before });

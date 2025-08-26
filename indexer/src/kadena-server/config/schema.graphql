@@ -454,10 +454,11 @@ type QueryTransactionsByPactCodeConnectionEdge {
 
 type TransactionSummary {
   requestKey: String!
-  height: String!
-  chainId: String!
+  height: BigInt!
+  chainId: BigInt!
   canonical: Boolean!
-  creationTime: String!
+  creationTime: DateTime!
+  badResult: String
   sender: String!
   gas: String!
   gasLimit: String!
