@@ -499,29 +499,56 @@ export class PairService {
       transaction: tx,
     });
 
-    // Update or create pool stats
-    await PoolStats.upsert(
-      {
-        pairId,
-        timestamp: todayUTC,
-        volume24hUsd: this.formatTo8Decimals(volume24h),
-        volume7dUsd: this.formatTo8Decimals(volume7d),
-        volume30dUsd: this.formatTo8Decimals(volume30d),
-        volume1yUsd: this.formatTo8Decimals(volume1y),
-        fees24hUsd: this.formatTo8Decimals(fees24h),
-        fees7dUsd: this.formatTo8Decimals(fees7d),
-        fees30dUsd: this.formatTo8Decimals(fees30d),
-        fees1yUsd: this.formatTo8Decimals(fees1y),
-        transactionCount24h: transactions24h.length,
-        tvlUsd: latestChart?.tvlUsd ? this.formatTo8Decimals(parseFloat(latestChart.tvlUsd)) : 0,
-        apr24h: this.formatTo8Decimals(apr24h),
-        tvlHistory: tvlHistory.map(chart => ({
-          timestamp: chart.timestamp,
-          value: chart.tvlUsd,
-        })),
-      },
-      { transaction: tx },
-    );
+// Update or create pool stats
+    const existingPoolStats = await PoolStats.findOne({
+      where: { pairId, timestamp: todayUTC },
+      transaction: tx,
+    });
+    if (existingPoolStats) {
+      await existingPoolStats.update(
+        {
+          volume24hUsd: this.formatTo8Decimals(volume24h),
+          volume7dUsd: this.formatTo8Decimals(volume7d),
+          volume30dUsd: this.formatTo8Decimals(volume30d),
+          volume1yUsd: this.formatTo8Decimals(volume1y),
+          fees24hUsd: this.formatTo8Decimals(fees24h),
+          fees7dUsd: this.formatTo8Decimals(fees7d),
+          fees30dUsd: this.formatTo8Decimals(fees30d),
+          fees1yUsd: this.formatTo8Decimals(fees1y),
+          transactionCount24h: transactions24h.length,
+          tvlUsd: latestChart?.tvlUsd ? this.formatTo8Decimals(parseFloat(latestChart.tvlUsd)) : 0,
+          apr24h: this.formatTo8Decimals(apr24h),
+          tvlHistory: tvlHistory.map(chart => ({
+            timestamp: chart.timestamp,
+            value: chart.tvlUsd,
+          })),
+        },
+        { transaction: tx },
+      );
+    } else {
+      await PoolStats.create(
+        {
+          pairId,
+          timestamp: todayUTC,
+          volume24hUsd: this.formatTo8Decimals(volume24h),
+          volume7dUsd: this.formatTo8Decimals(volume7d),
+          volume30dUsd: this.formatTo8Decimals(volume30d),
+          volume1yUsd: this.formatTo8Decimals(volume1y),
+          fees24hUsd: this.formatTo8Decimals(fees24h),
+          fees7dUsd: this.formatTo8Decimals(fees7d),
+          fees30dUsd: this.formatTo8Decimals(fees30d),
+          fees1yUsd: this.formatTo8Decimals(fees1y),
+          transactionCount24h: transactions24h.length,
+          tvlUsd: latestChart?.tvlUsd ? this.formatTo8Decimals(parseFloat(latestChart.tvlUsd)) : 0,
+          apr24h: this.formatTo8Decimals(apr24h),
+          tvlHistory: tvlHistory.map(chart => ({
+            timestamp: chart.timestamp,
+            value: chart.tvlUsd,
+          })),
+        },
+        { transaction: tx },
+      );
+    }
   }
 
   private static async createOrFindPair(
