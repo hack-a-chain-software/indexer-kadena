@@ -122,9 +122,9 @@ func SaveTransactionDetails(db pgx.Tx, details []TransactionDetailsAttributes, t
 
 	query := `INSERT INTO "TransactionDetails" (
 			"transactionId", code, continuation, data, gas, gaslimit, gasprice,
-			nonce, pactid, proof, rollback, sigs, step, ttl, "createdAt", "updatedAt"
+			nonce, pactid, proof, rollback, sigs, step, ttl, "createdAt", "updatedAt", code_indexed
 		)
-		VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15, $16)
+		VALUES ($1, $2::jsonb, $3::jsonb, $4::jsonb, $5, $6, $7, $8, $9, $10, $11, $12::jsonb, $13, $14, $15, $16, false)
 	`
 
 	now := time.Now()

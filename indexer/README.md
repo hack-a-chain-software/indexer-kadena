@@ -60,6 +60,35 @@ cp indexer/.env.template indexer/.env
 | `ALLOWED_ORIGINS`         | Allowed origins for CORS                | `http://abcde:3001,http://abcde:3002`   |
 | `PRICE_CACHE_TTL`         | Time-to-live for price cache in seconds | `300`                                   |
 
+### 3.3. Optional ClickHouse Integration
+
+When ClickHouse is configured, the indexer can index/search Pact code efficiently.
+
+Environment Variables:
+
+| Variable                     | Description                                            | Example                 |
+| ---------------------------- | ------------------------------------------------------ | ----------------------- |
+| `CLICKHOUSE_URL`             | ClickHouse endpoint (enables health and clients)       | `http://localhost:8123` |
+| `CLICKHOUSE_USER`            | ClickHouse username (optional)                         | `default`               |
+| `CLICKHOUSE_PASSWORD`        | ClickHouse password (optional)                         | `secret`                |
+| `CLICKHOUSE_DATABASE`        | ClickHouse database (optional)                         | `default`               |
+| `FEATURE_CLICKHOUSE_SEARCH`  | If `1`, use ClickHouse for transactionsByPactCode      | `1`                     |
+| `FEATURE_CLICKHOUSE_INDEXER` | If `1`, attempt async writes to ClickHouse post-commit | `1`                     |
+
+Outbox consumer tuning (optional):
+
+| Variable                      | Description                                   | Default |
+| ----------------------------- | --------------------------------------------- | ------- |
+| `OUTBOX_CONSUMER_BATCH`       | Max rows processed per tick                   | `200`   |
+| `OUTBOX_CONSUMER_INTERVAL_MS` | Polling interval in milliseconds              | `2000`  |
+| `OUTBOX_CONSUMER_MAX_RETRIES` | Max retry attempts per outbox row before skip | `5`     |
+
+Behavior:
+
+- If ClickHouse is disabled or down, Postgres writes proceed; errors are logged only.
+- A Postgres column `TransactionDetails.code_indexed` tracks whether code was indexed (default false).
+- Health endpoint exposed at `/health/clickhouse` only when `CLICKHOUSE_URL` is set.
+
 **NOTE:** The example Kadena node API from chainweb will not work for the indexer purpose. You will need to run your own Kadena node and set the `NODE_API_URL` to your node's API URL.
 
 ## 4. Docker Setup

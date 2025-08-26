@@ -1,6 +1,15 @@
 version: '3.8'
 
 services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:23
+    container_name: clickhouse
+    restart: unless-stopped
+    ports:
+      - '8123:8123'
+    volumes:
+      - ch-data:/var/lib/clickhouse
+
   indexer-db:
     image: postgres
     container_name: postgres-indexer
@@ -41,6 +50,8 @@ services:
       context: ../
       dockerfile: Dockerfile.development
     container_name: db-migration
+    env_file:
+      - ./.env
     environment:
       DB_HOST: indexer-db
     command: ['yarn', 'migrate:up']
@@ -53,6 +64,8 @@ services:
       context: ../
       dockerfile: Dockerfile.development
     container_name: kad-indexer-graphql
+    env_file:
+      - ./.env
     environment:
       DB_HOST: indexer-db
     command: ['yarn', 'dev:graphql']
@@ -61,15 +74,22 @@ services:
     depends_on:
       db-migration:
         condition: service_completed_successfully
+      clickhouse:
+        condition: service_started
 
   streaming-app:
     build:
       context: ../
       dockerfile: Dockerfile.development
     container_name: kad-indexer-streaming
+    env_file:
+      - ./.env
     environment:
       DB_HOST: indexer-db
     command: ['yarn', 'dev:streaming']
     depends_on:
       graphql-app:
         condition: service_started
+
+volumes:
+  ch-data:

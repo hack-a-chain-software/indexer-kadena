@@ -329,6 +329,35 @@ export async function startGraphqlServer() {
       },
     ],
   });
+  // Health endpoint for ClickHouse (only when enabled via env)
+  if (process.env.CLICKHOUSE_URL) {
+    app.get('/health/clickhouse', async (_req, res) => {
+      const enabledFlags = {
+        FEATURE_CLICKHOUSE_SEARCH: process.env.FEATURE_CLICKHOUSE_SEARCH === '1',
+        FEATURE_CLICKHOUSE_INDEXER: process.env.FEATURE_CLICKHOUSE_INDEXER === '1',
+      };
+      try {
+        const { getClickHouseClient } = await import('@/search/clickhouse-client');
+        const ch = getClickHouseClient();
+        await ch.ping();
+        res.json({ status: 'up', enabled: enabledFlags });
+      } catch (err: any) {
+        res
+          .status(503)
+          .json({ status: 'down', enabled: enabledFlags, reason: err?.message || 'unknown' });
+      }
+    });
+    // Prometheus metrics endpoint
+    app.get('/metrics', async (_req, res) => {
+      try {
+        const { getMetricsRegister } = await import('@/services/metrics');
+        res.set('Content-Type', 'text/plain');
+        res.send(await getMetricsRegister().metrics());
+      } catch (err: any) {
+        res.status(500).json({ error: err?.message || 'metrics error' });
+      }
+    });
+  }
   await server.start();
 
   const schema = makeExecutableSchema({ typeDefs, resolvers });

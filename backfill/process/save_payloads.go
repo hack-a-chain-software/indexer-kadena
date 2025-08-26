@@ -3,6 +3,7 @@ package process
 import (
 	"context"
 	"fmt"
+	"go-backfill/clickhouse"
 	"go-backfill/config"
 	"go-backfill/fetch"
 	"go-backfill/repository"
@@ -74,6 +75,11 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 
 	var transactionIdsToSave [][]int64
 	var totalGasUsedInChain float64 = 0
+
+	// Accumulators for ClickHouse backfill
+	var chRows []clickhouse.TxCodeRow
+	var chReqKeys []string
+
 	for index, processedPayload := range processedPayloads {
 		var blockId = blockIds[index]
 		var currBlock = blocks[index]
@@ -90,6 +96,30 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		err = repository.SaveTransactionDetails(tx, txDetails, transactionIds)
 		if err != nil {
 			return Counters{}, DataSizeTracker{}, fmt.Errorf("saving transaction details for block %d -> %w", currBlock.Height, err)
+		}
+
+		// Build ClickHouse rows for non-coinbase transactions
+		for i := 0; i < len(txDetails); i++ {
+			codeStr, mErr := clickhouse.MarshalCode(txDetails[i].Code)
+			if mErr != nil {
+				log.Printf("[CH][MARSHAL][WARN] skipping code marshal error: %v", mErr)
+				continue
+			}
+			row := clickhouse.TxCodeRow{
+				ID:           uint64(transactionIds[i]),
+				RequestKey:   txs[i].RequestKey,
+				ChainID:      uint16(chainId),
+				CreationTime: uint64(currBlock.CreationTime),
+				Height:       uint64(currBlock.Height),
+				Canonical:    1,
+				Sender:       txs[i].Sender,
+				Gas:          txDetails[i].Gas,
+				GasLimit:     txDetails[i].GasLimit,
+				GasPrice:     txDetails[i].GasPrice,
+				Code:         codeStr,
+			}
+			chRows = append(chRows, row)
+			chReqKeys = append(chReqKeys, txs[i].RequestKey)
 		}
 
 		var totalGasUsedInBlock float64 = 0
@@ -191,6 +221,35 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 
 	if err := tx.Commit(context.Background()); err != nil {
 		return Counters{}, DataSizeTracker{}, fmt.Errorf("committing transaction: %w", err)
+	}
+
+	// After commit, optionally backfill into ClickHouse and flip flags
+	if clickhouse.GetCHConfig().ClickHouseURL != "" {
+		ctx := context.Background()
+		connCH, err := clickhouse.NewClient(clickhouse.GetCHConfig())
+		if err != nil {
+			log.Printf("[CH][CONNECT][ERROR] %v", err)
+		} else {
+			if err := clickhouse.EnsureDDL(ctx, connCH); err != nil {
+				log.Printf("[CH][DDL][ERROR] %v", err)
+			} else {
+				if err := clickhouse.BulkInsert(ctx, connCH, chRows); err != nil {
+					log.Printf("[CH][INSERT][ERROR] %v", err)
+				} else {
+					// Flip code_indexed for matching request keys
+					if len(chReqKeys) > 0 {
+						_, err := conn.Exec(context.Background(), `
+							UPDATE "TransactionDetails" td
+							SET code_indexed = true
+							FROM "Transactions" t
+							WHERE td."transactionId" = t.id AND t.requestkey = ANY($1::text[])`, chReqKeys)
+						if err != nil {
+							log.Printf("[PG][FLAG][ERROR] %v", err)
+						}
+					}
+				}
+			}
+		}
 	}
 
 	dataSizeTracker.TransactionsKB /= 1024

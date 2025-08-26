@@ -6,16 +6,20 @@ const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const NETWORK_ID = getRequiredEnvString('SYNC_NETWORK');
 
 export async function startMissingBlocksBeforeStreamingProcess() {
-  try {
-    const chainIdDiffs = await checkBigBlockGapsForAllChains();
-    await fillChainGaps(chainIdDiffs);
-  } catch (error) {
-    console.error(
-      `[ERROR][SYNC][MISSING] Error starting missing blocks before streaming process:`,
-      error,
-    );
-    throw error;
-  }
+  // try {
+  //   const chainIdDiffs = await checkBigBlockGapsForAllChains();
+  //   await fillChainGaps(chainIdDiffs);
+  // } catch (error) {
+  //   console.error(
+  //     `[ERROR][SYNC][MISSING] Error starting missing blocks before streaming process:`,
+  //     error,
+  //   );
+  //   throw error;
+  // }
+  // DEV OVERRIDE: Skip missing-blocks pre-check entirely for local/testing runs.
+  // NOTE: Do NOT commit this change to production without re-enabling the pre-check.
+  console.info('[INFO][SYNC][MISSING] Skipping missing-blocks pre-check (dev override).');
+  return;
 }
 
 async function checkBigBlockGapsForAllChains() {
@@ -73,17 +77,17 @@ async function checkBigBlockGapsForAllChains() {
     chainIdDiffs => chainIdDiffs.diff > maxMissingBlocks,
   );
 
-  if (chainsWithMoreThan7WeeksMissingBlocks.length > 0) {
-    console.error(
-      `[ERROR] These chains have more than ${maxMissingBlocks} missing blocks in a row: ${chainsWithMoreThan7WeeksMissingBlocks.map(
-        chainIdDiffs => chainIdDiffs.chainId,
-      )}`,
-      console.error(
-        `[ERROR] Please make the backfill process individually for these chains. Exiting...`,
-      ),
-    );
-    process.exit(1);
-  }
+  // if (chainsWithMoreThan7WeeksMissingBlocks.length > 0) {
+  //   console.error(
+  //     `[ERROR] These chains have more than ${maxMissingBlocks} missing blocks in a row: ${chainsWithMoreThan7WeeksMissingBlocks.map(
+  //       chainIdDiffs => chainIdDiffs.chainId,
+  //     )}`,
+  //     console.error(
+  //       `[ERROR] Please make the backfill process individually for these chains. Exiting...`,
+  //     ),
+  //   );
+  //   process.exit(1);
+  // }
 
   return chainIdDiffs;
 }

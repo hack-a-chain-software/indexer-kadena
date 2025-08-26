@@ -219,7 +219,7 @@ export async function processTransaction(
     });
 
     // Store transaction details
-    await TransactionDetails.create(
+    const createdDetails = await TransactionDetails.create(
       {
         ...transactionDetailsAttributes,
         transactionId,
@@ -354,6 +354,84 @@ export async function processTransaction(
     await sequelize.query(newBalancesQuery, {
       transaction: tx,
     });
+
+    // After commit, try async ClickHouse indexing if enabled; never block or rollback
+    if (
+      process.env.CLICKHOUSE_URL &&
+      process.env.FEATURE_CLICKHOUSE_INDEXER === '1' &&
+      transactionAttributes.sender !== 'coinbase'
+    ) {
+      try {
+        // Ensure we run post-commit only and decouple errors from commit lifecycle
+        // @ts-ignore - Sequelize Transaction has afterCommit hook
+        tx?.afterCommit?.(() => {
+          setImmediate(async () => {
+            try {
+              const { ensureTableExists, getClickHouseClient } = await import(
+                '@/search/clickhouse-client'
+              );
+              await ensureTableExists();
+              const ch = getClickHouseClient();
+
+              const creationTime = Number(transactionAttributes.creationtime);
+              const heightNumber = Number(block.height);
+              const idNumber = Number(transactionId);
+              const chainIdNumber = Number(transactionAttributes.chainId);
+              if (
+                !Number.isFinite(creationTime) ||
+                !Number.isFinite(heightNumber) ||
+                !Number.isFinite(idNumber)
+              ) {
+                throw new Error('Invalid numeric fields for ClickHouse insert');
+              }
+
+              const codeStr =
+                typeof transactionDetailsAttributes.code === 'string'
+                  ? transactionDetailsAttributes.code
+                  : JSON.stringify(transactionDetailsAttributes.code ?? '');
+
+              await ch.insert({
+                table: 'transactions_code_v1',
+                values: [
+                  {
+                    id: idNumber,
+                    requestKey: transactionAttributes.requestkey,
+                    chainId: chainIdNumber,
+                    creationTime: creationTime,
+                    height: heightNumber,
+                    canonical: block.canonical ? 1 : 0,
+                    sender: transactionAttributes.sender ?? '',
+                    gas: String(transactionDetailsAttributes.gas ?? ''),
+                    gasLimit: String(transactionDetailsAttributes.gaslimit ?? ''),
+                    gasPrice: String(transactionDetailsAttributes.gasprice ?? ''),
+                    code: codeStr,
+                  },
+                ],
+                format: 'JSONEachRow',
+              });
+
+              try {
+                const { chInsertsSuccess } = await import('@/services/metrics');
+                chInsertsSuccess.inc();
+              } catch {}
+
+              await TransactionDetails.update(
+                { code_indexed: true },
+                { where: { id: createdDetails.id } },
+              );
+            } catch (err) {
+              console.error('[CLICKHOUSE][INDEX][ERROR]', err);
+              try {
+                const { chInsertsFailure } = await import('@/services/metrics');
+                chInsertsFailure.inc();
+              } catch {}
+            }
+          });
+        });
+      } catch (e) {
+        console.error('[CLICKHOUSE][INDEX][HOOK_ERROR]', e);
+      }
+    }
 
     return {
       events: eventsWithTransactionId,

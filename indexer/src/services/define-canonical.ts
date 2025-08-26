@@ -75,6 +75,25 @@ export async function defineCanonicalBaseline(
       chainId: tipBlock.chainId,
       tx,
     });
+
+    // Outbox: emit canonical flip for height-level updates
+    try {
+      await sequelize.query(
+        `INSERT INTO "Outbox" (topic, payload) VALUES ('canonical-flip', $1::jsonb)`,
+        {
+          transaction: tx,
+          bind: [
+            JSON.stringify({
+              chainId: tipBlock.chainId,
+              height: tipBlock.height,
+              canonical: true,
+            }),
+          ],
+        },
+      );
+    } catch (e) {
+      console.error('[OUTBOX][WRITE][ERROR]', e);
+    }
     await tx.commit();
   } catch (error) {
     await tx.rollback();
