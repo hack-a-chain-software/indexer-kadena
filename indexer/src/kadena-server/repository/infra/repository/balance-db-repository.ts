@@ -31,6 +31,7 @@ import { fungibleAccountValidator } from '../schema-validator/fungible-account-v
 import { fungibleChainAccountValidator } from '../schema-validator/fungible-chain-account-validator';
 import { nonFungibleTokenBalanceValidator } from '../schema-validator/non-fungible-token-balance-validator';
 import { getPageInfo, getPaginationParams } from '../../pagination';
+import { appCache } from '@/cache/init';
 
 /**
  * PostgreSQL implementation of the BalanceRepository interface
@@ -207,7 +208,7 @@ export default class BalanceDbRepository implements BalanceRepository {
     accountName: string,
     fungibleName = 'coin',
   ): Promise<FungibleAccountOutput | null> {
-    const chainIds = Array.from({ length: 20 }, (_, chainId) => chainId);
+    const chainIds = appCache.getNodeInfo().nodeChains;
 
     // Query each chain directly using Pact code
     const balancePromises = chainIds.map(c => {
@@ -247,9 +248,7 @@ export default class BalanceDbRepository implements BalanceRepository {
     fungibleName: string,
     chainIds?: string[],
   ): Promise<FungibleChainAccountOutput[]> {
-    const chainIdsParam = chainIds?.length
-      ? chainIds.map(c => Number(c))
-      : Array.from({ length: 20 }, (_, chainId) => chainId);
+    const chainIdsParam = chainIds?.length ? chainIds : appCache.getNodeInfo().nodeChains;
 
     // Query each chain directly using Pact code
     const balancePromises = chainIdsParam.map(c => {

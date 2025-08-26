@@ -22,7 +22,12 @@ import {
   NETWORK_STATISTICS_KEY,
   NODE_INFO_KEY,
 } from './keys';
-import { HashRateAndTotalDifficulty } from '../kadena-server/repository/application/network-repository';
+import {
+  CountersOfEachChain,
+  GetNodeInfo,
+  HashRateAndTotalDifficulty,
+  NetworkStatistics,
+} from '../kadena-server/repository/application/network-repository';
 
 /**
  * Global in-memory cache instance
@@ -30,7 +35,7 @@ import { HashRateAndTotalDifficulty } from '../kadena-server/repository/applicat
  * Standard TTL of 0 means cache items never expire automatically.
  * Instead, we manually refresh data on a set interval.
  */
-export const MEMORY_CACHE = new NodeCache({ stdTTL: 0 });
+const MEMORY_CACHE = new NodeCache({ stdTTL: 0 });
 
 /**
  * Refresh interval for cached data in milliseconds (30 seconds)
@@ -51,7 +56,7 @@ const CACHE_TTL = 1000 * 30; // 30 seconds
  * @param context - The GraphQL resolver context containing repository instances
  */
 export default async function initCache(context: ResolverContext) {
-  const { blockRepository, networkRepository } = context;
+  const { networkRepository } = context;
 
   /**
    * Fetches and caches network hash rate and total difficulty
@@ -60,9 +65,9 @@ export default async function initCache(context: ResolverContext) {
    * If new data cannot be retrieved, it preserves the previous total difficulty
    * value to prevent data loss.
    */
-  async function getHashRateAndTotalDifficulty() {
+  async function initHashRateAndTotalDifficulty() {
     try {
-      const chainIds = await blockRepository.getChainIds();
+      const chainIds = getNodeInfo().nodeChains;
       const { networkHashRate, totalDifficulty } =
         await networkRepository.getHashRateAndTotalDifficulty(chainIds);
 
@@ -89,7 +94,7 @@ export default async function initCache(context: ResolverContext) {
    * These statistics include metrics about blockchain performance,
    * transaction throughput, and other network-wide indicators.
    */
-  async function getNetworkStatistics() {
+  async function initNetworkStatistics() {
     try {
       const networkStatistics = await networkRepository.getNetworkStatistics();
       MEMORY_CACHE.set(NETWORK_STATISTICS_KEY, networkStatistics);
@@ -104,7 +109,7 @@ export default async function initCache(context: ResolverContext) {
    * This includes node version, connectivity status, and other
    * node-specific information that helps monitor the node's health.
    */
-  async function getNodeInfo() {
+  async function initNodeInfo() {
     try {
       const nodeInfo = await networkRepository.getNodeInfo();
       MEMORY_CACHE.set(NODE_INFO_KEY, nodeInfo);
@@ -120,7 +125,7 @@ export default async function initCache(context: ResolverContext) {
    * node-specific information that helps monitor the node's health.
    */
 
-  async function getCountersOfEachChain() {
+  async function initCountersOfEachChain() {
     try {
       const counters = await networkRepository.getCountersOfEachChain();
       MEMORY_CACHE.set(COUNTERS_OF_EACH_CHAIN_KEY, counters);
@@ -141,16 +146,39 @@ export default async function initCache(context: ResolverContext) {
    * This is called both during initialization and on the refresh interval
    * to ensure all cached data is updated in a single batch.
    */
-  const getAllInfo = async () => {
-    await getNetworkStatistics();
-    await getNodeInfo();
-    await getHashRateAndTotalDifficulty();
-    await getCountersOfEachChain();
+  const refreshCacheValues = async () => {
+    await initNetworkStatistics();
+    await initNodeInfo();
+    await initHashRateAndTotalDifficulty();
+    await initCountersOfEachChain();
   };
 
   // Populate cache with initial data
-  getAllInfo();
+  refreshCacheValues();
 
   // Set up periodic refresh of cached data
-  setInterval(getAllInfo, CACHE_TTL);
+  setInterval(refreshCacheValues, CACHE_TTL);
 }
+
+const getNodeInfo = () => {
+  return MEMORY_CACHE.get(NODE_INFO_KEY) as GetNodeInfo;
+};
+
+const getHashRateAndTotalDifficulty = () => {
+  return MEMORY_CACHE.get(HASH_RATE_AND_TOTAL_DIFFICULTY_KEY) as HashRateAndTotalDifficulty;
+};
+
+const getCountersOfEachChain = () => {
+  return MEMORY_CACHE.get(COUNTERS_OF_EACH_CHAIN_KEY) as CountersOfEachChain[];
+};
+
+const getNetworkStatistics = () => {
+  return MEMORY_CACHE.get(NETWORK_STATISTICS_KEY) as NetworkStatistics;
+};
+
+export const appCache = {
+  getNodeInfo,
+  getHashRateAndTotalDifficulty,
+  getCountersOfEachChain,
+  getNetworkStatistics,
+};

@@ -27,15 +27,11 @@ import BlockRepository, {
 } from '../../application/block-repository';
 import { getPageInfo, getPaginationParams } from '../../pagination';
 import { blockValidator } from '../schema-validator/block-schema-validator';
-import Balance from '../../../../models/balance';
 import { handleSingleQuery } from '../../../../utils/raw-query';
 import { formatBalance_NODE, formatGuard_NODE } from '../../../../utils/chainweb-node';
-import { MEMORY_CACHE } from '../../../../cache/init';
-import { NODE_INFO_KEY } from '../../../../cache/keys';
-import { GetNodeInfo } from '../../application/network-repository';
 import { TransactionOutput } from '../../application/transaction-repository';
-import { fungibleAccountValidator } from '@/kadena-server/repository/infra/schema-validator/fungible-account-validator';
 import { fungibleChainAccountValidator } from '@/kadena-server/repository/infra/schema-validator/fungible-chain-account-validator';
+import { appCache } from '@/cache/init';
 
 /**
  * Database implementation of the BlockRepository interface
@@ -352,23 +348,9 @@ export default class BlockDbRepository implements BlockRepository {
     return fungibleAccount;
   }
 
-  /**
-   * Retrieves all chain IDs from the blockchain node
-   *
-   * This method fetches the list of active chain IDs from the cached
-   * node information, which is useful for queries that need to access
-   * data across all chains.
-   *
-   * @returns Promise resolving to an array of chain IDs
-   */
-  async getChainIds() {
-    const nodeInfo = MEMORY_CACHE.get(NODE_INFO_KEY) as GetNodeInfo;
-    return nodeInfo.nodeChains.map(chainId => Number(chainId));
-  }
-
   async getTotalCount(params: GetTotalCountParams) {
     const { chainIds, minimumDepth = 0 } = params;
-    const chainIdsToUse = chainIds?.length ? chainIds : await this.getChainIds();
+    const chainIdsToUse = chainIds?.length ? chainIds : appCache.getNodeInfo().nodeChains;
     const query = `
       SELECT sum("canonicalBlocks") as "totalCount"
       FROM "Counters"
@@ -406,7 +388,7 @@ export default class BlockDbRepository implements BlockRepository {
       last,
     });
 
-    const chainIds = chainIdsParam?.length ? chainIdsParam : await this.getChainIds();
+    const chainIds = chainIdsParam?.length ? chainIdsParam : appCache.getNodeInfo().nodeChains;
 
     if (completedHeights) {
       const query = `
@@ -776,7 +758,10 @@ export default class BlockDbRepository implements BlockRepository {
     quantity: number,
     id?: string,
   ): Promise<BlockOutput[]> {
-    const chainIds = chainIdsParam.length ? chainIdsParam.map(Number) : await this.getChainIds();
+    const chainIds = chainIdsParam.length
+      ? chainIdsParam.map(Number)
+      : appCache.getNodeInfo().nodeChains;
+
     const maxHeights = await this.getMaxHeights();
 
     const queryParams: any[] = [];
@@ -874,9 +859,9 @@ export default class BlockDbRepository implements BlockRepository {
   }
 
   async getMaxHeights(): Promise<Record<string, number>> {
-    const chainIds = await this.getChainIds();
+    const chainIds = appCache.getNodeInfo().nodeChains;
 
-    const maxHeightsByChainIdPromises = chainIds.map(async chainId => {
+    const maxHeightsByChainIdPromises = chainIds.map(async (chainId: string) => {
       const query = `
         SELECT MAX(height) as max_height
         FROM "Blocks"

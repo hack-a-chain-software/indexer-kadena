@@ -68,8 +68,6 @@ export default interface BlockRepository {
 
   getLastBlockHeight(): Promise<number>;
 
-  getChainIds(): Promise<number[]>;
-
   getTotalCountOfBlockTransactions(blockHash: string): Promise<number>;
 
   getLatestBlocks(params: GetLatestBlocksParams): Promise<BlockOutput[]>;

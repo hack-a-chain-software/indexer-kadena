@@ -13,8 +13,6 @@ import NetworkRepository, {
   CountersOfEachChain,
   CurrentChainHeights,
   GetNodeInfo,
-  HashRateAndTotalDifficulty,
-  NetworkStatistics,
 } from '../../application/network-repository';
 import {
   BlockWithDifficulty,
@@ -25,21 +23,14 @@ import { calculateNetworkHashRate } from '../../../../utils/hashrate';
 import { rootPgPool } from '../../../../config/database';
 import { nodeInfoValidator } from '../schema-validator/node-info-validator';
 import { getRequiredEnvString } from '../../../../utils/helpers';
-import { MEMORY_CACHE } from '../../../../cache/init';
-import {
-  COUNTERS_OF_EACH_CHAIN_KEY,
-  HASH_RATE_AND_TOTAL_DIFFICULTY_KEY,
-  NETWORK_STATISTICS_KEY,
-} from '../../../../cache/keys';
+import { appCache } from '@/cache/init';
+
 import { getCirculationNumber } from '../../../../utils/coin-circulation';
 
 // Configuration values from environment variables
 const HOST_URL = getRequiredEnvString('NODE_API_URL');
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const NETWORK_ID = getRequiredEnvString('SYNC_NETWORK');
-
-// Cache key for node information
-const NODE_INFO_KEY = 'NODE_INFO_KEY';
 
 /**
  * Database and API implementation of the NetworkRepository interface
@@ -158,7 +149,7 @@ export default class NetworkDbRepository implements NetworkRepository {
    * @param chainIds - Array of chain IDs to include in the difficulty calculations
    * @returns Promise resolving to hash rate and total difficulty values
    */
-  async getHashRateAndTotalDifficulty(chainIds: number[]) {
+  async getHashRateAndTotalDifficulty(chainIds: string[]) {
     const lastBlock = await BlockModel.findOne({
       order: [['height', 'DESC']],
       attributes: ['height'],
@@ -268,14 +259,10 @@ export default class NetworkDbRepository implements NetworkRepository {
    * @returns Promise resolving to combined network information
    */
   async getAllInfo() {
-    const nodeInfo = MEMORY_CACHE.get(NODE_INFO_KEY) as GetNodeInfo;
-    const networkStatistics = MEMORY_CACHE.get(NETWORK_STATISTICS_KEY) as NetworkStatistics;
-    const HashRateAndTotalDifficulty = MEMORY_CACHE.get(
-      HASH_RATE_AND_TOTAL_DIFFICULTY_KEY,
-    ) as HashRateAndTotalDifficulty;
-    const countersOfEachChain = MEMORY_CACHE.get(
-      COUNTERS_OF_EACH_CHAIN_KEY,
-    ) as CountersOfEachChain[];
+    const nodeInfo = appCache.getNodeInfo();
+    const networkStatistics = appCache.getNetworkStatistics();
+    const HashRateAndTotalDifficulty = appCache.getHashRateAndTotalDifficulty();
+    const countersOfEachChain = appCache.getCountersOfEachChain();
 
     return {
       ...nodeInfo,

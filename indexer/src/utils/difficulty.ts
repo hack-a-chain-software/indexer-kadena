@@ -50,7 +50,7 @@ interface IBlockGroup {
 export function calculateTotalDifficulty(
   currentHeight: bigint,
   blocks: BlockWithDifficulty[],
-  chainIds: number[],
+  chainIds: string[],
 ): bigint | undefined {
   // Look at the current height and up to 3 blocks backward
   // This helps find complete sets of blocks in case of missing data at the exact height
@@ -82,7 +82,7 @@ export function calculateTotalDifficulty(
       let totalDifficulty = 0n;
       // Process each chain separately
       for (const chainId of chainIds) {
-        const blocks = blocksGroupedByChainId[chainId.toString()];
+        const blocks = blocksGroupedByChainId[chainId];
 
         if (blocks) {
           // Calculate total difficulty for this chain
