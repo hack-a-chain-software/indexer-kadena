@@ -99,7 +99,7 @@ export interface GetTokensParams extends PaginationsParams {}
  * Parameters for fetching account balances with pagination and filters.
  */
 export interface GetAccountBalancesParams extends PaginationsParams {
-  accountName: string;
+  accountName?: string | null;
   chainIds?: string[] | null;
   module?: string | null;
 }
@@ -168,7 +168,12 @@ export default interface BalanceRepository {
    */
   getAccountBalances(params: GetAccountBalancesParams): Promise<{
     pageInfo: PageInfo;
-    edges: ConnectionEdge<{ module: string; chainId: string; balance: string }>[];
+    edges: ConnectionEdge<{
+      accountName: string;
+      module: string;
+      chainId: string;
+      balance: string;
+    }>[];
   }>;
 
   /**

@@ -7,6 +7,9 @@ export const balanceQueryResolver: QueryResolvers<ResolverContext>['balance'] = 
   context,
 ) => {
   const { accountName, chainIds, module, after, before, first, last } = args;
+  if (!accountName && !module) {
+    throw new Error('Either accountName or module must be provided.');
+  }
   const output = await context.balanceRepository.getAccountBalances({
     accountName,
     chainIds: chainIds ?? null,

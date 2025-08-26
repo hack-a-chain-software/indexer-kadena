@@ -124,7 +124,7 @@ type Query {
   Retrieve live balances for a given account with optional filtering by chains and module. Default page size is 20.
   """
   balance(
-    accountName: String!
+    accountName: String
     chainIds: [String!]
     module: String
     after: String
@@ -478,6 +478,7 @@ type QueryBalanceConnectionEdge {
 }
 
 type BalanceNode {
+  accountName: String!
   module: String!
   chainId: String!
   balance: String!
