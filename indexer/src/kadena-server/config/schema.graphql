@@ -432,6 +432,11 @@ type Query {
   ): DexMetrics! @complexity(value: 1)
 
   """
+  Get last price for a specific token in KDA
+  """
+  lastTokenPriceInKda(moduleName: String!): Decimal
+
+  """
   Get price for a specific token
   """
   tokenPrice(tokenAddress: String!, protocolAddress: String): TokenPrice @complexity(value: 1)
