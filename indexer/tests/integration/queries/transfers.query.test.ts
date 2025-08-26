@@ -13,11 +13,13 @@ import { transfersFixture009 } from '../fixtures/transfers/transfers.fixture.009
 import { transfersFixture010 } from '../fixtures/transfers/transfers.fixture.010';
 import { transfersFixture011 } from '../fixtures/transfers/transfers.fixture.011';
 import { transfersFixture012 } from '../fixtures/transfers/transfers.fixture.012';
+import { transfersFixture013 } from '../fixtures/transfers/transfers.fixture.013';
+import { transfersFixture014 } from '../fixtures/transfers/transfers.fixture.014';
 
 const client = new GraphQLClient(process.env.API_URL ?? 'http://localhost:3001/graphql');
 
 describe('Transfers', () => {
-  it('#001 - requestKey', async () => {
+  it('requestKey', async () => {
     const query = getTransfersQuery({
       requestKey: 'RNxoNCcQriEZU3p_qLSiJAo7Bi-0-Oe7NkjkPFOKr70',
     });
@@ -26,7 +28,7 @@ describe('Transfers', () => {
     expect(transfersFixture001.data).toMatchObject(data);
   });
 
-  it('#002 - blockHash', async () => {
+  it('blockHash', async () => {
     const query = getTransfersQueryTwo({
       blockHash: 'OT7c7X4Mql24dslm4Hvsc5tyKrjjxPDImyopqlRJKiQ',
     });
@@ -35,10 +37,10 @@ describe('Transfers', () => {
     expect(transfersFixture002.data).toMatchObject(data);
   });
 
-  it('#003 - accountName + after + first', async () => {
+  it('accountName + after + first', async () => {
     const query = getTransfersQueryTwo({
       accountName: 'k:684630cdf2d1107a459a6c6004b74cd4f4437e746e6f2192c55981c2fc524fd5',
-      after: 'MTc1NDY1ODMzMTozNzg1OTQ0NTQ=',
+      after: 'MTc1NjEyNjI0NDozODQ5ODk0MjE=',
       first: 25,
     });
 
@@ -46,10 +48,10 @@ describe('Transfers', () => {
     expect(transfersFixture003.data).toMatchObject(data);
   });
 
-  it('#004 - chainId + after + first', async () => {
+  it('chainId + after + first', async () => {
     const query = getTransfersQueryTwo({
       chainId: '19',
-      after: 'MTc1NDY3NTU1MjozNzg2NTY4MTU=',
+      after: 'MTc1NjEzNTc1MTozODUwMjM3NTM=',
       first: 25,
     });
 
@@ -57,11 +59,11 @@ describe('Transfers', () => {
     expect(transfersFixture004.data).toMatchObject(data);
   });
 
-  it('#005 - accountName + chainId + after + first', async () => {
+  it('accountName + chainId + after + first', async () => {
     const query = getTransfersQueryTwo({
       accountName: 'k:684630cdf2d1107a459a6c6004b74cd4f4437e746e6f2192c55981c2fc524fd5',
       chainId: '0',
-      after: 'MTc1NDY0MzMxNTozNzg1Mzk2NDI=',
+      after: 'MTc1NjEyNjI0NDozODQ5ODk0MjE=',
       first: 25,
     });
 
@@ -69,11 +71,11 @@ describe('Transfers', () => {
     expect(transfersFixture005.data).toMatchObject(data);
   });
 
-  it('#006 - accountName + fungibleName + after + first', async () => {
+  it('accountName + fungibleName + after + first', async () => {
     const query = getTransfersQueryTwo({
       accountName: 'k:912da3f72ba0e48a1c7a2ad40b554541a382473284627861ebfa3affeaadbe5e',
       fungibleName: 'free.crankk01',
-      after: 'MTc1MjQ0NDIwNzo5NTU3MzA3OA==',
+      after: 'MTc1NTA0ODYxNTozODAwODg0NDI=',
       first: 25,
     });
 
@@ -81,11 +83,11 @@ describe('Transfers', () => {
     expect(transfersFixture006.data).toMatchObject(data);
   });
 
-  it('#007 - fungibleName + chainId + after + first', async () => {
+  it('fungibleName + chainId + after + first', async () => {
     const query = getTransfersQueryTwo({
       fungibleName: 'free.crankk01',
       chainId: '0',
-      after: 'MTc1NDY3ODA1ODozNzg2NjU5MzE=',
+      after: 'MTc1NjEzNjE2MjozODUwMjUwODU=',
       first: 25,
     });
 
@@ -93,12 +95,12 @@ describe('Transfers', () => {
     expect(transfersFixture007.data).toMatchObject(data);
   });
 
-  it('#008 - accountName + fungibleName + chainId + after + first', async () => {
+  it('accountName + fungibleName + chainId + after + first', async () => {
     const query = getTransfersQueryTwo({
       accountName: 'k:912da3f72ba0e48a1c7a2ad40b554541a382473284627861ebfa3affeaadbe5e',
       fungibleName: 'coin',
       chainId: '19',
-      after: 'MTcxMzMzODgxNjo1NTg1MzQ4Mg==',
+      after: 'MTcxNTMzODU2Njo1NDkwOTU4OQ==',
       first: 25,
     });
 
@@ -106,24 +108,24 @@ describe('Transfers', () => {
     expect(transfersFixture008.data).toMatchObject(data);
   });
 
-  it('#009 - accountName + fungibleName + chainId + last', async () => {
+  it('accountName + fungibleName + chainId + last + before', async () => {
     const query = getTransfersQueryTwo({
       accountName: 'k:912da3f72ba0e48a1c7a2ad40b554541a382473284627861ebfa3affeaadbe5e',
       fungibleName: 'coin',
       chainId: '19',
       last: 25,
+      before: 'MTcwODIwMDA5MDo1NzQ5MzU3Mw==',
     });
 
     const data = await client.request(query);
     expect(transfersFixture009.data).toMatchObject(data);
   });
 
-  it('#010 - accountName + fungibleName + chainId + before + last', async () => {
+  it('accountName + fungibleName + chainId + last', async () => {
     const query = getTransfersQueryTwo({
       accountName: 'k:912da3f72ba0e48a1c7a2ad40b554541a382473284627861ebfa3affeaadbe5e',
       fungibleName: 'coin',
       chainId: '19',
-      before: 'MTcxMTA4Njk5OTo1NjczMzcxOQ==',
       last: 25,
     });
 
@@ -131,11 +133,11 @@ describe('Transfers', () => {
     expect(transfersFixture010.data).toMatchObject(data);
   });
 
-  it('#011 - accountName + isNFT + after + first', async () => {
+  it('accountName + isNFT + after + first', async () => {
     const query = getNftTransfersQuery({
       accountName: 'k:ef4a368a2d66e50ae885e981cd6e139a0bcb8b469e5ad18ebc55a477dbdefdec',
       isNFT: true,
-      after: 'MTczOTA0ODQ0MjozODM2Mzg1NDg=',
+      after: 'MTc1NDAwMDA3MTozODM1NDU4MzE=',
       first: 25,
     });
 
@@ -143,10 +145,10 @@ describe('Transfers', () => {
     expect(transfersFixture011.data).toMatchObject(data);
   });
 
-  it('#012 - isNFT + after + first', async () => {
+  it('isNFT + after + first', async () => {
     const query = getNftTransfersQuery({
       isNFT: true,
-      after: 'MTc1NTQ0NDc2MTozODM3NTkxNDk=',
+      after: 'MTc1NTQ0NDgyNDozODM3NTkxNTY=',
       first: 25,
     });
 
@@ -154,7 +156,7 @@ describe('Transfers', () => {
     expect(transfersFixture012.data).toMatchObject(data);
   });
 
-  it('#013 - isNFT + fungibleName', async () => {
+  it('isNFT + fungibleName', async () => {
     const query = getNftTransfersQuery({
       isNFT: true,
       fungibleName: 'k:ef4a368a2d66e50ae885e981cd6e139a0bcb8b469e5ad18ebc55a477dbdefdec',
@@ -167,5 +169,27 @@ describe('Transfers', () => {
         ],
       },
     });
+  });
+
+  it('accountName + first + after (many transfers)', async () => {
+    const query = getTransfersQueryTwo({
+      accountName: 'k:c903a4ae7cbd4ddbc0350d40562da52a0a770a5b1fb0e3d9882b22c8c7b63bcc',
+      after: 'MTc1NjEyNjY1MzozODQ5OTA3NjI=',
+      first: 20,
+    });
+
+    const data = await client.request(query);
+    expect(transfersFixture013.data).toMatchObject(data);
+  });
+
+  it('accountName + last + before (many transfers)', async () => {
+    const query = getTransfersQueryTwo({
+      accountName: 'k:c903a4ae7cbd4ddbc0350d40562da52a0a770a5b1fb0e3d9882b22c8c7b63bcc',
+      last: 20,
+      before: 'MTY4MTY0OTgzNDozNTM4NzA1ODU=',
+    });
+
+    const data = await client.request(query);
+    expect(transfersFixture014.data).toMatchObject(data);
   });
 });

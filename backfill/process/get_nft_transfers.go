@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-func GetNftTransfers(network string, chainId int, events []fetch.Event, reqKey string, transactionId int64) []repository.TransferAttributes {
+func GetNftTransfers(network string, chainId int, events []fetch.Event, reqKey string, transactionId int64, txCreationTime string) []repository.TransferAttributes {
 	const ReconcileSignature = "RECONCILE"
 	const TransferNftParamsLength = 4
 
@@ -73,6 +73,7 @@ func GetNftTransfers(network string, chainId int, events []fetch.Event, reqKey s
 				HasTokenId:    tokenId != nil,
 				TokenId:       tokenId,
 				Type:          "poly-fungible",
+				CreationTime:  txCreationTime,
 				OrderIndex:    len(transfers),
 			}
 
