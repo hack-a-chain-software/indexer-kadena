@@ -29,6 +29,7 @@ export type Scalars = {
 
 export type BalanceNode = {
   __typename?: 'BalanceNode';
+  accountName: Scalars['String']['output'];
   balance: Scalars['String']['output'];
   chainId: Scalars['String']['output'];
   module: Scalars['String']['output'];
@@ -807,7 +808,7 @@ export type Query = {
 };
 
 export type QueryBalanceArgs = {
-  accountName: Scalars['String']['input'];
+  accountName?: InputMaybe<Scalars['String']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   chainIds?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -2171,6 +2172,7 @@ export type BalanceNodeResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['BalanceNode'] = ResolversParentTypes['BalanceNode'],
 > = {
+  accountName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   balance?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   chainId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   module?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2972,7 +2974,7 @@ export type QueryResolvers<
     ResolversTypes['QueryBalanceConnection'],
     ParentType,
     ContextType,
-    RequireFields<QueryBalanceArgs, 'accountName'>
+    Partial<QueryBalanceArgs>
   >;
   block?: Resolver<
     Maybe<ResolversTypes['Block']>,
