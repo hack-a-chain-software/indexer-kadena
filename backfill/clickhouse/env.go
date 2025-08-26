@@ -33,7 +33,7 @@ func LoadCHEnv(envFilePath string) {
         ClickHouseUser:            getEnvSoft("CLICKHOUSE_USER"),
         ClickHousePassword:        getEnvSoft("CLICKHOUSE_PASSWORD"),
         ClickHouseDatabase:        getEnvSoft("CLICKHOUSE_DATABASE"),
-        Network:                   getEnvHard("SYNC_NETWORK"),
+        Network:                   getEnvHard("NETWORK"),
         ChainId:                   getEnvAsIntSoft("CHAIN_ID"),
         SyncBaseUrl:               getEnvHard("SYNC_BASE_URL"),
         SyncMinHeight:             getEnvAsIntSoft("SYNC_MIN_HEIGHT"),
