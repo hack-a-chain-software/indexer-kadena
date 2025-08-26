@@ -1400,13 +1400,14 @@ export type TransactionSignature = {
 
 export type TransactionSummary = {
   __typename?: 'TransactionSummary';
+  badResult?: Maybe<Scalars['String']['output']>;
   canonical: Scalars['Boolean']['output'];
-  chainId: Scalars['String']['output'];
-  creationTime: Scalars['String']['output'];
+  chainId: Scalars['BigInt']['output'];
+  creationTime: Scalars['DateTime']['output'];
   gas: Scalars['String']['output'];
   gasLimit: Scalars['String']['output'];
   gasPrice: Scalars['String']['output'];
-  height: Scalars['String']['output'];
+  height: Scalars['BigInt']['output'];
   requestKey: Scalars['String']['output'];
   sender: Scalars['String']['output'];
 };
@@ -3672,13 +3673,14 @@ export type TransactionSummaryResolvers<
   ParentType extends
     ResolversParentTypes['TransactionSummary'] = ResolversParentTypes['TransactionSummary'],
 > = {
+  badResult?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   canonical?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  chainId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  creationTime?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  chainId?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  creationTime?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   gas?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   gasLimit?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   gasPrice?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  height?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  height?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   requestKey?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   sender?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

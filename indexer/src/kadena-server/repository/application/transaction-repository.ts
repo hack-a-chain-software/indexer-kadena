@@ -112,15 +112,16 @@ export type TransactionOutput = Omit<Transaction, 'cmd'> & {
 };
 
 export type TransactionByPactCodeOutput = {
-  creationTime: string;
   requestKey: string;
-  chainId: string;
-  height: string;
+  height: any;
+  chainId: any;
   canonical: boolean;
+  creationTime: Date;
+  badResult: any;
+  sender: string;
   gas: string;
   gasLimit: string;
   gasPrice: string;
-  sender: string;
 };
 
 /**
