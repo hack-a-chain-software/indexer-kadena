@@ -770,6 +770,8 @@ export type Query = {
   graphConfiguration: GraphConfiguration;
   /** Get the height of the block with the highest height. */
   lastBlockHeight?: Maybe<Scalars['BigInt']['output']>;
+  /** Get last price for a specific token in KDA */
+  lastTokenPriceInKda?: Maybe<Scalars['Decimal']['output']>;
   /** Get user's liquidity positions */
   liquidityPositions: LiquidityPositionsConnection;
   /** Get information about the network. */
@@ -902,6 +904,10 @@ export type QueryFungibleChainAccountsByPublicKeyArgs = {
 
 export type QueryGasLimitEstimateArgs = {
   input: Array<Scalars['String']['input']>;
+};
+
+export type QueryLastTokenPriceInKdaArgs = {
+  moduleName: Scalars['String']['input'];
 };
 
 export type QueryLiquidityPositionsArgs = {
@@ -3054,6 +3060,12 @@ export type QueryResolvers<
   >;
   graphConfiguration?: Resolver<ResolversTypes['GraphConfiguration'], ParentType, ContextType>;
   lastBlockHeight?: Resolver<Maybe<ResolversTypes['BigInt']>, ParentType, ContextType>;
+  lastTokenPriceInKda?: Resolver<
+    Maybe<ResolversTypes['Decimal']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryLastTokenPriceInKdaArgs, 'moduleName'>
+  >;
   liquidityPositions?: Resolver<
     ResolversTypes['LiquidityPositionsConnection'],
     ParentType,
