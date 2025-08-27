@@ -29,6 +29,7 @@ import {
   startMissingBlocksBeforeStreamingProcess,
 } from '@/services/missing';
 import { EventAttributes } from '@/models/event';
+import { startPairCreation } from '@/services/start-pair-creation';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
@@ -158,6 +159,9 @@ export async function startStreaming() {
 
   // Schedule a periodic check of canonical path for all chains every 1 hour
   setInterval(checkCanonicalPathForAllChains, 1000 * 60 * 60 * 1);
+
+  // Schedule a periodic check of pair creation events every 2 minutes
+  setInterval(startPairCreation, 1000 * 60 * 2);
 }
 
 /**

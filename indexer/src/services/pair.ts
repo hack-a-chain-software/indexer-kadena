@@ -5,6 +5,7 @@ import { Op, WhereOptions, Transaction as SequelizeTransaction } from 'sequelize
 import Transaction from '../models/transaction';
 import { DEFAULT_PROTOCOL } from '../kadena-server/config/apollo-server-config';
 import Block from '@/models/block';
+import { sequelize } from '@/config/database';
 
 const MODULE_NAMES = [`${DEFAULT_PROTOCOL}`, `${DEFAULT_PROTOCOL}-tokens`];
 const EVENT_TYPES = ['CREATE_PAIR', 'UPDATE', 'SWAP', 'ADD_LIQUIDITY', 'REMOVE_LIQUIDITY'];
@@ -123,9 +124,9 @@ export async function backfillPairEvents(
   endBlock?: number,
   batchSize: number = 1000,
 ): Promise<void> {
-  if (LAST_BLOCK_ID === null) {
-    throw new Error('BACKFILL_PAIR_EVENTS_LAST_BLOCK_ID is not set');
-  }
+  // if (LAST_BLOCK_ID === null) {
+  //   throw new Error('BACKFILL_PAIR_EVENTS_LAST_BLOCK_ID is not set');
+  // }
 
   const whereClause: WhereOptions<EventAttributes> = {
     module: {
@@ -164,10 +165,10 @@ export async function backfillPairEvents(
           include: [
             {
               model: Block,
-              as: 'block',
               attributes: ['height'],
               where: {
                 canonical: true,
+                height: 6121875,
               },
             },
           ],
@@ -182,14 +183,22 @@ export async function backfillPairEvents(
       continue;
     }
 
-    const progressPercentage = ((processedCount / LAST_BLOCK_ID) * 100).toFixed(2);
-    console.log(
-      `Processing batch of ${events.length} events starting from offset ${processedCount} (${progressPercentage}% complete)`,
-    );
-    await processPairCreationEvents(
-      events.map(event => event.get({ plain: true })),
-      null,
-    );
+    // const progressPercentage = ((processedCount / LAST_BLOCK_ID) * 100).toFixed(2);
+    // console.log(
+    //   `Processing batch of ${events.length} events starting from offset ${processedCount} (${progressPercentage}% complete)`,
+    // );
+
+    const tx = await sequelize.transaction();
+    try {
+      await processPairCreationEvents(
+        events.map(event => event.get({ plain: true })),
+        tx,
+      );
+      await tx.commit();
+    } catch (error) {
+      await tx.rollback();
+      console.error('[ERROR][DATA][DATA_CORRUPT] Error processing pair creation events:', error);
+    }
     processedCount += events.length;
 
     const endTime = Date.now();
@@ -202,4 +211,5 @@ export async function backfillPairEvents(
   }
 
   console.log(`Backfill completed. Processed ${processedCount} events.`);
+  process.exit(0);
 }
