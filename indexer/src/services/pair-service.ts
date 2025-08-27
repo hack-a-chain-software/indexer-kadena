@@ -499,7 +499,7 @@ export class PairService {
       transaction: tx,
     });
 
-// Update or create pool stats
+    // Update or create pool stats
     const existingPoolStats = await PoolStats.findOne({
       where: { pairId, timestamp: todayUTC },
       transaction: tx,
