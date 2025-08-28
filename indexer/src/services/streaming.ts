@@ -54,7 +54,7 @@ const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
 export async function startStreaming() {
   console.info('[INFO][WORKER][BIZ_FLOW] Starting blockchain streaming service ...');
 
-  await startMissingBlocksBeforeStreamingProcess();
+  // await startMissingBlocksBeforeStreamingProcess();
 
   const nextBlocksToProcess: any[] = [];
   const blocksRecentlyProcessed = new Set<string>();
@@ -161,7 +161,12 @@ export async function startStreaming() {
   setInterval(checkCanonicalPathForAllChains, 1000 * 60 * 60 * 1);
 
   // Schedule a periodic check of pair creation events every 2 minutes
-  setInterval(startPairCreation, 1000 * 60 * 2);
+  setInterval(startPairCreation, 1000 * 30);
+
+  setInterval(() => {
+    const memUsage = process.memoryUsage();
+    console.log(`Memory: ${Math.round(memUsage.heapUsed / 1024 / 1024)} MB`);
+  }, 1000 * 10);
 }
 
 /**

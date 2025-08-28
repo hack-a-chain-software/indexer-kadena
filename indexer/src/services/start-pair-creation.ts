@@ -3,26 +3,39 @@ import Block from '@/models/block';
 import Event, { EventAttributes } from '@/models/event';
 import Transaction from '@/models/transaction';
 import { processPairCreationEvents } from '@/services/pair';
+import { isNullOrUndefined } from '@/utils/helpers';
 import { Op, Transaction as SeqTransaction } from 'sequelize';
 
-let lastHeight: number | null = null;
+let lastHeightProcessed: number | null = null;
 const BLOCK_DEPTH = 6;
 
 export async function startPairCreation() {
   let pairCreationTx: SeqTransaction;
   let events: EventAttributes[] = [];
   let currentHeight: number;
+
+  const startTime = Date.now();
   try {
     const result: any = await rootPgPool.query('SELECT max(height) FROM "Blocks"');
     const maxHeight = result.rows?.[0].max;
-    currentHeight = maxHeight - BLOCK_DEPTH;
 
-    if (lastHeight === null) {
-      lastHeight = currentHeight - 10;
+    if (isNullOrUndefined(maxHeight)) {
+      console.error('[ERROR][DATA][DATA_CORRUPT] Failed to get max height from database');
+      return;
     }
 
-    if (currentHeight - lastHeight <= 0) {
-      console.info('[INFO][SYNC][STREAMING] No new blocks to process');
+    // maxheight = 66; currentheight = 60; lastheightprocessed = 58
+    // [60, 61]
+    currentHeight = maxHeight - BLOCK_DEPTH;
+    if (lastHeightProcessed === null) {
+      lastHeightProcessed = currentHeight - 10;
+    }
+
+    if (currentHeight - lastHeightProcessed <= 0) {
+      console.info('[INFO][SYNC][STREAMING] No new blocks to process', {
+        lastHeightProcessed,
+        currentHeight,
+      });
       return;
     }
 
@@ -36,8 +49,8 @@ export async function startPairCreation() {
               model: Block,
               where: {
                 height: {
-                  [Op.gt]: lastHeight,
-                  [Op.lte]: currentHeight,
+                  [Op.gt]: 6121875,
+                  [Op.lte]: 6121875,
                 },
               },
             },
@@ -60,7 +73,16 @@ export async function startPairCreation() {
   try {
     await processPairCreationEvents(events, pairCreationTx);
     await pairCreationTx.commit();
-    lastHeight = currentHeight;
+    console.info('[INFO][SYNC][STREAMING] Pair creation events processed', {
+      lastHeightProcessed,
+      currentHeight,
+    });
+    console.info(
+      '[INFO][SYNC][STREAMING] Pair creation events processed in',
+      Date.now() - startTime,
+      'ms',
+    );
+    lastHeightProcessed = currentHeight;
   } catch (error) {
     await pairCreationTx.rollback();
     console.error('[ERROR][DATA][DATA_CORRUPT] Error processing pair creation events:', error);
