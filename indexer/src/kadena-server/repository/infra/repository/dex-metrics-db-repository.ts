@@ -44,15 +44,26 @@ export default class DexMetricsDbRepository implements DexMetricsRepository {
 
     // Get TVL history
     const tvlHistoryQuery = `
-      SELECT 
-        date_trunc('day', pc.timestamp) as timestamp,
-        SUM(CAST(pc."tvlUsd" AS DECIMAL)) as value
-      FROM "PoolCharts" pc
-      JOIN "Pairs" p ON p.id = pc."pairId"
-      WHERE pc.timestamp BETWEEN $1 AND $2
-      AND p.address = $3
-      GROUP BY date_trunc('day', pc.timestamp)
-      ORDER BY timestamp ASC
+     SELECT
+        date_trunc('day', t.timestamp) AS timestamp,
+        SUM(CAST(t."tvlUsd" AS DECIMAL)) AS value
+      FROM (
+        SELECT
+          pc."pairId",
+          pc."tvlUsd",
+          pc."timestamp",
+          ROW_NUMBER() OVER (
+            PARTITION BY pc."pairId", date_trunc('day', pc."timestamp")
+            ORDER BY pc."timestamp" DESC
+          ) as rn
+        FROM "PoolCharts" pc
+        JOIN "Pairs" p ON p.id = pc."pairId"
+        WHERE pc.timestamp BETWEEN $1 AND $2
+          AND p.address = $3
+      ) t
+      WHERE t.rn = 1
+      GROUP BY date_trunc('day', t.timestamp)
+      ORDER BY timestamp ASC;
     `;
 
     const tvlHistory = await sequelize.query(tvlHistoryQuery, {
