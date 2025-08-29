@@ -18,6 +18,7 @@ import { startStreaming } from './services/streaming';
 import { backfillPairEvents } from './services/pair';
 import { setupAssociations } from './models/setup-associations';
 import { PriceUpdaterService } from '@/services/price/price-updater.service';
+import { startOutboxConsumer } from '@/services/outbox-consumer';
 
 /**
  * Command-line interface configuration using Commander.
@@ -53,6 +54,7 @@ async function main() {
     if (options.streaming) {
       await startStreaming();
     } else if (options.graphql) {
+      startOutboxConsumer();
       await startGraphqlServer();
     } else if (options.backfillPairs) {
       await backfillPairEvents();

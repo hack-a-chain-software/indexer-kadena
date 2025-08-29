@@ -23,6 +23,7 @@ import NetworkRepository from '../repository/application/network-repository';
 import PoolRepository from '../repository/application/pool-repository';
 import BlockDbRepository from '../repository/infra/repository/block-db-repository';
 import TransactionDbRepository from '../repository/infra/repository/transaction-db-repository';
+import { TransactionSearchRepository } from '../repository/infra/repository/transaction-search-repository';
 import BalanceDbRepository from '../repository/infra/repository/balance-db-repository';
 import EventDbRepository from '../repository/infra/repository/event-db-repository';
 import TransferDbRepository from '../repository/infra/repository/transfer-db-repository';
@@ -111,6 +112,7 @@ export type ResolverContext = {
   eventRepository: EventRepository;
   transferRepository: TransferRepository;
   transactionRepository: TransactionRepository;
+  transactionSearchRepository: TransactionSearchRepository;
   networkRepository: NetworkRepository;
   poolRepository: PoolRepository;
   gasGateway: GasGateway;
@@ -140,9 +142,11 @@ export type ResolverContext = {
 export const createGraphqlContext = () => {
   const blockRepository = new BlockDbRepository();
   const transactionRepository = new TransactionDbRepository();
+  const transactionSearchRepository = new TransactionSearchRepository();
   const context = {
     blockRepository,
     transactionRepository,
+    transactionSearchRepository,
     balanceRepository: new BalanceDbRepository(),
     eventRepository: new EventDbRepository(),
     transferRepository: new TransferDbRepository(),

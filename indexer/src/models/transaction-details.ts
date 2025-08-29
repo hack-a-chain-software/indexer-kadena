@@ -18,6 +18,7 @@ export interface TransactionDetailsAttributes {
   sigs: object;
   step: number;
   ttl: string;
+  code_indexed?: boolean;
 }
 
 export interface TransactionDetailsCreationAttributes
@@ -147,6 +148,12 @@ TransactionDetails.init(
     ttl: {
       type: DataTypes.STRING,
       comment: 'The time-to-live of the transaction.',
+    },
+    code_indexed: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: 'Flag indicating whether this transaction code was indexed in ClickHouse',
     },
   },
   {
