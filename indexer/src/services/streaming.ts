@@ -78,7 +78,7 @@ export async function startStreaming() {
   // Handle connection errors
   eventSource.onerror = (error: any) => {
     // TODO: [RETRY-OPTIMIZATION] Consider adding retry/backoff or a reconnect strategy; at minimum emit a metric.
-    console.error('[ERROR][NET][CONN_LOST] EventSource connection error:', error);
+    console.error('[ERROR][NET][CONN_LOST] EventSource connection error', { error });
   };
 
   const processBlock = async (block: any) => {
@@ -113,10 +113,14 @@ export async function startStreaming() {
       blocksRecentlyProcessed.add(blockIdentifier);
     } catch (error) {
       await tx.rollback();
-      // TODO: [LOGS] Enrich with block identifiers (hash, height, chainId) for better traceability
       // TODO: [OBS][METRICS] Increment 'stream.block_failures' with tags { chainId, reason: 'processing' }
       // TODO: [STREAM][DLQ] Persist failed block header to DLQ storage for later reprocessing
-      console.error('[ERROR][DATA][DATA_CORRUPT] Failed to process block event:', error);
+      console.error('[ERROR][DATA][DATA_CORRUPT] Failed to process block event', {
+        error,
+        chainId: block?.header?.chainId,
+        height: block?.header?.height,
+        hash: block?.header?.hash,
+      });
     }
   };
 

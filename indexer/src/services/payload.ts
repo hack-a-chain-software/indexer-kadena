@@ -156,7 +156,12 @@ export async function processTransaction(
   try {
     cmdData = JSON.parse(transactionInfo.cmd);
   } catch (error) {
-    console.error(`[ERROR][DATA][DATA_FORMAT] Failed to parse transaction command JSON: ${error}`);
+    console.error('[ERROR][DATA][DATA_FORMAT] Failed to parse transaction command JSON', {
+      error,
+      chainId: block.chainId,
+      height: (block as any)?.height,
+      txHash: transactionInfo?.hash,
+    });
     throw error;
   }
 
@@ -374,9 +379,14 @@ export async function processTransaction(
       gasprice: transactionDetailsAttributes.gasprice,
     };
   } catch (error) {
-    console.error(
-      `[ERROR][DB][DATA_CORRUPT] Failed to save transaction ${transactionInfo.hash}: ${error}`,
-    );
+    // If an entire batch (or this transaction inside batch) failed before commit, treat as major in classifier
+    console.error('[ERROR][DB][DATA_CORRUPT] Failed to save transaction', {
+      error,
+      chainId: transactionAttributes.chainId,
+      height: (block as any)?.height,
+      txHash: transactionInfo?.hash,
+      blockId: (block as any)?.id,
+    });
     throw error;
   }
 }

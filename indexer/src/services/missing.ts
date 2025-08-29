@@ -15,7 +15,8 @@ export async function startMissingBlocksBeforeStreamingProcess() {
   } catch (error) {
     throw new Error(
       `[ERROR][SYNC][MISSING] Error starting missing blocks before streaming process:
-      ${(error as Error)?.message}`);
+      ${(error as Error)?.message}`,
+    );
   }
 }
 
@@ -75,12 +76,12 @@ async function checkBigBlockGapsForAllChains() {
   );
 
   if (chainsWithMoreThan7WeeksMissingBlocks.length > 0) {
-    console.error(
-      `[ERROR][SYNC][MISSING] These chains exceed ${maxMissingBlocks} missing blocks: ${chainsWithMoreThan7WeeksMissingBlocks.map(c => c.chainId)}`,
-    );
-    console.error(
-      `[ERROR][SYNC][MISSING] Please backfill these chains individually. Exiting...`,
-    );
+    console.error(`[ERROR][SYNC][MISSING] These chains exceed ${maxMissingBlocks} missing blocks`, {
+      chains: chainsWithMoreThan7WeeksMissingBlocks.map(c => c.chainId),
+    });
+    console.error(`[ERROR][SYNC][MISSING] Please backfill these chains individually. Exiting...`, {
+      severityHint: 'degraded',
+    });
     process.exit(1);
   }
 
@@ -274,7 +275,9 @@ async function checkCanonicalPathStartingFromSpecificBlock(
   }
 
   if (ancestors.length < CANONICAL_BASE_LINE_LENGTH) {
-    console.info(`[INFO][SYNC][MISSING] Failed to build complete canonical path after ${maxAttempts} attempts. Only found ${ancestors.length} blocks.`);
+    console.info(
+      `[INFO][SYNC][MISSING] Failed to build complete canonical path after ${maxAttempts} attempts. Only found ${ancestors.length} blocks.`,
+    );
     return false;
   }
 
