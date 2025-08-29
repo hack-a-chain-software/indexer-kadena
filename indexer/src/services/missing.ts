@@ -13,10 +13,11 @@ export async function startMissingBlocksBeforeStreamingProcess() {
     const chainIdDiffs = await checkBigBlockGapsForAllChains();
     await fillChainGaps(chainIdDiffs);
   } catch (error) {
-    throw new Error(
-      `[ERROR][SYNC][MISSING] Error starting missing blocks before streaming process:
-      ${(error as Error)?.message}`,
+    console.error(
+      `[ERROR][SYNC][MISSING] Error starting missing blocks before streaming process:`,
+      error,
     );
+    throw error;
   }
 }
 
@@ -275,10 +276,9 @@ async function checkCanonicalPathStartingFromSpecificBlock(
   }
 
   if (ancestors.length < CANONICAL_BASE_LINE_LENGTH) {
-    console.info(
+    throw new Error(
       `[INFO][SYNC][MISSING] Failed to build complete canonical path after ${maxAttempts} attempts. Only found ${ancestors.length} blocks.`,
     );
-    return false;
   }
 
   return attempts > 0;
