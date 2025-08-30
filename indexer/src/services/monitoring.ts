@@ -134,11 +134,15 @@ export function initializeErrorMonitoring(): void {
     }
 
     // Ignore GraphQL-internal logs if requested (by tag)
-    if (typeof message === 'string' && message.includes('[ERROR][GRAPHQL]')) {
+    if (typeof message === 'string' && message.includes('[GRAPHQL]')) {
       return;
     }
 
     const operation = (global as any).__currentGraphQLOperationName;
+    // Ignore all errors during an active GraphQL operation (strict mode)
+    if (operation) {
+      return;
+    }
     const severity = classifySeverity(message, extra);
     let extraWithSeverity: unknown = extra;
     if (extra === undefined || extra === null) {
