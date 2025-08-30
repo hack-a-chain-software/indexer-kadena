@@ -124,7 +124,7 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 	}
 
 	for index, processedPayload := range processedPayloads {
-		events, err := PrepareEvents(network, processedPayload, transactionIdsToSave[index])
+		events, err := PrepareEvents(network, processedPayload, transactionIdsToSave[index], txCreationTimesToSave[index])
 		if err != nil {
 			return Counters{}, DataSizeTracker{}, fmt.Errorf("preparing events -> %w", err)
 		}

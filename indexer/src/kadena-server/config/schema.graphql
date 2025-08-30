@@ -195,17 +195,18 @@ type Query {
   events(
     after: String
     before: String
-    blockHash: String
-    chainId: String
     first: Int
     last: Int
+    qualifiedEventName: String
+    moduleName: String
+    blockHash: String
+    requestKey: String
+    chainId: String
     maxHeight: Int
     minHeight: Int
     minimumDepth: Int
     orderIndex: Int
     parametersFilter: String
-    qualifiedEventName: String!
-    requestKey: String
   ): QueryEventsConnection! @complexity(value: 1, multipliers: ["first", "last"])
 
   """

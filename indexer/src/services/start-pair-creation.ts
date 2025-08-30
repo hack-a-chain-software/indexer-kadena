@@ -75,6 +75,7 @@ export async function startPairCreation() {
         qualname: r.qualname,
         requestkey: r.requestkey,
         orderIndex: r.orderIndex,
+        creationtime: '', // not being used in pair creation process
         id: r.id,
       };
     }) as EventAttributes[];
