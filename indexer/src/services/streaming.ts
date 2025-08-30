@@ -77,7 +77,8 @@ export async function startStreaming() {
 
   // Handle connection errors
   eventSource.onerror = (error: any) => {
-    console.error('[ERROR][NET][CONN_LOST] EventSource connection error:', error);
+    // TODO: [RETRY-OPTIMIZATION] Consider adding retry/backoff or a reconnect strategy; at minimum emit a metric.
+    console.error('[ERROR][NET][CONN_LOST] EventSource connection error', { error });
   };
 
   const processBlock = async (block: any) => {
@@ -94,6 +95,7 @@ export async function startStreaming() {
       const payload = processPayload(block.payloadWithOutputs);
 
       // Save the block data and process its transactions
+      // TODO: [CONSISTENCY] Validate saveBlock result; if null/failed, handle with rollback + DLQ + metric to avoid partial commits
       await saveBlock({ header: block.header, payload, canonical: null }, tx);
 
       if (!initialChainGapsAlreadyFilled.has(block.header.chainId)) {
@@ -111,7 +113,14 @@ export async function startStreaming() {
       blocksRecentlyProcessed.add(blockIdentifier);
     } catch (error) {
       await tx.rollback();
-      console.error('[ERROR][DATA][DATA_CORRUPT] Failed to process block event:', error);
+      // TODO: [OBS][METRICS] Increment 'stream.block_failures' with tags { chainId, reason: 'processing' }
+      // TODO: [STREAM][DLQ] Persist failed block header to DLQ storage for later reprocessing
+      console.error('[ERROR][DATA][DATA_CORRUPT] Failed to process block event', {
+        error,
+        chainId: block?.header?.chainId,
+        height: block?.header?.height,
+        hash: block?.header?.hash,
+      });
     }
   };
 
@@ -146,7 +155,7 @@ export async function startStreaming() {
   setInterval(
     () => {
       blocksRecentlyProcessed.clear();
-      console.log('[INFO][SYNC][STREAMING] blocksRecentlyProcessed cleared');
+      console.info('[INFO][SYNC][STREAMING] blocksRecentlyProcessed cleared');
     },
     1000 * 60 * 60 * 1,
   );

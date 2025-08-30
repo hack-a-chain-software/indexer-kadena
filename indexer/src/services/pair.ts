@@ -183,7 +183,7 @@ export async function backfillPairEvents(
     }
 
     const progressPercentage = ((processedCount / LAST_BLOCK_ID) * 100).toFixed(2);
-    console.log(
+    console.info(
       `Processing batch of ${events.length} events starting from offset ${processedCount} (${progressPercentage}% complete)`,
     );
     await processPairCreationEvents(
@@ -194,12 +194,12 @@ export async function backfillPairEvents(
 
     const endTime = Date.now();
     const timeTaken = (endTime - startTime) / 1000; // Convert to seconds
-    console.log(`Batch processed in ${timeTaken.toFixed(2)} seconds`);
+    console.info(`Batch processed in ${timeTaken.toFixed(2)} seconds`);
 
     if (events.length < batchSize) {
       hasMore = false;
     }
   }
 
-  console.log(`Backfill completed. Processed ${processedCount} events.`);
+  console.info(`Backfill completed. Processed ${processedCount} events.`);
 }

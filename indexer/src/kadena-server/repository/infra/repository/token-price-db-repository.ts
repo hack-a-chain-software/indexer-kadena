@@ -41,7 +41,6 @@ export default class TokenPriceDbRepository implements TokenPriceRepository {
 
   async getTokenPrices(params: QueryTokenPricesArgs): Promise<TokenPrice[]> {
     const { protocolAddress = DEFAULT_PROTOCOL } = params;
-    console.log(protocolAddress);
 
     // Get all unique tokens from pairs
     const tokensQuery = `
@@ -56,8 +55,6 @@ export default class TokenPriceDbRepository implements TokenPriceRepository {
       bind: [protocolAddress],
       model: Token,
     });
-
-    console.log(tokens);
 
     const prices: TokenPrice[] = [];
     for (const token of tokens) {

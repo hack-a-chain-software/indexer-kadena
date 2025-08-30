@@ -45,6 +45,7 @@ async function* iteratorFn({
   }
 
   const startingTimestamp = new Date().getTime() / 1000000;
+  // TODO: [ERROR-OPTIMIZATION] missing try catch block
   const blockResult = await context.blockRepository.getLastBlocksWithDepth(
     chainIds,
     minimumDepth,
@@ -60,6 +61,7 @@ async function* iteratorFn({
   }
 
   while (context.signal) {
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const newBlocks = await context.blockRepository.getLastBlocksWithDepth(
       chainIds,
       minimumDepth,

@@ -156,7 +156,12 @@ export async function processTransaction(
   try {
     cmdData = JSON.parse(transactionInfo.cmd);
   } catch (error) {
-    console.error(`[ERROR][DATA][DATA_FORMAT] Failed to parse transaction command JSON: ${error}`);
+    console.error('[ERROR][DATA][DATA_FORMAT] Failed to parse transaction command JSON', {
+      error,
+      chainId: block.chainId,
+      height: (block as any)?.height,
+      txHash: transactionInfo?.hash,
+    });
     throw error;
   }
 
@@ -248,7 +253,19 @@ export async function processTransaction(
     try {
       await processPairCreationEvents(eventsWithTransactionId, tx);
     } catch (error) {
-      console.error('Error processing pair creation events:', error);
+      // These events are not critical for transaction persistence; log with identifiers and emit a metric-like log
+      const requestKey = transactionAttributes.requestkey;
+      const txHash = transactionInfo.hash;
+      const chainId = transactionAttributes.chainId;
+      console.error(
+        `[ERROR][PAIR][PROCESSING] Error processing pair creation events: ${
+          error instanceof Error ? error.message : String(error)
+        } | blockId=${block.id} requestKey=${requestKey} txHash=${txHash} chainId=${chainId}`,
+      );
+      // Metric-style log for monitoring data loss of pair events
+      console.warn(
+        `[METRIC][DATA_LOSS][PAIR_EVENTS] count=1 blockId=${block.id} requestKey=${requestKey} txHash=${txHash} chainId=${chainId}`,
+      );
     }
 
     const signers = (cmdData.signers ?? []).map((signer: any, index: number) => ({
@@ -362,9 +379,14 @@ export async function processTransaction(
       gasprice: transactionDetailsAttributes.gasprice,
     };
   } catch (error) {
-    console.error(
-      `[ERROR][DB][DATA_CORRUPT] Failed to save transaction ${transactionInfo.hash}: ${error}`,
-    );
+    // If an entire batch (or this transaction inside batch) failed before commit, treat as major in classifier
+    console.error('[ERROR][DB][DATA_CORRUPT] Failed to save transaction', {
+      error,
+      chainId: transactionAttributes.chainId,
+      height: (block as any)?.height,
+      txHash: transactionInfo?.hash,
+      blockId: (block as any)?.id,
+    });
     throw error;
   }
 }

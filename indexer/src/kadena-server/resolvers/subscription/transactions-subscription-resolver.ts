@@ -44,7 +44,7 @@ async function* iteratorFn(
     }
   } catch (error) {
     hasError = true;
-    console.error('[ERROR][DB][DATA_CORRUPT] Error getting last transactions:', error);
+    console.error('[ERROR][GRAPHQL][DB][DATA_CORRUPT] Error getting last transactions:', error);
   }
 }
 

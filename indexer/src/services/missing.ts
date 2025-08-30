@@ -77,14 +77,12 @@ async function checkBigBlockGapsForAllChains() {
   );
 
   if (chainsWithMoreThan7WeeksMissingBlocks.length > 0) {
-    console.error(
-      `[ERROR] These chains have more than ${maxMissingBlocks} missing blocks in a row: ${chainsWithMoreThan7WeeksMissingBlocks.map(
-        chainIdDiffs => chainIdDiffs.chainId,
-      )}`,
-      console.error(
-        `[ERROR] Please make the backfill process individually for these chains. Exiting...`,
-      ),
-    );
+    console.error(`[ERROR][SYNC][MISSING] These chains exceed ${maxMissingBlocks} missing blocks`, {
+      chains: chainsWithMoreThan7WeeksMissingBlocks.map(c => c.chainId),
+    });
+    console.error(`[ERROR][SYNC][MISSING] Please backfill these chains individually. Exiting...`, {
+      severityHint: 'degraded',
+    });
     process.exit(1);
   }
 
