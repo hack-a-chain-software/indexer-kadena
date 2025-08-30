@@ -21,9 +21,11 @@ import Block, { BlockAttributes } from '@/models/block';
 import { sequelize } from '@/config/database';
 import { backfillGuards } from './guards';
 import { Transaction } from 'sequelize';
-import { PriceUpdaterService } from './price/price-updater.service';
 import { defineCanonicalBaseline } from '@/services/define-canonical';
-import { startMissingBlocksBeforeStreamingProcess } from '@/services/missing';
+import {
+  fillChainGapsBeforeDefiningCanonicalBaseline,
+  startMissingBlocksBeforeStreamingProcess,
+} from '@/services/missing';
 import { EventAttributes } from '@/models/event';
 import { startPairCreation } from '@/services/start-pair-creation';
 
@@ -53,10 +55,7 @@ export async function startStreaming() {
   await startMissingBlocksBeforeStreamingProcess();
 
   const nextBlocksToProcess: any[] = [];
-  const blocksRecentlyProcessed = new Set<string>();
-
-  // Initialize price updater
-  PriceUpdaterService.getInstance();
+  const initialChainGapsAlreadyFilled = new Set<number>();
 
   // Initialize EventSource connection to the blockchain node
   const eventSource = new EventSource(`${SYNC_BASE_URL}/${SYNC_NETWORK}/block/updates`);
@@ -78,27 +77,54 @@ export async function startStreaming() {
   };
 
   const processBlock = async (block: any) => {
-    const blockIdentifier = block.header.hash;
+    const blockHash = block.header.hash;
 
-    if (blocksRecentlyProcessed.has(blockIdentifier)) {
-      await defineCanonicalBaseline(
-        block.header.hash,
-        block.header.parent,
-        block.header.height,
-        block.header.chainId,
+    let blockInDatabase: Block | null = null;
+    try {
+      blockInDatabase = await Block.findOne({ where: { hash: blockHash } });
+    } catch (error) {
+      console.error(
+        '[ERROR][DB][STREAMING] There was an error with the database:',
+        blockHash,
+        error,
+      );
+      process.exit(1);
+    }
+
+    if (blockInDatabase) {
+      await defineCanonicalBaseline(block.header.hash);
+      return;
+    }
+
+    let tx: Transaction;
+    try {
+      tx = await sequelize.transaction();
+    } catch (error) {
+      console.error(
+        '[ERROR][DB][STREAMING] Failed to start transaction for new block:',
+        blockHash,
+        error,
       );
       return;
     }
 
-    const tx = await sequelize.transaction();
     try {
       const payload = processPayload(block.payloadWithOutputs);
 
       // Save the block data and process its transactions
       // TODO: [CONSISTENCY] Validate saveBlock result; if null/failed, handle with rollback + DLQ + metric to avoid partial commits
       await saveBlock({ header: block.header, payload, canonical: null }, tx);
+
+      if (!initialChainGapsAlreadyFilled.has(block.header.chainId)) {
+        initialChainGapsAlreadyFilled.add(block.header.chainId);
+        await fillChainGapsBeforeDefiningCanonicalBaseline({
+          chainId: block.header.chainId,
+          lastHeight: block.header.height,
+          tx,
+        });
+      }
+
       await tx.commit();
-      blocksRecentlyProcessed.add(blockIdentifier);
     } catch (error) {
       await tx.rollback();
       // TODO: [OBS][METRICS] Increment 'stream.block_failures' with tags { chainId, reason: 'processing' }
@@ -112,12 +138,7 @@ export async function startStreaming() {
       return;
     }
 
-    await defineCanonicalBaseline(
-      block.header.hash,
-      block.header.parent,
-      block.header.height,
-      block.header.chainId,
-    );
+    await defineCanonicalBaseline(block.header.hash);
   };
 
   const processBlocks = async () => {
@@ -145,14 +166,6 @@ export async function startStreaming() {
 
     setTimeout(processBlocks, 1000);
   };
-
-  setInterval(
-    () => {
-      blocksRecentlyProcessed.clear();
-      console.info('[INFO][SYNC][STREAMING] blocksRecentlyProcessed cleared');
-    },
-    1000 * 60 * 60 * 1, // 1 hour
-  );
 
   processBlocks();
   backfillGuards();

@@ -209,7 +209,6 @@ export async function backfillPairEvents(
     }
   }
 
-
   console.info(`Backfill completed. Processed ${processedCount} events.`);
   process.exit(0);
 }
