@@ -5,33 +5,24 @@ import { getRequiredEnvString } from '@/utils/helpers';
 import { processPayload, saveBlock } from './streaming';
 import { sequelize } from '@/config/database';
 import { Transaction } from 'sequelize';
+import { BlockOutput } from '@/kadena-server/repository/application/block-repository';
 
 const blockRepository = new BlockDbRepository();
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
 
-export async function defineCanonicalBaseline(
-  blockHash: string,
-  parentHash: string,
-  height: number,
-  chainId: number,
-) {
+export async function defineCanonicalBaseline(blockHash: string) {
+  let tipBlock: BlockOutput | null = null;
   try {
-    const parentBlock = await blockRepository.getBlockByHash(parentHash);
-    if (!parentBlock) {
-      console.log(`[INFO][SYNC][DEFINE_CANONICAL] parentBlock not found. filling gaps ...`);
-      console.log(`[chainId: ${chainId}, parentHash: ${parentHash}, height: ${height - 1}]`);
-      await fillChainGapAndConfirmBlockPath(parentHash, height - 1, chainId);
-    }
+    tipBlock = await blockRepository.getBlockByHash(blockHash);
   } catch (error) {
-    console.error(`[ERROR][SYNC][DEFINE_CANONICAL] Error filling gaps:`, error);
-    return;
+    console.error(`[FATAL][DB][BASELINE] There was an error with the database:`, error);
+    process.exit(1);
   }
 
-  const tipBlock = await blockRepository.getBlockByHash(blockHash);
   if (!tipBlock) {
     // this scenario should not happen, but if it does, terminate the app.
-    console.error(`[ERROR][DB][DEFINE_CANONICAL] Block ${blockHash} not found in database`);
+    console.error(`[FATAL][DB][BASELINE] Block ${blockHash} not found in database`);
     process.exit(1);
   }
 
@@ -39,8 +30,12 @@ export async function defineCanonicalBaseline(
   try {
     tx = await sequelize.transaction();
   } catch (error) {
-    console.error(`[ERROR][SYNC][DEFINE_CANONICAL] Failed to start transaction:`, error);
-    throw error;
+    console.error(
+      `[ERROR][DB][BASELINE] Failed to start transaction for canonical algorithm:`,
+      blockHash,
+      error,
+    );
+    return;
   }
 
   try {
