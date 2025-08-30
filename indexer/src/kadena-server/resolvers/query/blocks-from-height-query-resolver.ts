@@ -28,6 +28,10 @@ import { buildBlockOutput } from '../output/build-block-output';
  */
 export const blocksFromHeightQueryResolver: QueryResolvers<ResolverContext>['blocksFromHeight'] =
   async (_parent, args, context) => {
+    if (args.endHeight && args.startHeight > args.endHeight) {
+      throw new Error('Start height cannot be greater than end height');
+    }
+
     const output = await context.blockRepository.getBlocksBetweenHeights(args);
 
     const edges = output.edges.map(e => ({
@@ -35,5 +39,13 @@ export const blocksFromHeightQueryResolver: QueryResolvers<ResolverContext>['blo
       node: buildBlockOutput(e.node),
     }));
 
-    return { edges, pageInfo: output.pageInfo };
+    return {
+      edges,
+      pageInfo: output.pageInfo,
+
+      startHeight: args.startHeight,
+      endHeight: args.endHeight,
+      chainIds: args.chainIds,
+      totalCount: -1,
+    };
   };

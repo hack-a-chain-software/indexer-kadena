@@ -25,6 +25,10 @@ import { ConnectionEdge } from '../types';
  */
 export type GetTransactionsParams = GetTransactionsCountParams & PaginationsParams;
 
+export type GetTransactionsByPactCodeParams = PaginationsParams & {
+  pactCode: string;
+};
+
 /**
  * Parameters for fetching transactions by a specific public key.
  * Extends pagination parameters to support page-based data access.
@@ -82,6 +86,8 @@ export interface GetTransactionsCountParams {
 export interface GetTransactionsByRequestKey {
   /** The request key to search for */
   requestKey: string;
+  /** Current heights of each chain */
+  currentChainHeights: Record<string, number>;
   /** Optional block hash to narrow the search */
   blockHash?: string | null;
   /** Optional minimum confirmation depth requirement */
@@ -103,6 +109,19 @@ export type TransactionOutput = Omit<Transaction, 'cmd'> & {
   blockHash: string;
   /** Height of the block containing this transaction */
   blockHeight: number;
+};
+
+export type TransactionByPactCodeOutput = {
+  requestKey: string;
+  height: any;
+  chainId: any;
+  canonical: boolean;
+  creationTime: Date;
+  badResult: any;
+  sender: string;
+  gas: string;
+  gasLimit: string;
+  gasPrice: string;
 };
 
 /**
@@ -132,6 +151,18 @@ export default interface TransactionRepository {
   getTransactions(params: GetTransactionsParams): Promise<{
     pageInfo: PageInfo;
     edges: ConnectionEdge<TransactionOutput>[];
+  }>;
+
+  /**
+   * Retrieves transactions by pact code with pagination.
+   *
+   * @param params - Pact code and pagination parameters
+   * @returns Promise resolving to paginated transaction results
+   */
+
+  getTransactionsByPactCode(params: GetTransactionsByPactCodeParams): Promise<{
+    pageInfo: PageInfo;
+    edges: ConnectionEdge<TransactionByPactCodeOutput>[];
   }>;
 
   /**

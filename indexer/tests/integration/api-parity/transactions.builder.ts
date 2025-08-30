@@ -1,8 +1,8 @@
 import { gql } from 'graphql-request';
 
 export const transactionsQueryGql = gql`
-  query {
-    transactions(blockHash: "Qzi58vcpW97du01srIwxpwSQUPDRNBnl2EKyubP-IWw") {
+  query transactions($blockHash: String!) {
+    transactions(blockHash: $blockHash, first: 500) {
       pageInfo {
         hasNextPage
         hasPreviousPage

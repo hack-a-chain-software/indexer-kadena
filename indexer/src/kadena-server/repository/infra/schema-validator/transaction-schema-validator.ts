@@ -103,14 +103,14 @@ function validate(row: any): TransactionOutput {
       status: '', // TODO
 
       // TransactionResult
-      badResult: !isSuccess ? res.result.data : null,
+      badResult: !isSuccess ? JSON.stringify(res.result.error) : null,
       continuation: continuation === '{}' ? null : continuation,
       eventCount: res.eventCount,
       transactionId: res.txid ? res.txid : null,
       height: res.height,
 
       gas: res.gas ?? '0',
-      goodResult: isSuccess ? JSON.stringify(res.result.data) : null,
+      goodResult: isSuccess && res.result.data !== '' ? JSON.stringify(res.result.data) : null,
       logs: res.logs,
     },
     cmd: {

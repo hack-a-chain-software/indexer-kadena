@@ -102,9 +102,11 @@ export const getNode = async (context: ResolverContext, id: string) => {
     // Resolve Transaction node - requires blockHash and requestKey
     const [blockHash, requestKey] = JSON.parse(params);
     // TODO: [ERROR-OPTIMIZATION] missing try catch block
+    const currentChainHeights = await context.networkRepository.getCurrentChainHeights();
     const output = await context.transactionRepository.getTransactionsByRequestKey({
       requestKey,
       blockHash,
+      currentChainHeights,
     });
 
     const outputs = output.map(t => buildTransactionOutput(t));

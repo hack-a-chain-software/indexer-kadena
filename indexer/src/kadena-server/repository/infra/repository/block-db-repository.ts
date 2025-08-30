@@ -14,7 +14,7 @@
  * - Optimized batch retrieval through DataLoader patterns
  */
 
-import { Op, QueryTypes } from 'sequelize';
+import { Op, QueryTypes, Transaction } from 'sequelize';
 import { rootPgPool, sequelize } from '../../../../config/database';
 import BlockModel from '../../../../models/block';
 import BlockRepository, {
@@ -24,13 +24,12 @@ import BlockRepository, {
   GetCompletedBlocksParams,
   GetLatestBlocksParams,
   GetTotalCountParams,
-  UpdateCanonicalStatusParams,
 } from '../../application/block-repository';
 import { getPageInfo, getPaginationParams } from '../../pagination';
 import { blockValidator } from '../schema-validator/block-schema-validator';
 import Balance from '../../../../models/balance';
 import { handleSingleQuery } from '../../../../utils/raw-query';
-import { formatGuard_NODE } from '../../../../utils/chainweb-node';
+import { formatBalance_NODE, formatGuard_NODE } from '../../../../utils/chainweb-node';
 import { MEMORY_CACHE } from '../../../../cache/init';
 import { NODE_INFO_KEY } from '../../../../cache/keys';
 import { GetNodeInfo } from '../../application/network-repository';
@@ -118,7 +117,9 @@ export default class BlockDbRepository implements BlockRepository {
       lastHeight = parseInt(heightStr, 10);
       lastId = parseInt(idStr, 10);
       if (isNaN(lastHeight) || isNaN(lastId)) {
-        throw new Error(`[INFO][PAGINATION][INVALID_AFTER_CURSOR] Invalid 'after' cursor:', ${after}`);
+        throw new Error(
+          `[INFO][PAGINATION][INVALID_AFTER_CURSOR] Invalid 'after' cursor:', ${after}`,
+        );
       }
     }
 
@@ -127,7 +128,9 @@ export default class BlockDbRepository implements BlockRepository {
       lastHeight = parseInt(heightStr, 10);
       lastId = parseInt(idStr, 10);
       if (isNaN(lastHeight) || isNaN(lastId)) {
-        throw new Error(`[INFO][PAGINATION][INVALID_BEFORE_CURSOR] Invalid 'before' cursor:', ${before}`);
+        throw new Error(
+          `[INFO][PAGINATION][INVALID_BEFORE_CURSOR] Invalid 'before' cursor:', ${before}`,
+        );
       }
     }
 
@@ -240,7 +243,9 @@ export default class BlockDbRepository implements BlockRepository {
       const beforeId = parseInt(id, 10);
 
       if (isNaN(beforeHeight) || isNaN(beforeId)) {
-        throw new Error(`[ERROR][PAGINATION][INVALID_BEFORE_CURSOR] Invalid 'before' cursor:', ${before}`);
+        throw new Error(
+          `[ERROR][PAGINATION][INVALID_BEFORE_CURSOR] Invalid 'before' cursor:', ${before}`,
+        );
       }
 
       queryParams.push(beforeHeight, beforeId);
@@ -254,7 +259,9 @@ export default class BlockDbRepository implements BlockRepository {
       const afterId = parseInt(id, 10);
 
       if (isNaN(afterHeight) || isNaN(afterId)) {
-        throw new Error(`[ERROR][PAGINATION][INVALID_BEFORE_CURSOR] Invalid 'before' cursor:', ${before}`);
+        throw new Error(
+          `[ERROR][PAGINATION][INVALID_BEFORE_CURSOR] Invalid 'before' cursor:', ${before}`,
+        );
       }
       queryParams.push(afterHeight, afterId);
       conditions += `\nAND (b.height, b.id) < ($${queryParams.length - 1}, $${queryParams.length})`;
@@ -286,7 +293,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.adjacents as "adjacents",
         b.parent as "parent",
         b.canonical as "canonical",
-        b."transactionsCount" as "transactionsCount"
+        b."transactionsCount" as "transactionsCount",
+        b."totalGasUsed" as "totalGasUsed"
       FROM "Blocks" b
       WHERE b.height ${before ? '<=' : '>='} $2
       ${conditions}
@@ -318,20 +326,12 @@ export default class BlockDbRepository implements BlockRepository {
    * @throws Error if the miner account is not found
    */
   async getMinerData(hash: string, chainId: string) {
-    const balanceRows = await sequelize.query(
-      `SELECT ba.id,
-              ba.account,
-              ba.balance,
-              ba."chainId",
-              ba.module
+    const balanceRows = await sequelize.query<{ account: string }>(
+      `SELECT b."minerData"->>'account' as account
         FROM "Blocks" b
-        JOIN "Balances" ba ON ba.account = b."minerData"->>'account'
-        WHERE b.hash = :hash
-        AND ba."chainId" = :chainId`,
+        WHERE b.hash = :hash`,
       {
-        model: Balance,
-        mapToModel: true,
-        replacements: { hash, chainId },
+        replacements: { hash },
         type: QueryTypes.SELECT,
       },
     );
@@ -339,19 +339,23 @@ export default class BlockDbRepository implements BlockRepository {
     const [balanceRow] = balanceRows;
 
     if (!balanceRow) {
-      throw new Error(`[ERROR][MINER][NOT_FOUND] Miner account not found for block ${hash} on chain ${chainId}.`);
+      throw new Error(
+        `[ERROR][MINER][NOT_FOUND] Miner account not found for block ${hash} on chain ${chainId}.`,
+      );
     }
 
     const res = await handleSingleQuery({
       chainId: chainId.toString(),
-      code: `(${balanceRow.module}.details \"${balanceRow.account}\")`,
+      code: `(coin.details \"${balanceRow.account}\")`,
     });
+
+    const balance = formatBalance_NODE(res);
 
     const fungibleAccount = fungibleChainAccountValidator.validate({
       accountName: balanceRow.account,
-      balance: balanceRow.balance,
-      chainId: balanceRow.chainId,
-      module: balanceRow.module,
+      balance: balance.toString(),
+      chainId: chainId,
+      module: 'coin',
       guard: formatGuard_NODE(res),
     });
 
@@ -539,7 +543,9 @@ export default class BlockDbRepository implements BlockRepository {
     );
 
     if (blockRows.length !== eventIds.length) {
-      throw new Error(`[ERROR][EVENTS][FETCH_BLOCKS_MISMATCH] Fetched blocks count (${blockRows.length}) does not match event IDs count (${eventIds.length}).`);
+      throw new Error(
+        `[ERROR][EVENTS][FETCH_BLOCKS_MISMATCH] Fetched blocks count (${blockRows.length}) does not match event IDs count (${eventIds.length}).`,
+      );
     }
 
     const blockMap = blockRows.reduce(
@@ -581,7 +587,8 @@ export default class BlockDbRepository implements BlockRepository {
         b.parent as "parent",
         b.canonical as "canonical",
         t.id as "transactionId",
-        b."transactionsCount" as "transactionsCount"
+        b."transactionsCount" as "transactionsCount",
+        b."totalGasUsed" as "totalGasUsed"
         FROM "Blocks" b
         JOIN "Transactions" t ON b.id = t."blockId"
         WHERE t.id = ANY($1::int[])`,
@@ -589,7 +596,9 @@ export default class BlockDbRepository implements BlockRepository {
     );
 
     if (blockRows.length !== transactionIds.length) {
-      throw new Error(`[ERROR][TRANSACTIONS][FETCH_BLOCKS_MISMATCH] Fetched blocks count (${blockRows.length}) does not match transaction IDs count (${transactionIds.length}).`);
+      throw new Error(
+        `[ERROR][TRANSACTIONS][FETCH_BLOCKS_MISMATCH] Fetched blocks count (${blockRows.length}) does not match transaction IDs count (${transactionIds.length}).`,
+      );
     }
 
     const blockMap = blockRows.reduce(
@@ -630,14 +639,17 @@ export default class BlockDbRepository implements BlockRepository {
         b.adjacents as "adjacents",
         b.parent as "parent",
         b.canonical as "canonical",
-        b."transactionsCount" as "transactionsCount"
+        b."transactionsCount" as "transactionsCount",
+        b."totalGasUsed" as "totalGasUsed"
         FROM "Blocks" b
         WHERE b.hash = ANY($1::text[])`,
       [hashes],
     );
 
     if (blockRows.length !== hashes.length) {
-      throw new Error(`[ERROR][BLOCKS][FETCH_BY_HASHES_MISMATCH] Fetched blocks count (${blockRows.length}) does not match requested hashes count (${hashes.length}).`);
+      throw new Error(
+        `[ERROR][BLOCKS][FETCH_BY_HASHES_MISMATCH] Fetched blocks count (${blockRows.length}) does not match requested hashes count (${hashes.length}).`,
+      );
     }
 
     const blockMap = blockRows.reduce(
@@ -701,7 +713,7 @@ export default class BlockDbRepository implements BlockRepository {
       `SELECT COUNT(*) as "totalCount"
         FROM "Blocks" b
         JOIN "Transactions" t ON t."blockId" = b.id
-        WHERE b.hash = $1`,
+        WHERE b.hash = $1 AND t.sender != 'coinbase'`,
       [blockHash],
     );
 
@@ -896,61 +908,35 @@ export default class BlockDbRepository implements BlockRepository {
     return Object.assign({}, ...maxHeightsArray);
   }
 
-  async getBlocksWithSameHeight(height: number, chainId: string): Promise<BlockOutput[]> {
-    const query = `
-      SELECT b.*
-      FROM "Blocks" b
-      WHERE b."height" = $1 AND b."chainId" = $2
-    `;
+  async getBlocksWithSameHeight(
+    height: number,
+    chainId: string,
+    tx?: Transaction,
+  ): Promise<BlockOutput[]> {
+    const blocks = await BlockModel.findAll({
+      where: {
+        height,
+        chainId,
+      },
+      transaction: tx,
+    });
 
-    const { rows } = await rootPgPool.query(query, [height, chainId]);
-
-    return rows.map(row => blockValidator.validate(row));
+    return blocks.map(row => blockValidator.mapFromSequelize(row));
   }
 
-  async getBlocksWithHeightHigherThan(height: number, chainId: string): Promise<BlockOutput[]> {
-    const query = `
-      SELECT b.*
-      FROM "Blocks" b
-      WHERE b.height > $1 AND b."chainId" = $2;
-    `;
+  async getBlocksWithHeightHigherThan(
+    height: number,
+    chainId: string,
+    tx?: Transaction,
+  ): Promise<BlockOutput[]> {
+    const blocks = await BlockModel.findAll({
+      where: {
+        height: { [Op.gt]: height },
+        chainId,
+      },
+      transaction: tx,
+    });
 
-    const { rows } = await rootPgPool.query(query, [height, chainId]);
-
-    return rows.map(row => blockValidator.validate(row));
-  }
-
-  async updateCanonicalStatus(params: UpdateCanonicalStatusParams) {
-    const canonicalHashes = params.blocks
-      .filter(change => change.canonical)
-      .map(change => change.hash);
-    const nonCanonicalHashes = params.blocks
-      .filter(change => !change.canonical)
-      .map(change => change.hash);
-
-    await rootPgPool.query('BEGIN');
-    try {
-      if (canonicalHashes.length > 0) {
-        const canonicalQuery = `
-          UPDATE "Blocks"
-          SET "canonical" = true
-          WHERE hash = ANY($1)
-        `;
-        await rootPgPool.query(canonicalQuery, [canonicalHashes]);
-      }
-
-      if (nonCanonicalHashes.length > 0) {
-        const nonCanonicalQuery = `
-          UPDATE "Blocks"
-          SET "canonical" = false
-          WHERE hash = ANY($1)
-        `;
-        await rootPgPool.query(nonCanonicalQuery, [nonCanonicalHashes]);
-      }
-      await rootPgPool.query('COMMIT');
-    } catch (error) {
-      await rootPgPool.query('ROLLBACK');
-      throw error;
-    }
+    return blocks.map(row => blockValidator.mapFromSequelize(row));
   }
 }

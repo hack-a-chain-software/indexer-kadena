@@ -1,8 +1,8 @@
 import { gql } from 'graphql-request';
 
 export const blockQueryGql = gql`
-  query {
-    block(hash: "iVyDpWHv4ITrvZTHLHKxjaUpydxeiHeASwcfjY1SUxk") {
+  query block($hash: String!) {
+    block(hash: $hash) {
       chainId
       creationTime
       difficulty
@@ -12,7 +12,7 @@ export const blockQueryGql = gql`
       id
       minerAccount {
         accountName
-        balance
+        # balance
         chainId
         fungibleName
         guard {

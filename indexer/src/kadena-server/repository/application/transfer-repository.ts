@@ -23,15 +23,15 @@ export interface GetTotalCountParams {
 }
 
 export interface GetCrossChainTransferByPactIdParams {
-  pactId: string;
   amount: string;
   receiverAccount: string;
   senderAccount: string;
+  transactionId: string;
 }
 
 export type TransferOutput = Omit<Transfer, 'block' | 'transaction' | 'crossChainTransfer'> & {
   transferId: string;
-  pactId: string | null;
+  transactionId: string;
   blockHash: string;
 };
 

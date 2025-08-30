@@ -21,11 +21,26 @@ export interface GetNodeInfo {
   nodeLatestBehaviorHeight: number;
 }
 
-type AllInfo = NetworkStatistics & HashRateAndTotalDifficulty & GetNodeInfo;
+export interface CountersOfEachChain {
+  chainId: string;
+  blocksCount: number;
+  transactionCount: number;
+  totalGasUsedInKda: string;
+}
+
+type AllInfo = NetworkStatistics &
+  HashRateAndTotalDifficulty &
+  GetNodeInfo & {
+    countersOfEachChain: CountersOfEachChain[];
+  };
+
+export type CurrentChainHeights = Record<string, number>;
 
 export default interface NetworkRepository {
   getNetworkStatistics(): Promise<NetworkStatistics>;
   getHashRateAndTotalDifficulty(chainIds: number[]): Promise<HashRateAndTotalDifficulty>;
   getNodeInfo(): Promise<GetNodeInfo>;
   getAllInfo(): Promise<AllInfo>;
+  getCurrentChainHeights(): Promise<CurrentChainHeights>;
+  getCountersOfEachChain(): Promise<CountersOfEachChain[]>;
 }

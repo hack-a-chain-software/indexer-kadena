@@ -27,6 +27,14 @@ export type Scalars = {
   Decimal: { input: any; output: any };
 };
 
+export type BalanceNode = {
+  __typename?: 'BalanceNode';
+  accountName: Scalars['String']['output'];
+  balance: Scalars['String']['output'];
+  chainId: Scalars['String']['output'];
+  module: Scalars['String']['output'];
+};
+
 /** A unit of information that stores a set of verified transactions. */
 export type Block = Node & {
   __typename?: 'Block';
@@ -52,6 +60,7 @@ export type Block = Node & {
   /** The proof of work hash. */
   powHash: Scalars['String']['output'];
   target: Scalars['String']['output'];
+  totalGasUsedInKda: Scalars['Decimal']['output'];
   /** Default page size is 20. */
   transactions: BlockTransactionsConnection;
   weight: Scalars['String']['output'];
@@ -128,6 +137,14 @@ export type ContinuationPayload = {
   rollback?: Maybe<Scalars['Boolean']['output']>;
   /** The step-number when this is an execution of a `defpact`, aka multi-step transaction. */
   step?: Maybe<Scalars['Int']['output']>;
+};
+
+export type CountersOfEachChain = {
+  __typename?: 'CountersOfEachChain';
+  blocksCount: Scalars['Int']['output'];
+  chainId: Scalars['String']['output'];
+  totalGasUsedInKda: Scalars['String']['output'];
+  transactionCount: Scalars['Int']['output'];
 };
 
 /** DEX metrics including TVL, volume, and pool count */
@@ -393,6 +410,7 @@ export type NetworkInfo = {
   apiVersion: Scalars['String']['output'];
   /** The number of circulating coins. */
   coinsInCirculation: Scalars['Float']['output'];
+  countersOfEachChain: Array<CountersOfEachChain>;
   genesisHeights: Array<GenesisHeight>;
   /** The network hash rate. */
   networkHashRate: Scalars['Float']['output'];
@@ -703,6 +721,8 @@ export type PoolTransactionsConnection = {
 
 export type Query = {
   __typename?: 'Query';
+  /** Retrieve live balances for a given account with optional filtering by chains and module. Default page size is 20. */
+  balance: QueryBalanceConnection;
   /** Retrieve a block by hash. */
   block?: Maybe<Block>;
   /** Retrieve blocks by chain and minimal depth. Default page size is 20. */
@@ -750,6 +770,8 @@ export type Query = {
   graphConfiguration: GraphConfiguration;
   /** Get the height of the block with the highest height. */
   lastBlockHeight?: Maybe<Scalars['BigInt']['output']>;
+  /** Get last price for a specific token in KDA */
+  lastTokenPriceInKda?: Maybe<Scalars['Decimal']['output']>;
   /** Get user's liquidity positions */
   liquidityPositions: LiquidityPositionsConnection;
   /** Get information about the network. */
@@ -779,10 +801,22 @@ export type Query = {
    * At least one of accountName, fungibleName, blockHash, or requestKey must be provided.
    */
   transactions: QueryTransactionsConnection;
+  /** Retrieve all transactions by a given pact code. */
+  transactionsByPactCode: QueryTransactionsByPactCodeConnection;
   /** Retrieve all transactions by a given public key. */
   transactionsByPublicKey: QueryTransactionsByPublicKeyConnection;
   /** Retrieve transfers. Default page size is 20. */
   transfers: QueryTransfersConnection;
+};
+
+export type QueryBalanceArgs = {
+  accountName?: InputMaybe<Scalars['String']['input']>;
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  chainIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  module?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type QueryBlockArgs = {
@@ -870,6 +904,10 @@ export type QueryFungibleChainAccountsByPublicKeyArgs = {
 
 export type QueryGasLimitEstimateArgs = {
   input: Array<Scalars['String']['input']>;
+};
+
+export type QueryLastTokenPriceInKdaArgs = {
+  moduleName: Scalars['String']['input'];
 };
 
 export type QueryLiquidityPositionsArgs = {
@@ -968,6 +1006,14 @@ export type QueryTransactionsArgs = {
   requestKey?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type QueryTransactionsByPactCodeArgs = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  last?: InputMaybe<Scalars['Int']['input']>;
+  pactCode: Scalars['String']['input'];
+};
+
 export type QueryTransactionsByPublicKeyArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
@@ -989,6 +1035,19 @@ export type QueryTransfersArgs = {
   requestKey?: InputMaybe<Scalars['String']['input']>;
 };
 
+/** Connection type for balance query results. */
+export type QueryBalanceConnection = {
+  __typename?: 'QueryBalanceConnection';
+  edges: Array<QueryBalanceConnectionEdge>;
+  pageInfo: PageInfo;
+};
+
+export type QueryBalanceConnectionEdge = {
+  __typename?: 'QueryBalanceConnectionEdge';
+  cursor: Scalars['String']['output'];
+  node: BalanceNode;
+};
+
 export type QueryBlocksFromDepthConnection = {
   __typename?: 'QueryBlocksFromDepthConnection';
   edges: Array<QueryBlocksFromDepthConnectionEdge>;
@@ -1006,6 +1065,7 @@ export type QueryBlocksFromHeightConnection = {
   __typename?: 'QueryBlocksFromHeightConnection';
   edges: Array<QueryBlocksFromHeightConnectionEdge>;
   pageInfo: PageInfo;
+  totalCount: Scalars['Int']['output'];
 };
 
 export type QueryBlocksFromHeightConnectionEdge = {
@@ -1062,6 +1122,18 @@ export type QueryTokensEdge = {
   __typename?: 'QueryTokensEdge';
   cursor: Scalars['String']['output'];
   node: Token;
+};
+
+export type QueryTransactionsByPactCodeConnection = {
+  __typename?: 'QueryTransactionsByPactCodeConnection';
+  edges: Array<QueryTransactionsByPactCodeConnectionEdge>;
+  pageInfo: PageInfo;
+};
+
+export type QueryTransactionsByPactCodeConnectionEdge = {
+  __typename?: 'QueryTransactionsByPactCodeConnectionEdge';
+  cursor: Scalars['String']['output'];
+  node: TransactionSummary;
 };
 
 export type QueryTransactionsByPublicKeyConnection = {
@@ -1333,6 +1405,20 @@ export type TransactionSignature = {
   sig: Scalars['String']['output'];
 };
 
+export type TransactionSummary = {
+  __typename?: 'TransactionSummary';
+  badResult?: Maybe<Scalars['String']['output']>;
+  canonical: Scalars['Boolean']['output'];
+  chainId: Scalars['BigInt']['output'];
+  creationTime: Scalars['DateTime']['output'];
+  gas: Scalars['String']['output'];
+  gasLimit: Scalars['String']['output'];
+  gasPrice: Scalars['String']['output'];
+  height: Scalars['BigInt']['output'];
+  requestKey: Scalars['String']['output'];
+  sender: Scalars['String']['output'];
+};
+
 /** A transfer of funds from a fungible between two accounts. */
 export type Transfer = Node & {
   __typename?: 'Transfer';
@@ -1355,6 +1441,8 @@ export type Transfer = Node & {
   receiverAccount: Scalars['String']['output'];
   requestKey: Scalars['String']['output'];
   senderAccount: Scalars['String']['output'];
+  /** The token id if this is a poly-fungible transfer. */
+  tokenId?: Maybe<Scalars['String']['output']>;
   /** The transaction that initiated this transfer. */
   transaction?: Maybe<Transaction>;
 };
@@ -1519,6 +1607,7 @@ export type ResolversInterfaceTypes<_RefType extends Record<string, unknown>> = 
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  BalanceNode: ResolverTypeWrapper<BalanceNode>;
   BigInt: ResolverTypeWrapper<Scalars['BigInt']['output']>;
   Block: ResolverTypeWrapper<
     Omit<Block, 'events' | 'minerAccount' | 'parent' | 'transactions'> & {
@@ -1548,6 +1637,7 @@ export type ResolversTypes = {
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
   ChartDataPoint: ResolverTypeWrapper<ChartDataPoint>;
   ContinuationPayload: ResolverTypeWrapper<ContinuationPayload>;
+  CountersOfEachChain: ResolverTypeWrapper<CountersOfEachChain>;
   DateTime: ResolverTypeWrapper<Scalars['DateTime']['output']>;
   Decimal: ResolverTypeWrapper<Scalars['Decimal']['output']>;
   DexMetrics: ResolverTypeWrapper<DexMetrics>;
@@ -1695,6 +1785,8 @@ export type ResolversTypes = {
   PoolTransactionType: PoolTransactionType;
   PoolTransactionsConnection: ResolverTypeWrapper<PoolTransactionsConnection>;
   Query: ResolverTypeWrapper<{}>;
+  QueryBalanceConnection: ResolverTypeWrapper<QueryBalanceConnection>;
+  QueryBalanceConnectionEdge: ResolverTypeWrapper<QueryBalanceConnectionEdge>;
   QueryBlocksFromDepthConnection: ResolverTypeWrapper<
     Omit<QueryBlocksFromDepthConnection, 'edges'> & {
       edges: Array<ResolversTypes['QueryBlocksFromDepthConnectionEdge']>;
@@ -1731,6 +1823,8 @@ export type ResolversTypes = {
   QueryPoolsConnectionEdge: ResolverTypeWrapper<QueryPoolsConnectionEdge>;
   QueryTokensConnection: ResolverTypeWrapper<QueryTokensConnection>;
   QueryTokensEdge: ResolverTypeWrapper<QueryTokensEdge>;
+  QueryTransactionsByPactCodeConnection: ResolverTypeWrapper<QueryTransactionsByPactCodeConnection>;
+  QueryTransactionsByPactCodeConnectionEdge: ResolverTypeWrapper<QueryTransactionsByPactCodeConnectionEdge>;
   QueryTransactionsByPublicKeyConnection: ResolverTypeWrapper<
     Omit<QueryTransactionsByPublicKeyConnection, 'edges'> & {
       edges: Array<ResolversTypes['QueryTransactionsByPublicKeyConnectionEdge']>;
@@ -1808,6 +1902,7 @@ export type ResolversTypes = {
     Omit<TransactionResultTransfersConnectionEdge, 'node'> & { node: ResolversTypes['Transfer'] }
   >;
   TransactionSignature: ResolverTypeWrapper<TransactionSignature>;
+  TransactionSummary: ResolverTypeWrapper<TransactionSummary>;
   Transfer: ResolverTypeWrapper<
     Omit<Transfer, 'block' | 'crossChainTransfer' | 'transaction'> & {
       block: ResolversTypes['Block'];
@@ -1820,6 +1915,7 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
+  BalanceNode: BalanceNode;
   BigInt: Scalars['BigInt']['output'];
   Block: Omit<Block, 'events' | 'minerAccount' | 'parent' | 'transactions'> & {
     events: ResolversParentTypes['BlockEventsConnection'];
@@ -1843,6 +1939,7 @@ export type ResolversParentTypes = {
   Boolean: Scalars['Boolean']['output'];
   ChartDataPoint: ChartDataPoint;
   ContinuationPayload: ContinuationPayload;
+  CountersOfEachChain: CountersOfEachChain;
   DateTime: Scalars['DateTime']['output'];
   Decimal: Scalars['Decimal']['output'];
   DexMetrics: DexMetrics;
@@ -1966,6 +2063,8 @@ export type ResolversParentTypes = {
   PoolTransactionEdge: PoolTransactionEdge;
   PoolTransactionsConnection: PoolTransactionsConnection;
   Query: {};
+  QueryBalanceConnection: QueryBalanceConnection;
+  QueryBalanceConnectionEdge: QueryBalanceConnectionEdge;
   QueryBlocksFromDepthConnection: Omit<QueryBlocksFromDepthConnection, 'edges'> & {
     edges: Array<ResolversParentTypes['QueryBlocksFromDepthConnectionEdge']>;
   };
@@ -1995,6 +2094,8 @@ export type ResolversParentTypes = {
   QueryPoolsConnectionEdge: QueryPoolsConnectionEdge;
   QueryTokensConnection: QueryTokensConnection;
   QueryTokensEdge: QueryTokensEdge;
+  QueryTransactionsByPactCodeConnection: QueryTransactionsByPactCodeConnection;
+  QueryTransactionsByPactCodeConnectionEdge: QueryTransactionsByPactCodeConnectionEdge;
   QueryTransactionsByPublicKeyConnection: Omit<QueryTransactionsByPublicKeyConnection, 'edges'> & {
     edges: Array<ResolversParentTypes['QueryTransactionsByPublicKeyConnectionEdge']>;
   };
@@ -2053,6 +2154,7 @@ export type ResolversParentTypes = {
     'node'
   > & { node: ResolversParentTypes['Transfer'] };
   TransactionSignature: TransactionSignature;
+  TransactionSummary: TransactionSummary;
   Transfer: Omit<Transfer, 'block' | 'crossChainTransfer' | 'transaction'> & {
     block: ResolversParentTypes['Block'];
     crossChainTransfer?: Maybe<ResolversParentTypes['Transfer']>;
@@ -2072,6 +2174,17 @@ export type ComplexityDirectiveResolver<
   ContextType = any,
   Args = ComplexityDirectiveArgs,
 > = DirectiveResolverFn<Result, Parent, ContextType, Args>;
+
+export type BalanceNodeResolvers<
+  ContextType = any,
+  ParentType extends ResolversParentTypes['BalanceNode'] = ResolversParentTypes['BalanceNode'],
+> = {
+  accountName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  balance?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  chainId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  module?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
 
 export interface BigIntScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['BigInt'], any> {
   name: 'BigInt';
@@ -2104,6 +2217,7 @@ export type BlockResolvers<
   payloadHash?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   powHash?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   target?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalGasUsedInKda?: Resolver<ResolversTypes['Decimal'], ParentType, ContextType>;
   transactions?: Resolver<
     ResolversTypes['BlockTransactionsConnection'],
     ParentType,
@@ -2189,6 +2303,18 @@ export type ContinuationPayloadResolvers<
   proof?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   rollback?: Resolver<Maybe<ResolversTypes['Boolean']>, ParentType, ContextType>;
   step?: Resolver<Maybe<ResolversTypes['Int']>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CountersOfEachChainResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['CountersOfEachChain'] = ResolversParentTypes['CountersOfEachChain'],
+> = {
+  blocksCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  chainId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  totalGasUsedInKda?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  transactionCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2505,6 +2631,11 @@ export type NetworkInfoResolvers<
 > = {
   apiVersion?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   coinsInCirculation?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
+  countersOfEachChain?: Resolver<
+    Array<ResolversTypes['CountersOfEachChain']>,
+    ParentType,
+    ContextType
+  >;
   genesisHeights?: Resolver<Array<ResolversTypes['GenesisHeight']>, ParentType, ContextType>;
   networkHashRate?: Resolver<ResolversTypes['Float'], ParentType, ContextType>;
   networkHost?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2846,6 +2977,12 @@ export type QueryResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query'],
 > = {
+  balance?: Resolver<
+    ResolversTypes['QueryBalanceConnection'],
+    ParentType,
+    ContextType,
+    Partial<QueryBalanceArgs>
+  >;
   block?: Resolver<
     Maybe<ResolversTypes['Block']>,
     ParentType,
@@ -2923,6 +3060,12 @@ export type QueryResolvers<
   >;
   graphConfiguration?: Resolver<ResolversTypes['GraphConfiguration'], ParentType, ContextType>;
   lastBlockHeight?: Resolver<Maybe<ResolversTypes['BigInt']>, ParentType, ContextType>;
+  lastTokenPriceInKda?: Resolver<
+    Maybe<ResolversTypes['Decimal']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryLastTokenPriceInKdaArgs, 'moduleName'>
+  >;
   liquidityPositions?: Resolver<
     ResolversTypes['LiquidityPositionsConnection'],
     ParentType,
@@ -3008,6 +3151,12 @@ export type QueryResolvers<
     ContextType,
     Partial<QueryTransactionsArgs>
   >;
+  transactionsByPactCode?: Resolver<
+    ResolversTypes['QueryTransactionsByPactCodeConnection'],
+    ParentType,
+    ContextType,
+    RequireFields<QueryTransactionsByPactCodeArgs, 'pactCode'>
+  >;
   transactionsByPublicKey?: Resolver<
     ResolversTypes['QueryTransactionsByPublicKeyConnection'],
     ParentType,
@@ -3020,6 +3169,26 @@ export type QueryResolvers<
     ContextType,
     Partial<QueryTransfersArgs>
   >;
+};
+
+export type QueryBalanceConnectionResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['QueryBalanceConnection'] = ResolversParentTypes['QueryBalanceConnection'],
+> = {
+  edges?: Resolver<Array<ResolversTypes['QueryBalanceConnectionEdge']>, ParentType, ContextType>;
+  pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type QueryBalanceConnectionEdgeResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['QueryBalanceConnectionEdge'] = ResolversParentTypes['QueryBalanceConnectionEdge'],
+> = {
+  cursor?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  node?: Resolver<ResolversTypes['BalanceNode'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type QueryBlocksFromDepthConnectionResolvers<
@@ -3058,6 +3227,7 @@ export type QueryBlocksFromHeightConnectionResolvers<
     ContextType
   >;
   pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3154,6 +3324,30 @@ export type QueryTokensEdgeResolvers<
 > = {
   cursor?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   node?: Resolver<ResolversTypes['Token'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type QueryTransactionsByPactCodeConnectionResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['QueryTransactionsByPactCodeConnection'] = ResolversParentTypes['QueryTransactionsByPactCodeConnection'],
+> = {
+  edges?: Resolver<
+    Array<ResolversTypes['QueryTransactionsByPactCodeConnectionEdge']>,
+    ParentType,
+    ContextType
+  >;
+  pageInfo?: Resolver<ResolversTypes['PageInfo'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type QueryTransactionsByPactCodeConnectionEdgeResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['QueryTransactionsByPactCodeConnectionEdge'] = ResolversParentTypes['QueryTransactionsByPactCodeConnectionEdge'],
+> = {
+  cursor?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  node?: Resolver<ResolversTypes['TransactionSummary'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3488,6 +3682,24 @@ export type TransactionSignatureResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type TransactionSummaryResolvers<
+  ContextType = any,
+  ParentType extends
+    ResolversParentTypes['TransactionSummary'] = ResolversParentTypes['TransactionSummary'],
+> = {
+  badResult?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  canonical?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
+  chainId?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  creationTime?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
+  gas?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  gasLimit?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  gasPrice?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  height?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  requestKey?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  sender?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type TransferResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['Transfer'] = ResolversParentTypes['Transfer'],
@@ -3506,6 +3718,7 @@ export type TransferResolvers<
   receiverAccount?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   requestKey?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   senderAccount?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  tokenId?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   transaction?: Resolver<Maybe<ResolversTypes['Transaction']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
@@ -3523,6 +3736,7 @@ export type UserGuardResolvers<
 };
 
 export type Resolvers<ContextType = any> = {
+  BalanceNode?: BalanceNodeResolvers<ContextType>;
   BigInt?: GraphQLScalarType;
   Block?: BlockResolvers<ContextType>;
   BlockEventsConnection?: BlockEventsConnectionResolvers<ContextType>;
@@ -3532,6 +3746,7 @@ export type Resolvers<ContextType = any> = {
   BlockTransactionsConnectionEdge?: BlockTransactionsConnectionEdgeResolvers<ContextType>;
   ChartDataPoint?: ChartDataPointResolvers<ContextType>;
   ContinuationPayload?: ContinuationPayloadResolvers<ContextType>;
+  CountersOfEachChain?: CountersOfEachChainResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Decimal?: GraphQLScalarType;
   DexMetrics?: DexMetricsResolvers<ContextType>;
@@ -3578,6 +3793,8 @@ export type Resolvers<ContextType = any> = {
   PoolTransactionEdge?: PoolTransactionEdgeResolvers<ContextType>;
   PoolTransactionsConnection?: PoolTransactionsConnectionResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  QueryBalanceConnection?: QueryBalanceConnectionResolvers<ContextType>;
+  QueryBalanceConnectionEdge?: QueryBalanceConnectionEdgeResolvers<ContextType>;
   QueryBlocksFromDepthConnection?: QueryBlocksFromDepthConnectionResolvers<ContextType>;
   QueryBlocksFromDepthConnectionEdge?: QueryBlocksFromDepthConnectionEdgeResolvers<ContextType>;
   QueryBlocksFromHeightConnection?: QueryBlocksFromHeightConnectionResolvers<ContextType>;
@@ -3590,6 +3807,8 @@ export type Resolvers<ContextType = any> = {
   QueryPoolsConnectionEdge?: QueryPoolsConnectionEdgeResolvers<ContextType>;
   QueryTokensConnection?: QueryTokensConnectionResolvers<ContextType>;
   QueryTokensEdge?: QueryTokensEdgeResolvers<ContextType>;
+  QueryTransactionsByPactCodeConnection?: QueryTransactionsByPactCodeConnectionResolvers<ContextType>;
+  QueryTransactionsByPactCodeConnectionEdge?: QueryTransactionsByPactCodeConnectionEdgeResolvers<ContextType>;
   QueryTransactionsByPublicKeyConnection?: QueryTransactionsByPublicKeyConnectionResolvers<ContextType>;
   QueryTransactionsByPublicKeyConnectionEdge?: QueryTransactionsByPublicKeyConnectionEdgeResolvers<ContextType>;
   QueryTransactionsConnection?: QueryTransactionsConnectionResolvers<ContextType>;
@@ -3614,6 +3833,7 @@ export type Resolvers<ContextType = any> = {
   TransactionResultTransfersConnection?: TransactionResultTransfersConnectionResolvers<ContextType>;
   TransactionResultTransfersConnectionEdge?: TransactionResultTransfersConnectionEdgeResolvers<ContextType>;
   TransactionSignature?: TransactionSignatureResolvers<ContextType>;
+  TransactionSummary?: TransactionSummaryResolvers<ContextType>;
   Transfer?: TransferResolvers<ContextType>;
   UserGuard?: UserGuardResolvers<ContextType>;
 };

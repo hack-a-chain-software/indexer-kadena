@@ -140,7 +140,8 @@ export const transactionsFixture014 = {
               payload: {},
             },
             result: {
-              badResult: null,
+              badResult:
+                '{"info":"","type":"EvalError","message":"resumePact: pact completed: O2y87vcsF9i1lVuK7aoCA-7pXipReB0MM73ujd3dhDU","callStack":[]}',
               goodResult: null,
               continuation: null,
             },

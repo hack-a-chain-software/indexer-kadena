@@ -44,6 +44,7 @@ export const totalCountQueryTransactionsConnectionResolver: QueryTransactionsCon
       requestKey,
       isCoinbase,
     } = schema.parse(parent);
+
     const output = await context.transactionRepository.getTransactionsCount({
       accountName,
       blockHash,

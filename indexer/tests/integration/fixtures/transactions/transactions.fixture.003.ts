@@ -63,7 +63,7 @@ export const transactionsFixture003 = {
             },
             result: {
               badResult: null,
-              goodResult: '""',
+              goodResult: null,
               continuation: null,
             },
           },

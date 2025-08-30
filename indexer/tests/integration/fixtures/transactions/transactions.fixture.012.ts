@@ -443,7 +443,7 @@ export const transactionsFixture012 = {
             },
             result: {
               badResult: null,
-              goodResult: '""',
+              goodResult: null,
               continuation: null,
             },
           },
@@ -463,7 +463,7 @@ export const transactionsFixture012 = {
             },
             result: {
               badResult: null,
-              goodResult: '""',
+              goodResult: null,
               continuation: null,
             },
           },
