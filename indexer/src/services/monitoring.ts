@@ -16,9 +16,11 @@ export interface ErrorReporter {
 
 class HttpErrorReporter implements ErrorReporter {
   private readonly url: string;
+  private readonly apiKey: string;
 
-  constructor(url: string) {
+  constructor(url: string, apiKey: string) {
     this.url = url;
+    this.apiKey = apiKey;
   }
 
   async reportError({
@@ -45,8 +47,8 @@ class HttpErrorReporter implements ErrorReporter {
 
     try {
       await axios.post(this.url, body, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 3000,
+        headers: { 'Content-Type': 'application/json', 'x-api-key': this.apiKey },
+        timeout: 30000,
       });
     } catch {
       // Swallow errors to avoid breaking the app or creating log loops
@@ -56,12 +58,24 @@ class HttpErrorReporter implements ErrorReporter {
 
 export function initializeErrorMonitoring(): void {
   const monitoringUrl = process.env.MONITORING_URL?.trim();
-  if (!monitoringUrl) return; // Monitoring disabled; keep local logging only
+  const instance = process.env.INSTANCE_NAME?.trim();
+  const apiKey = process.env.ERROR_REPORT_API_KEY?.trim();
+
+  if (!monitoringUrl || !instance || !apiKey) {
+    const missing = [
+      !monitoringUrl ? 'MONITORING_URL' : null,
+      !instance ? 'INSTANCE_NAME' : null,
+      !apiKey ? 'ERROR_REPORT_API_KEY' : null,
+    ]
+      .filter(Boolean)
+      .join(', ');
+    console.warn(`[WARN][MONITORING] Monitoring not initialized. Missing env: ${missing}`);
+    return; // Monitoring disabled; keep local logging only
+  }
 
   const endpoint = `http://localhost:${process.env.KADENA_GRAPHQL_API_PORT ?? '3001'}/graphql`;
-  const instance = process.env.INSTANCE_NAME?.trim();
 
-  const reporter = new HttpErrorReporter(monitoringUrl);
+  const reporter = new HttpErrorReporter(monitoringUrl, apiKey);
   const originalConsoleError = console.error.bind(console);
 
   const classifySeverity = (message: string, extra: unknown): 'major' | 'degraded' | 'minimal' => {
