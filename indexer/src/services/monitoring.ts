@@ -51,7 +51,7 @@ class HttpErrorReporter implements ErrorReporter {
         timeout: 30000,
       });
     } catch {
-      // Swallow errors to avoid breaking the app or creating log loops
+      console.error('[ERROR][MONITORING][REPORT_ERROR] Failed to report error:', error);
     }
   }
 }
