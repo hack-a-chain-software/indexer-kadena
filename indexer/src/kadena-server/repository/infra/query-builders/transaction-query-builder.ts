@@ -57,7 +57,7 @@ export default class TransactionQueryBuilder {
 
     if (isNullOrUndefined(accountName) && minHeight && !maxHeight) {
       if (minHeight < 0) {
-        throw new Error('minHeight cannot be less than 0');
+        throw new Error('[ERROR][VALID][VALID_RANGE] minHeight cannot be less than 0');
       }
       blockParams.push(minHeight);
       const op = this.operator(blockParams.length);
@@ -66,7 +66,7 @@ export default class TransactionQueryBuilder {
 
     if (isNullOrUndefined(accountName) && minHeight && maxHeight) {
       if (minHeight > maxHeight) {
-        throw new Error('minHeight cannot be greater than maxHeight');
+        throw new Error('[ERROR][VALID][VALID_RANGE] minHeight cannot be greater than maxHeight');
       }
 
       blockParams.push(minHeight);

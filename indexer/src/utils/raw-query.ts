@@ -60,7 +60,10 @@ async function sendRawQuery(
 
     return JSON.stringify(result);
   } catch (error) {
-    throw new PactCommandError('Pact Command failed with error', error);
+    throw new PactCommandError(
+      '[ERROR][RAW_QUERY][SEND_RAW_QUERY] Pact Command failed with error',
+      error,
+    );
   }
 }
 
@@ -89,7 +92,10 @@ async function sendQuery(query: PactQuery): Promise<PactQueryResponse> {
     };
   } catch (error: unknown) {
     const err = error as PactCommandError;
-    const pactErrorMessage = err.pactError?.message || JSON.stringify(err.pactError || error);
+    const pactErrorMessage =
+      err.pactError?.message ||
+      JSON.stringify(err.pactError || error) ||
+      '[ERROR][RAW_QUERY][SEND_QUERY] Pact Command failed with error';
 
     return {
       status: 'error',
@@ -118,7 +124,8 @@ function createTimeout(query: PactQuery, timeoutMs: number): Promise<PactQueryRe
       resolve({
         status: 'timeout',
         result: null,
-        error: 'The query took too long to execute and was aborted',
+        error:
+          '[ERROR][RAW_QUERY][CREATE_TIMEOUT] The query took too long to execute and was aborted',
         chainId: query.chainId,
         code: query.code,
       });

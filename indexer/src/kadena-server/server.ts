@@ -271,7 +271,7 @@ export async function startGraphqlServer() {
       try {
         const path = Array.isArray(formattedError.path) ? formattedError.path.join('.') : '';
         // Log full message in the first arg so monitoring puts it in data.error
-        console.error(`[ERROR][GRAPHQL][FORMAT] ${formattedError.message}`, { path });
+        console.error(`[ERROR][GRAPHQL][DATA_FORMAT] ${formattedError.message}`, { path });
       } catch {
         // no-op
       }
@@ -319,7 +319,7 @@ export async function startGraphqlServer() {
                 for (const err of ctx.errors) {
                   const path = Array.isArray(err.path) ? err.path.join('.') : '';
                   // Log full message first so monitoring puts it in data.error; details go in extra.args
-                  console.error(`[ERROR][GRAPHQL][RESOLVER] ${err.message}`, {
+                  console.error(`[ERROR][GRAPHQL] ${err.message}`, {
                     operation: op,
                     path,
                   });
@@ -376,7 +376,7 @@ export async function startGraphqlServer() {
             // like compare it with max and throw error when the threshold is reached
             if (complexity > MAX_COMPLEXITY) {
               throw new Error(
-                'Sorry, too complicated query! Exceeded the maximum allowed complexity.',
+                '[ERROR][GRAPHQL][VALID_RANGE] Sorry, too complicated query! Exceeded the maximum allowed complexity.',
               );
             }
           },

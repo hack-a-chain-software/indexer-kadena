@@ -124,7 +124,7 @@ export async function backfillPairEvents(
   batchSize: number = 1000,
 ): Promise<void> {
   if (LAST_BLOCK_ID === null) {
-    throw new Error('BACKFILL_PAIR_EVENTS_LAST_BLOCK_ID is not set');
+    throw new Error('[ERROR][INFRA][INFRA_CONFIG] BACKFILL_PAIR_EVENTS_LAST_BLOCK_ID is not set');
   }
 
   const whereClause: WhereOptions<EventAttributes> = {

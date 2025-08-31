@@ -61,7 +61,7 @@ export const getNode = async (context: ResolverContext, id: string) => {
     // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const output = await context.blockRepository.getBlockByHash(params);
     if (!output) {
-      throw new Error('[ERROR][DB][DATA_MISSING] Block not found.');
+      throw new Error('[ERROR][GRAPHQL][DB][DATA_MISSING] Block not found.');
     }
     return buildBlockOutput(output);
   }

@@ -719,7 +719,9 @@ export default class TransactionDbRepository implements TransactionRepository {
     );
 
     if (rows.length !== eventIds.length) {
-      throw new Error(`[ERROR][EVENTS][FETCH_BLOCKS_MISMATCH] Fetched blocks count (${rows.length}) does not match event IDs count (${eventIds.length}).`);
+      throw new Error(
+        `[ERROR][DB][DATA_CORRUPT] Fetched blocks count (${rows.length}) does not match event IDs count (${eventIds.length}).`,
+      );
     }
 
     const transactionMap = rows.reduce(

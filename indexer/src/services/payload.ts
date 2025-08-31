@@ -258,7 +258,7 @@ export async function processTransaction(
       const txHash = transactionInfo.hash;
       const chainId = transactionAttributes.chainId;
       console.error(
-        `[ERROR][PAIR][PROCESSING] Error processing pair creation events: ${
+        `[ERROR][WORKER] Error processing pair creation events: ${
           error instanceof Error ? error.message : String(error)
         } | blockId=${block.id} requestKey=${requestKey} txHash=${txHash} chainId=${chainId}`,
       );
@@ -380,7 +380,7 @@ export async function processTransaction(
     };
   } catch (error) {
     // If an entire batch (or this transaction inside batch) failed before commit, treat as major in classifier
-    console.error('[ERROR][DB][DATA_CORRUPT] Failed to save transaction', {
+    console.error('[ERROR][DB][DATA_INVALID] Failed to save transaction', {
       error,
       chainId: transactionAttributes.chainId,
       height: (block as any)?.height,

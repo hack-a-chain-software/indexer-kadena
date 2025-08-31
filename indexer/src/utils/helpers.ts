@@ -9,7 +9,7 @@ export function getDecoded(encodedData: string): any {
   try {
     return JSON.parse(decodedData);
   } catch (error) {
-    console.error('Error decoding data:', error);
+    console.error('[ERROR][DATA][DATA_FORMAT] Error decoding data:', error);
     return null;
   }
 }

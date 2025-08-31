@@ -81,6 +81,8 @@ export function initializeErrorMonitoring(): void {
       'econnrefused',
       'econnreset',
       'connection refused',
+      'conn_refused',
+      'conn_reset',
       'failed to start',
       'migration failed',
       'eventsource connection error',
@@ -94,15 +96,20 @@ export function initializeErrorMonitoring(): void {
     const degradedHints = [
       'timeout',
       'timed out',
+      'conn_timeout',
+      'int_timeout',
+      'sync_timeout',
       'partial',
       'incomplete',
       'retry',
       'rate limit',
       'delayed',
       'inconsistent',
-      'conn_timeout',
       'exceed',
       'please backfill',
+      'data_missing',
+      'data_invalid',
+      'data_format',
     ];
     if (degradedHints.some(h => hay.includes(h))) return 'degraded';
 

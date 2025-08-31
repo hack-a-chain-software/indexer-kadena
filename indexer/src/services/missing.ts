@@ -14,7 +14,7 @@ export async function startMissingBlocksBeforeStreamingProcess() {
     await fillChainGaps(chainIdDiffs);
   } catch (error) {
     console.error(
-      `[ERROR][SYNC][MISSING] Error starting missing blocks before streaming process:`,
+      `[ERROR][SYNC][SYNC_TIMEOUT] Error starting missing blocks before streaming process:`,
       error,
     );
     throw error;
@@ -78,7 +78,7 @@ async function checkBigBlockGapsForAllChains() {
 
   if (chainsWithMoreThan7WeeksMissingBlocks.length > 0) {
     console.error(
-      `[ERROR][SYNC][MISSING] These chains exceed ${maxMissingBlocks} missing blocks. Please backfill these chains individually. Exiting...`,
+      `[ERROR][DATA][DATA_MISSING] These chains exceed ${maxMissingBlocks} missing blocks. Please backfill these chains individually. Exiting...`,
       {
         chains: chainsWithMoreThan7WeeksMissingBlocks.map(c => c.chainId),
         severityHint: 'degraded',
@@ -213,7 +213,7 @@ export async function fillChainGapsBeforeDefiningCanonicalBaseline({
     console.info(`[INFO][SYNC][MISSING] Initial chain gaps filled:`, chainId, fromHeight, toHeight);
   } catch (error) {
     console.error(
-      `[ERROR][SYNC][MISSING] Error filling chain ${chainId} gaps before defining canonical baseline:`,
+      `[ERROR][SYNC][SYNC_TIMEOUT] Error filling chain ${chainId} gaps before defining canonical baseline:`,
       error,
     );
   }
@@ -249,7 +249,10 @@ export async function checkCanonicalPathForAllChains() {
       );
     }
   } catch (error) {
-    console.error(`[ERROR][SYNC][MISSING] Error checking canonical path for all chains:`, error);
+    console.error(
+      `[ERROR][SYNC][SYNC_TIMEOUT] Error checking canonical path for all chains:`,
+      error,
+    );
   }
 }
 
@@ -278,7 +281,7 @@ async function checkCanonicalPathStartingFromSpecificBlock(
 
   if (ancestors.length < CANONICAL_BASE_LINE_LENGTH) {
     throw new Error(
-      `[INFO][SYNC][MISSING] Failed to build complete canonical path after ${maxAttempts} attempts. Only found ${ancestors.length} blocks.`,
+      `[ERROR][SYNC][SYNC_TIMEOUT] Failed to build complete canonical path after ${maxAttempts} attempts. Only found ${ancestors.length} blocks.`,
     );
   }
 

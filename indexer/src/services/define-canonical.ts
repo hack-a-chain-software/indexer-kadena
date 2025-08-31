@@ -7,7 +7,7 @@ const blockRepository = new BlockDbRepository();
 export async function defineCanonicalInStreaming(blockHash: string) {
   const tipBlock = await blockRepository.getBlockByHash(blockHash);
   if (!tipBlock) {
-    console.error('[ERROR][DATA][DATA_CORRUPT] Error defining canonical in streaming:', blockHash);
+    console.error('[ERROR][DB][DATA_MISSING] Error defining canonical in streaming:', blockHash);
     return;
   }
 
@@ -40,6 +40,6 @@ export async function defineCanonicalInStreaming(blockHash: string) {
       chainId: tipBlock.chainId,
     });
   } catch (error) {
-    console.error('Error defining canonical:', error);
+    console.error('[ERROR][SYNC][BIZ_FLOW] Error defining canonical:', error);
   }
 }
