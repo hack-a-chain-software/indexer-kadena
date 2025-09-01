@@ -77,13 +77,6 @@ export default class TransferDbRepository implements TransferRepository {
     const queryParams: (string | number | boolean)[] = [limit];
     let conditions = '';
 
-    if (hasTokenId) {
-      queryParams.push('marmalade-v2.ledger');
-      const op = operator(queryParams.length);
-      queryParams.push('marmalade.ledger');
-      conditions += `\n${op} transfers.modulename IN ($${queryParams.length - 1}, $${queryParams.length})`;
-    }
-
     if (after) {
       const [creationTime, id] = after.split(':');
       queryParams.push(creationTime);
@@ -103,7 +96,7 @@ export default class TransferDbRepository implements TransferRepository {
     if (chainId) {
       queryParams.push(chainId);
       const op = operator(queryParams.length);
-      conditions += `\n${op} b."chainId" = $${queryParams.length}`;
+      conditions += `\n${op} transfers."chainId" = $${queryParams.length}`;
     }
 
     if (fungibleName) {
@@ -136,50 +129,67 @@ export default class TransferDbRepository implements TransferRepository {
       conditions += `\n${op} b.hash = $${queryParams.length}`;
     }
 
+    queryParams.push(hasTokenId ?? false);
+    const op = operator(queryParams.length);
+    conditions += `\n${op} transfers."hasTokenId" = $${queryParams.length}`;
+
     let query = '';
     if (accountName) {
       queryParams.push(accountName);
+
+      const columns = `
+        id,
+        amount as "transferAmount",
+        "chainId" as "chainId",
+        "creationtime" as "creationTime",
+        "transactionId" as "transactionId",
+        "from_acct" as "senderAccount",
+        "to_acct" as "receiverAccount", 
+        modulename as "moduleName",
+        modulehash as "moduleHash",
+        requestkey as "requestKey",
+        "orderIndex",
+        "tokenId",
+        "hasTokenId"
+      `;
       query = `
-        WITH filtered_transfers AS(
-          SELECT *
-          FROM (
-            SELECT *
-            FROM "Transfers"
-            WHERE "from_acct" = $${queryParams.length}
-            UNION ALL
-            SELECT *
-            FROM "Transfers"
-            WHERE "to_acct" = $${queryParams.length}
-          ) transfers
+        WITH from_transfers AS (
+          SELECT ${columns}
+          FROM "Transfers" transfers
+          ${conditions}
+          AND transfers."from_acct" = $${queryParams.length}
           ORDER BY transfers."creationtime" ${order}, transfers.id ${order}
+          LIMIT 100
+        ),
+        to_transfers AS (
+          SELECT ${columns}
+          FROM "Transfers" transfers
+          ${conditions}
+          AND transfers."to_acct" = $${queryParams.length}
+          ORDER BY transfers."creationtime" ${order}, transfers.id ${order}
+          LIMIT 100
         )
-        select transfers.id as id,
-        transfers.amount as "transferAmount",
-        b."chainId" as "chainId",
-        transfers."creationtime" as "creationTime",
-        t.id as "transactionId",
+        SELECT
+        transfers.*,
         b.height as "height",
-        b.hash as "blockHash",
-        transfers."from_acct" as "senderAccount",
-        transfers."to_acct" as "receiverAccount",
-        transfers.modulename as "moduleName",
-        transfers.modulehash as "moduleHash",
-        transfers.requestkey as "requestKey",
-        transfers."orderIndex" as "orderIndex",
-        transfers."tokenId" as "tokenId"
-        from filtered_transfers transfers
-        join "Transactions" t on t.id = transfers."transactionId"
-        join "Blocks" b on b."id" = t."blockId"
-        ${conditions}
+        b.hash as "blockHash"
+        FROM (
+          SELECT * FROM from_transfers
+          UNION ALL
+          SELECT * FROM to_transfers
+        ) transfers
+        JOIN "Transactions" t on t.id = transfers."transactionId"
+        JOIN "Blocks" b on b.id = t."blockId"
+        ORDER BY transfers."creationTime" ${order}, transfers.id ${order}
         LIMIT $1
       `;
     } else {
       query = `
-        select transfers.id as id,
+        select transfers.id,
         transfers.amount as "transferAmount",
-        b."chainId" as "chainId",
+        transfers."chainId" as "chainId",
         transfers."creationtime" as "creationTime",
-        t.id as "transactionId",
+        transfers."transactionId" as "transactionId",
         b.height as "height",
         b.hash as "blockHash",
         transfers."from_acct" as "senderAccount",
@@ -191,7 +201,7 @@ export default class TransferDbRepository implements TransferRepository {
         transfers."tokenId" as "tokenId"
         from "Transfers" transfers
         join "Transactions" t on t.id = transfers."transactionId"
-        join "Blocks" b on b."id" = t."blockId"
+        join "Blocks" b on b.id = t."blockId"
         ${conditions}
         ORDER BY transfers.creationtime ${order}, transfers.id ${order}
         LIMIT $1
