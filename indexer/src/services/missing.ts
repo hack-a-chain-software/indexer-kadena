@@ -112,6 +112,7 @@ async function fillChainGaps(
       let maxHeight = Math.min(i + THRESHOLD - 1, chainIdDiff.toHeight);
       const url = `${SYNC_BASE_URL}/${NETWORK_ID}/chain/${chainIdDiff.chainId}/block/branch?minheight=${minHeight}&maxheight=${maxHeight}`;
 
+      console.log('fetching');
       const res = await fetch(url, {
         method: 'POST',
         headers: {
@@ -123,13 +124,19 @@ async function fillChainGaps(
         }),
       });
 
+      console.log('fetched');
+
       const data = await res.json();
 
       const tx = await sequelize.transaction();
+      console.log('tx', 'initialized', data.items.length);
       try {
-        const promises = data.items.map(async (item: any) => {
+        const promises = data.items.map(async (item: any, index: number) => {
           const payload = processPayload(item.payloadWithOutputs);
-          return saveBlock({ header: item.header, payload, canonical: true }, tx);
+          console.log('saving', index);
+          const block = await saveBlock({ header: item.header, payload, canonical: true }, tx);
+          console.log('saved', index);
+          return block;
         });
 
         await Promise.all(promises);
@@ -147,4 +154,56 @@ async function fillChainGaps(
 
     console.info('[INFO][SYNC][MISSING] Processed:', chainIdDiff);
   }
+}
+
+const getGaps = async () => {
+  const url = `${SYNC_BASE_URL}/${NETWORK_ID}/cut`;
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  const data = await res.json();
+
+  const query = `
+    WITH ordered_heights AS (
+      SELECT DISTINCT "height"
+      FROM "Blocks"
+      WHERE "chainId" = $1 AND height > 6000000
+    ),
+    height_gaps AS (
+      SELECT
+        "height",
+        LEAD("height") OVER (ORDER BY "height") AS next_height
+      FROM ordered_heights
+    )
+    SELECT
+      "height" + 1 AS start_height,
+      next_height - 1 AS end_height
+    FROM height_gaps
+    WHERE next_height - "height" > 1
+    ORDER BY start_height;
+  `;
+
+  const allGaps = [];
+  for (const chainId of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]) {
+    const { rows } = await rootPgPool.query(query, [chainId]);
+    const gaps = rows.map(row => ({
+      chainId: chainId.toString(),
+      fromHeight: row.start_height,
+      toHeight: row.end_height,
+      hash: data.hashes[chainId].hash,
+    }));
+    allGaps.push(...gaps);
+  }
+
+  return allGaps;
+};
+
+export async function startMissingBlocksBackfill() {
+  const hashesMap = await getGaps();
+  console.log(hashesMap);
+  await fillChainGaps(hashesMap);
 }

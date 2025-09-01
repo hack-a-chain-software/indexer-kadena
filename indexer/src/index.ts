@@ -18,6 +18,7 @@ import { startStreaming } from './services/streaming';
 import { backfillPairEvents } from './services/pair';
 import { setupAssociations } from './models/setup-associations';
 import { PriceUpdaterService } from '@/services/price/price-updater.service';
+import { startMissingBlocksBackfill } from '@/services/missing';
 
 /**
  * Command-line interface configuration using Commander.
@@ -26,6 +27,7 @@ import { PriceUpdaterService } from '@/services/price/price-updater.service';
 program
   .option('-s, --streaming', 'Start streaming blockchain data')
   .option('-t, --graphql', 'Start GraphQL server based on kadena schema')
+  .option('-m, --missing', 'Start missing blocks backfill')
   .option('-p, --backfillPairs', 'Backfill the pairs');
 
 program.parse(process.argv);
@@ -55,6 +57,9 @@ async function main() {
       await startStreaming();
     } else if (options.graphql) {
       await startGraphqlServer();
+    } else if (options.missing) {
+      await startMissingBlocksBackfill();
+      process.exit(0);
     } else if (options.backfillPairs) {
       await backfillPairEvents();
     } else {
