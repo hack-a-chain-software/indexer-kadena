@@ -122,6 +122,7 @@ export type TransactionByPactCodeOutput = {
   gas: string;
   gasLimit: string;
   gasPrice: string;
+  code?: string | null;
 };
 
 /**

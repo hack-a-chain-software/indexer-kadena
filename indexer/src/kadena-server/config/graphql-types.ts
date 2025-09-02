@@ -1411,6 +1411,7 @@ export type TransactionSummary = {
   badResult?: Maybe<Scalars['String']['output']>;
   canonical: Scalars['Boolean']['output'];
   chainId: Scalars['BigInt']['output'];
+  code?: Maybe<Scalars['String']['output']>;
   creationTime: Scalars['DateTime']['output'];
   gas: Scalars['String']['output'];
   gasLimit: Scalars['String']['output'];
@@ -3691,6 +3692,7 @@ export type TransactionSummaryResolvers<
   badResult?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   canonical?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   chainId?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  code?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   creationTime?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   gas?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   gasLimit?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
