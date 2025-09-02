@@ -10,6 +10,7 @@ export type GetTransfersParams = GetTotalCountParams &
 
 export type GetTransfersByTransactionIdParams = {
   transactionId: string;
+  hasTokenId?: boolean | null;
 } & PaginationsParams;
 
 export interface GetTotalCountParams {
