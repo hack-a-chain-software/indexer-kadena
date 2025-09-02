@@ -77,13 +77,6 @@ export default class TransferDbRepository implements TransferRepository {
     const queryParams: (string | number | boolean)[] = [limit];
     let conditions = '';
 
-    if (hasTokenId) {
-      queryParams.push('marmalade-v2.ledger');
-      const op = operator(queryParams.length);
-      queryParams.push('marmalade.ledger');
-      conditions += `\n${op} transfers.modulename IN ($${queryParams.length - 1}, $${queryParams.length})`;
-    }
-
     if (after) {
       const [creationTime, id] = after.split(':');
       queryParams.push(creationTime);
@@ -135,6 +128,10 @@ export default class TransferDbRepository implements TransferRepository {
       const op = operator(queryParams.length);
       conditions += `\n${op} b.hash = $${queryParams.length}`;
     }
+
+    queryParams.push(hasTokenId ?? false);
+    const op = operator(queryParams.length);
+    conditions += `\n${op} transfers."hasTokenId" = $${queryParams.length}`;
 
     let query = '';
     if (accountName) {
@@ -293,7 +290,7 @@ export default class TransferDbRepository implements TransferRepository {
 
     const { blockHash, accountName, chainId, transactionId, fungibleName, requestKey, hasTokenId } =
       params;
-    const queryParams: (string | number)[] = [];
+    const queryParams: (string | number | boolean)[] = [];
     let conditions = '';
 
     const localOperator = (length: number) => (length > 1 ? `\nAND` : 'WHERE');
@@ -328,18 +325,15 @@ export default class TransferDbRepository implements TransferRepository {
       conditions += `${op} trans.modulename = $${queryParams.length}`;
     }
 
-    if (hasTokenId) {
-      queryParams.push('marmalade-v2.ledger');
-      queryParams.push('marmalade.ledger');
-      const op = localOperator(queryParams.length);
-      conditions += `${op} trans.modulename IN ($${queryParams.length - 1}, $${queryParams.length})`;
-    }
-
     if (requestKey) {
       queryParams.push(requestKey);
       const op = localOperator(queryParams.length);
       conditions += `${op} t.requestkey = $${queryParams.length}`;
     }
+
+    queryParams.push(hasTokenId ?? false);
+    const op = localOperator(queryParams.length);
+    conditions += `${op} trans."hasTokenId" = $${queryParams.length}`;
 
     const totalCountQuery = `
       SELECT COUNT(*) as count
@@ -366,7 +360,14 @@ export default class TransferDbRepository implements TransferRepository {
    * @returns Promise resolving to page info and transfer edges
    */
   async getTransfersByTransactionId(params: GetTransfersByTransactionIdParams) {
-    const { transactionId, after: afterEncoded, before: beforeEncoded, first, last } = params;
+    const {
+      transactionId,
+      after: afterEncoded,
+      before: beforeEncoded,
+      first,
+      last,
+      hasTokenId,
+    } = params;
 
     const { limit, order, after, before } = getPaginationParams({
       after: afterEncoded,
@@ -375,17 +376,17 @@ export default class TransferDbRepository implements TransferRepository {
       last,
     });
 
-    const queryParams: (string | number)[] = [limit, transactionId];
-    let conditions = '';
+    const queryParams: (string | number | boolean)[] = [limit, transactionId, hasTokenId ?? false];
+    let conditions = '\nAND transfers."hasTokenId" = $3';
 
     if (before) {
       queryParams.push(before);
-      conditions += `\nAND transfers.id > $3`;
+      conditions += `\nAND transfers.id > $4`;
     }
 
     if (after) {
       queryParams.push(after);
-      conditions += `\nAND transfers.id < $3`;
+      conditions += `\nAND transfers.id < $4`;
     }
 
     const query = `
@@ -402,12 +403,10 @@ export default class TransferDbRepository implements TransferRepository {
       transfers.modulehash as "moduleHash",
       transfers.requestkey as "requestKey",
       transfers."orderIndex" as "orderIndex",
-      td.pactid as "pactId",
       transfers."tokenId" as "tokenId"
       from "Blocks" b
       join "Transactions" transactions on b.id = transactions."blockId"
       join "Transfers" transfers on transfers."transactionId" = transactions.id 
-      left join "TransactionDetails" td on transactions.id = td."transactionId"
       WHERE transactions.id = $2
       ${conditions}
       ORDER BY transfers.id ${order}

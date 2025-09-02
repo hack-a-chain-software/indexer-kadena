@@ -25,11 +25,12 @@ const schema = zod.object({ databaseTransactionId: zod.string() });
 export const transfersTransactionResultResolver: TransactionResultResolvers<ResolverContext>['transfers'] =
   async (parent, args, context) => {
     const parentArgs = schema.parse(parent);
-
     const { first, after, before, last } = args;
 
+    const hasTokenId = false;
     const output = await context.transferRepository.getTransfersByTransactionId({
       transactionId: parentArgs.databaseTransactionId,
+      hasTokenId,
       first,
       after,
       before,
@@ -45,6 +46,7 @@ export const transfersTransactionResultResolver: TransactionResultResolvers<Reso
       pageInfo: output.pageInfo,
 
       // for resolvers
+      hasTokenId,
       databaseTransactionId: parentArgs.databaseTransactionId,
       totalCount: -1, // Placeholder value; actual count is resolved by a separate resolver
     };
