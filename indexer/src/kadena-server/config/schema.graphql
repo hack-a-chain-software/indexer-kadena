@@ -469,6 +469,7 @@ type TransactionSummary {
   gas: String!
   gasLimit: String!
   gasPrice: String!
+  code: String
 }
 
 """

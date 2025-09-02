@@ -439,6 +439,7 @@ export default class TransactionQueryBuilder {
         td.gas AS "gas",
         td.gaslimit AS "gasLimit",
         td.gasprice AS "gasPrice",
+        td.code AS code,
         t.result AS "result",
         b.height AS "height",
         b.canonical AS "canonical"

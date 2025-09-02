@@ -30,6 +30,7 @@ export const getTransactionsByPactCodeQuery = (params: any): string => {
             gasLimit
             gasPrice
             sender
+            code
           }
         }
       }

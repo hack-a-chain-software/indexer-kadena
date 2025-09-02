@@ -12,6 +12,7 @@ const schema = z.object({
   gas: z.string(),
   gasLimit: z.string(),
   gasPrice: z.string(),
+  code: z.any().nullable(),
 });
 
 function validate(row: any): TransactionByPactCodeOutput {
@@ -28,6 +29,7 @@ function validate(row: any): TransactionByPactCodeOutput {
     gas: res.gas,
     gasLimit: res.gasLimit,
     gasPrice: res.gasPrice,
+    code: res.code ? JSON.stringify(res.code) : null,
   };
 }
 
