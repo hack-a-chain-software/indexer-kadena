@@ -339,4 +339,3 @@ async function fetchAndSaveBlocks(chainId: number, height: number) {
     throw err;
   }
 }
-

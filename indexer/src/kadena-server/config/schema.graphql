@@ -353,15 +353,17 @@ type Query {
   Retrieve transfers. Default page size is 20.
   """
   transfers(
-    accountName: String
     after: String
     before: String
-    blockHash: String
-    chainId: String
     first: Int
-    fungibleName: String
     last: Int
+
+    blockHash: String
     requestKey: String
+
+    accountName: String
+    chainId: String
+    fungibleName: String
     isNFT: Boolean
   ): QueryTransfersConnection! @complexity(value: 1, multipliers: ["first", "last"])
 
