@@ -103,6 +103,10 @@ export default class TransferDbRepository implements TransferRepository {
       queryParams.push(fungibleName);
       const op = operator(queryParams.length);
       conditions += `\n${op} transfers."modulename" = $${queryParams.length}`;
+    } else {
+      queryParams.push(hasTokenId ?? false);
+      const op = operator(queryParams.length);
+      conditions += `\n${op} transfers."hasTokenId" = $${queryParams.length}`;
     }
 
     if (orderIndex) {
@@ -128,10 +132,6 @@ export default class TransferDbRepository implements TransferRepository {
       const op = operator(queryParams.length);
       conditions += `\n${op} b.hash = $${queryParams.length}`;
     }
-
-    queryParams.push(hasTokenId ?? false);
-    const op = operator(queryParams.length);
-    conditions += `\n${op} transfers."hasTokenId" = $${queryParams.length}`;
 
     let query = '';
     if (accountName) {
@@ -210,7 +210,7 @@ export default class TransferDbRepository implements TransferRepository {
 
     const { rows } = await rootPgPool.query(query, queryParams);
 
-    const edges = rows.map(row => ({
+    const edges = rows.map((row: any) => ({
       cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
       node: transferSchemaValidator.validate(row),
     }));
@@ -308,12 +308,6 @@ export default class TransferDbRepository implements TransferRepository {
 
     const localOperator = (length: number) => (length > 1 ? `\nAND` : 'WHERE');
 
-    if (accountName) {
-      queryParams.push(accountName);
-      const op = localOperator(queryParams.length);
-      conditions += `\n${op} (trans.from_acct = $${queryParams.length} OR trans.to_acct = $${queryParams.length})`;
-    }
-
     if (blockHash) {
       queryParams.push(blockHash);
       const op = localOperator(queryParams.length);
@@ -323,7 +317,7 @@ export default class TransferDbRepository implements TransferRepository {
     if (chainId) {
       queryParams.push(chainId);
       const op = localOperator(queryParams.length);
-      conditions += `${op} b."chainId" = $${queryParams.length}`;
+      conditions += `${op} trans."chainId" = $${queryParams.length}`;
     }
 
     if (transactionId) {
@@ -344,17 +338,56 @@ export default class TransferDbRepository implements TransferRepository {
       conditions += `${op} t.requestkey = $${queryParams.length}`;
     }
 
-    queryParams.push(hasTokenId ?? false);
-    const op = localOperator(queryParams.length);
-    conditions += `${op} trans."hasTokenId" = $${queryParams.length}`;
+    if (!fungibleName) {
+      queryParams.push(hasTokenId ?? false);
+      const op = localOperator(queryParams.length);
+      conditions += `${op} trans."hasTokenId" = $${queryParams.length}`;
+    }
 
-    const totalCountQuery = `
+    const hasJoinBlocks = blockHash;
+    const hasJoinTransactions = transactionId || requestKey || hasJoinBlocks;
+
+    let totalCountQuery = '';
+    if (accountName) {
+      queryParams.push(accountName);
+
+      const queryOne = `
+        SELECT COUNT(*)
+        FROM "Transfers" trans
+        ${conditions}
+        AND trans."from_acct" = $${queryParams.length}
+      `;
+      const queryTwo = `
+        SELECT COUNT(*)
+        FROM "Transfers" trans
+        ${conditions}
+        AND trans."to_acct" = $${queryParams.length}
+      `;
+
+      const promises = await Promise.all([
+        rootPgPool.query(queryOne, queryParams),
+        rootPgPool.query(queryTwo, queryParams),
+      ]);
+
+      const countResultOne = parseInt(promises[0].rows[0].count, 10);
+      const countResultTwo = parseInt(promises[1].rows[0].count, 10);
+      return countResultOne + countResultTwo;
+    }
+
+    totalCountQuery = `
       SELECT COUNT(*) as count
       FROM "Transfers" trans
-      join "Transactions" t on t.id = trans."transactionId"
-      join "Blocks" b on b.id = t."blockId"
-      ${conditions}
     `;
+
+    if (hasJoinTransactions) {
+      totalCountQuery += `\nJOIN "Transactions" t on t.id = trans."transactionId"`;
+    }
+
+    if (hasJoinBlocks) {
+      totalCountQuery += `\nJOIN "Blocks" b on b.id = t."blockId"`;
+    }
+
+    totalCountQuery += `\n${conditions}`;
 
     const { rows: countResult } = await rootPgPool.query(totalCountQuery, queryParams);
 
