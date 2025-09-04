@@ -35,7 +35,8 @@ const schema = zod.object({
   receiverAccount: zod.string(),
   senderAccount: zod.string(),
   requestKey: zod.string(),
-  pactId: zod.string().nullable(),
+  tokenId: zod.string().nullable().optional(),
+  transactionId: zod.number(),
 });
 
 /**
@@ -93,7 +94,8 @@ function validate(row: any): TransferOutput {
     receiverAccount: res.receiverAccount,
     senderAccount: res.senderAccount,
     transferId: res.id.toString(),
-    pactId: res.pactId,
+    transactionId: res.transactionId.toString(),
+    tokenId: res.tokenId,
   };
 }
 

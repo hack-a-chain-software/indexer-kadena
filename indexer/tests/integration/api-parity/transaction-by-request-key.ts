@@ -1,8 +1,8 @@
 import { gql } from 'graphql-request';
 
 export const transactionByRequestKeyQueryGql = gql`
-  query {
-    transaction(requestKey: "Jeva9G9yC0WKOvZPS0VamcVp5wJqOOXZW4jdlnIcE9k") {
+  query transactionByRequestKey($requestKey: String!) {
+    transaction(requestKey: $requestKey) {
       id
       hash
       cmd {

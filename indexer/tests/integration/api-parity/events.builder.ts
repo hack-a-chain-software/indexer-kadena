@@ -1,11 +1,8 @@
 import { gql } from 'graphql-request';
 
 export const eventsQueryGql = gql`
-  query {
-    events(
-      blockHash: "Qzi58vcpW97du01srIwxpwSQUPDRNBnl2EKyubP-IWw"
-      qualifiedEventName: "free.crankk01.TRANSFER"
-    ) {
+  query events($blockHash: String!) {
+    events(blockHash: $blockHash, qualifiedEventName: "free.crankk01.TRANSFER", first: 500) {
       pageInfo {
         hasNextPage
         hasPreviousPage

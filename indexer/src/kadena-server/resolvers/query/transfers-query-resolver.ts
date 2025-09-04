@@ -47,7 +47,7 @@ export const transfersQueryResolver: QueryResolvers<ResolverContext>['transfers'
   } = args;
 
   if (isNFT && fungibleName) {
-    throw new Error('isNFT and fungibleName cannot be used together');
+    throw new Error('[ERROR][GRAPHQL][VALID_PARAM] isNFT and fungibleName cannot be used together');
   }
 
   // Call the repository layer to retrieve the filtered and paginated transfers

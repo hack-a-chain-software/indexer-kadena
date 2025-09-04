@@ -5,10 +5,11 @@ import { Op, WhereOptions, Transaction as SequelizeTransaction } from 'sequelize
 import Transaction from '../models/transaction';
 import { DEFAULT_PROTOCOL } from '../kadena-server/config/apollo-server-config';
 import Block from '@/models/block';
+import { sequelize } from '@/config/database';
 
-const MODULE_NAMES = [`${DEFAULT_PROTOCOL}`, `${DEFAULT_PROTOCOL}-tokens`];
-const EVENT_TYPES = ['CREATE_PAIR', 'UPDATE', 'SWAP', 'ADD_LIQUIDITY', 'REMOVE_LIQUIDITY'];
-const EXCHANGE_TOKEN_EVENTS = ['MINT_EVENT', 'BURN_EVENT', 'TRANSFER_EVENT'];
+export const MODULE_NAMES = [`${DEFAULT_PROTOCOL}`, `${DEFAULT_PROTOCOL}-tokens`];
+export const EVENT_TYPES = ['CREATE_PAIR', 'UPDATE', 'SWAP', 'ADD_LIQUIDITY', 'REMOVE_LIQUIDITY'];
+export const EXCHANGE_TOKEN_EVENTS = ['MINT_EVENT', 'BURN_EVENT', 'TRANSFER_EVENT'];
 
 const LAST_BLOCK_ID = process.env.BACKFILL_PAIR_EVENTS_LAST_BLOCK_ID
   ? Number(process.env.BACKFILL_PAIR_EVENTS_LAST_BLOCK_ID)
@@ -124,7 +125,7 @@ export async function backfillPairEvents(
   batchSize: number = 1000,
 ): Promise<void> {
   if (LAST_BLOCK_ID === null) {
-    throw new Error('BACKFILL_PAIR_EVENTS_LAST_BLOCK_ID is not set');
+    throw new Error('[ERROR][INFRA][INFRA_CONFIG] BACKFILL_PAIR_EVENTS_LAST_BLOCK_ID is not set');
   }
 
   const whereClause: WhereOptions<EventAttributes> = {
@@ -164,7 +165,6 @@ export async function backfillPairEvents(
           include: [
             {
               model: Block,
-              as: 'block',
               attributes: ['height'],
               where: {
                 canonical: true,
@@ -182,24 +182,34 @@ export async function backfillPairEvents(
       continue;
     }
 
-    const progressPercentage = ((processedCount / LAST_BLOCK_ID) * 100).toFixed(2);
-    console.log(
-      `Processing batch of ${events.length} events starting from offset ${processedCount} (${progressPercentage}% complete)`,
-    );
-    await processPairCreationEvents(
-      events.map(event => event.get({ plain: true })),
-      null,
-    );
+    // const progressPercentage = ((processedCount / LAST_BLOCK_ID) * 100).toFixed(2);
+    // console.info(
+    //   `Processing batch of ${events.length} events starting from offset ${processedCount} (${progressPercentage}% complete)`,
+    // );
+
+    const tx = await sequelize.transaction();
+    try {
+      await processPairCreationEvents(
+        events.map(event => event.get({ plain: true })),
+        tx,
+      );
+      await tx.commit();
+    } catch (error) {
+      await tx.rollback();
+      console.error('[ERROR][DATA][DATA_CORRUPT] Error processing pair creation events:', error);
+    }
     processedCount += events.length;
 
     const endTime = Date.now();
     const timeTaken = (endTime - startTime) / 1000; // Convert to seconds
-    console.log(`Batch processed in ${timeTaken.toFixed(2)} seconds`);
+    console.info(`Batch processed in ${timeTaken.toFixed(2)} seconds`);
 
     if (events.length < batchSize) {
       hasMore = false;
     }
   }
 
-  console.log(`Backfill completed. Processed ${processedCount} events.`);
+
+  console.info(`Backfill completed. Processed ${processedCount} events.`);
+  process.exit(0);
 }

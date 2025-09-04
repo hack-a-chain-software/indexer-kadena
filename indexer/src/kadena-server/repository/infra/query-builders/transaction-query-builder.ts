@@ -57,7 +57,7 @@ export default class TransactionQueryBuilder {
 
     if (isNullOrUndefined(accountName) && minHeight && !maxHeight) {
       if (minHeight < 0) {
-        throw new Error('minHeight cannot be less than 0');
+        throw new Error('[ERROR][VALID][VALID_RANGE] minHeight cannot be less than 0');
       }
       blockParams.push(minHeight);
       const op = this.operator(blockParams.length);
@@ -66,7 +66,7 @@ export default class TransactionQueryBuilder {
 
     if (isNullOrUndefined(accountName) && minHeight && maxHeight) {
       if (minHeight > maxHeight) {
-        throw new Error('minHeight cannot be greater than maxHeight');
+        throw new Error('[ERROR][VALID][VALID_RANGE] minHeight cannot be greater than maxHeight');
       }
 
       blockParams.push(minHeight);
@@ -358,12 +358,6 @@ export default class TransactionQueryBuilder {
     let whereCondition = '';
     let queryParams: (string | number)[] = [params.limit];
 
-    if (!params.after && !params.before && params.order === 'DESC') {
-      const currentTime = Date.now() - 10000000;
-      queryParams.push(currentTime, 0);
-      whereCondition = ` WHERE t.creationtime > $2 AND t.id > $3`;
-    }
-
     if (params.after) {
       const [creationTime, id] = params.after.split(':');
       queryParams.push(creationTime, id);
@@ -409,6 +403,52 @@ export default class TransactionQueryBuilder {
       ${whereCondition}
       ORDER BY t.creationtime ${params.order}, t.id ${params.order}
       LIMIT $1
+    `;
+
+    return { query, queryParams };
+  }
+
+  buildTransactionByCodeQuery(params: {
+    after?: string | null;
+    before?: string | null;
+    order: string;
+    limit: number;
+    transactionCode: string;
+  }) {
+    let whereCondition = `\nWHERE td.code::text LIKE '%' || $2 || '%' AND t.sender != 'coinbase'`;
+    let queryParams: (string | number | boolean)[] = [params.limit, params.transactionCode];
+
+    if (params.after) {
+      const [creationTime, id] = params.after.split(':');
+      queryParams.push(creationTime, id);
+      whereCondition += `\nAND (t.creationtime, t.id) < ($${queryParams.length - 1}, $${queryParams.length})`;
+    }
+    if (params.before) {
+      const [creationTime, id] = params.before.split(':');
+      queryParams.push(creationTime, id);
+      whereCondition += `\nAND (t.creationtime, t.id) > ($${queryParams.length - 1}, $${queryParams.length})`;
+    }
+
+    const query = `
+      SELECT
+        t.id AS id,
+        t.requestkey AS "requestKey",
+        t."chainId" AS "chainId",
+        t.creationtime AS "creationTime",
+        t.sender AS "sender",
+        td.gas AS "gas",
+        td.gaslimit AS "gasLimit",
+        td.gasprice AS "gasPrice",
+        td.code AS code,
+        t.result AS "result",
+        b.height AS "height",
+        b.canonical AS "canonical"
+        FROM "TransactionDetails" td
+        JOIN "Transactions" t ON t.id = td."transactionId"
+        JOIN "Blocks" b ON b.id = t."blockId"
+        ${whereCondition}
+        ORDER BY t.creationtime ${params.order}, t.id ${params.order}
+        LIMIT $1
     `;
 
     return { query, queryParams };

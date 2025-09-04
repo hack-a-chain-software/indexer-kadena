@@ -156,7 +156,12 @@ export async function processTransaction(
   try {
     cmdData = JSON.parse(transactionInfo.cmd);
   } catch (error) {
-    console.error(`[ERROR][DATA][DATA_FORMAT] Failed to parse transaction command JSON: ${error}`);
+    console.error('[ERROR][DATA][DATA_FORMAT] Failed to parse transaction command JSON', {
+      error,
+      chainId: block.chainId,
+      height: (block as any)?.height,
+      txHash: transactionInfo?.hash,
+    });
     throw error;
   }
 
@@ -178,7 +183,7 @@ export async function processTransaction(
     hash: transactionInfo.hash,
     result: receiptInfo.result || null,
     logs: receiptInfo.logs || null,
-    num_events: eventsData ? eventsData.length : 0,
+    num_events: eventsData.length,
     requestkey: receiptInfo.reqKey,
     sender: cmdData?.meta?.sender || null,
     txid: receiptInfo.txId ? receiptInfo.txId.toString() : null,
@@ -230,26 +235,11 @@ export async function processTransaction(
     );
 
     const events = await Promise.all(eventsAttributes);
-    // Note: Should not summit debug to the 'main' branch
-    // const swapEvents = events.filter(event => event.name === 'SWAP');
-    // console.log('swapEvents', JSON.stringify(swapEvents, null, 2));
-    // const addLiquidityEvents = events.filter(event => event.name === 'ADD_LIQUIDITY');
-    // console.log('addLiquidityEvents', JSON.stringify(addLiquidityEvents, null, 2));
-    // const mintEvents = events.filter(event => event.name === 'MINT_EVENT');
-    // console.log('mintEvents', JSON.stringify(mintEvents, null, 2));
-    // console.log('------------------------------------- end -------------------------------');
     const eventsWithTransactionId = events.map(event => ({
       ...event,
       transactionId,
     }));
     await Event.bulkCreate(eventsWithTransactionId, { transaction: tx });
-
-    // Process pair creation events
-    try {
-      await processPairCreationEvents(eventsWithTransactionId, tx);
-    } catch (error) {
-      console.error('Error processing pair creation events:', error);
-    }
 
     const signers = (cmdData.signers ?? []).map((signer: any, index: number) => ({
       address: signer.address,
@@ -362,9 +352,14 @@ export async function processTransaction(
       gasprice: transactionDetailsAttributes.gasprice,
     };
   } catch (error) {
-    console.error(
-      `[ERROR][DB][DATA_CORRUPT] Failed to save transaction ${transactionInfo.hash}: ${error}`,
-    );
+    // If an entire batch (or this transaction inside batch) failed before commit, treat as major in classifier
+    console.error('[ERROR][DB][DATA_INVALID] Failed to save transaction', {
+      error,
+      chainId: transactionAttributes.chainId,
+      height: (block as any)?.height,
+      txHash: transactionInfo?.hash,
+      blockId: (block as any)?.id,
+    });
     throw error;
   }
 }

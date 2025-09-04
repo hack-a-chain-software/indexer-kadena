@@ -127,15 +127,18 @@ export class PairService {
       batches.push(pairs.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(`Starting to process ${batches.length} batches of ${BATCH_SIZE} pairs each`);
+
+    // console.info(`Starting to process ${batches.length} batches of ${BATCH_SIZE} pairs each`);
 
     // Process batches sequentially
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
       const progressPercentage = (((batchIndex + 1) / batches.length) * 100).toFixed(2);
-      console.log(
-        `Progress: ${progressPercentage}% (Create Pairs Batch ${batchIndex + 1}/${batches.length})`,
-      );
+
+      // console.info(
+      //   `Progress: ${progressPercentage}% (Create Pairs Batch ${batchIndex + 1}/${batches.length})`,
+      // );
+
 
       const tx = transaction || (await sequelize.transaction());
       try {
@@ -158,7 +161,7 @@ export class PairService {
               // Create pair
               await this.createOrFindPair(token0, token1, moduleName, tx);
             } catch (error) {
-              console.error('Error creating pair:', error);
+              console.error('[ERROR][DB][DATA_INVALID] Error creating pair:', error);
               throw error;
             }
           }),
@@ -170,10 +173,14 @@ export class PairService {
         if (transaction) {
           await tx.rollback();
         }
-        console.error(`Error processing batch ${batchIndex + 1}/${batches.length}:`, error);
+        console.error(
+          `[ERROR][WORKER] Error processing batch ${batchIndex + 1}/${batches.length}:`,
+          error,
+        );
       }
     }
-    console.log('Finished processing all pair creation batches');
+
+    // console.info('Finished processing all pair creation batches');
   }
 
   /**
@@ -227,15 +234,17 @@ export class PairService {
       batches.push(updateEvents.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(`Starting to process ${batches.length} batches of ${BATCH_SIZE} events each`);
+
+    // console.info(`Starting to process ${batches.length} batches of ${BATCH_SIZE} events each`);
 
     // Process batches sequentially
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
       const progressPercentage = (((batchIndex + 1) / batches.length) * 100).toFixed(2);
-      console.log(
-        `Progress: ${progressPercentage}% (Update Pairs Batch ${batchIndex + 1}/${batches.length})`,
-      );
+
+      // console.info(
+      //   `Progress: ${progressPercentage}% (Update Pairs Batch ${batchIndex + 1}/${batches.length})`,
+      // );
 
       const tx = transaction || (await sequelize.transaction());
       try {
@@ -394,7 +403,7 @@ export class PairService {
             // Update pool stats
             await this.updatePoolStats(pair.id, tx);
           } catch (error) {
-            console.error('Error updating pair:', error);
+            console.error('[ERROR][DB][DATA_INVALID] Error updating pair:', error);
             throw error;
           }
         }
@@ -405,10 +414,14 @@ export class PairService {
         if (transaction) {
           await tx.rollback();
         }
-        console.error(`Error processing batch ${batchIndex + 1}/${batches.length}:`, error);
+        console.error(
+          `[ERROR][WORKER] Error processing batch ${batchIndex + 1}/${batches.length}:`,
+          error,
+        );
       }
     }
-    console.log('Finished processing all update batches');
+
+    // console.info('Finished processing all update batches');
   }
 
   /**
@@ -629,15 +642,16 @@ export class PairService {
       batches.push(swapEvents.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(`Starting to process ${batches.length} batches of ${BATCH_SIZE} swap events each`);
+    // console.info(`Starting to process ${batches.length} batches of ${BATCH_SIZE} swap events each`);
 
     // Process batches sequentially
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
       const progressPercentage = (((batchIndex + 1) / batches.length) * 100).toFixed(2);
-      console.log(
-        `Progress: ${progressPercentage}% (Process Swaps Batch ${batchIndex + 1}/${batches.length})`,
-      );
+
+      // console.info(
+      //   `Progress: ${progressPercentage}% (Process Swaps Batch ${batchIndex + 1}/${batches.length})`,
+      // );
 
       const tx = transaction || (await sequelize.transaction());
       try {
@@ -712,7 +726,7 @@ export class PairService {
             // Update pool stats
             await this.updatePoolStats(pair.id, tx);
           } catch (error) {
-            console.error('Error processing swap:', error);
+            console.error('[ERROR][WORKER] Error processing swap:', error);
             throw error;
           }
         }
@@ -723,10 +737,14 @@ export class PairService {
         if (transaction) {
           await tx.rollback();
         }
-        console.error(`Error processing batch ${batchIndex + 1}/${batches.length}:`, error);
+        console.error(
+          `[ERROR][WORKER] Error processing batch ${batchIndex + 1}/${batches.length}:`,
+          error,
+        );
       }
     }
-    console.log('Finished processing all swap batches');
+
+    // console.info('Finished processing all swap batches');
   }
 
   /**
@@ -758,17 +776,18 @@ export class PairService {
       batches.push(liquidityEvents.slice(i, i + BATCH_SIZE));
     }
 
-    console.log(
-      `Starting to process ${batches.length} batches of ${BATCH_SIZE} liquidity events each`,
-    );
+    // console.info(
+    //   `Starting to process ${batches.length} batches of ${BATCH_SIZE} liquidity events each`,
+    // );
 
     // Process batches sequentially
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
       const progressPercentage = (((batchIndex + 1) / batches.length) * 100).toFixed(2);
-      console.log(
-        `Progress: ${progressPercentage}% (Process Liquidity Events Batch ${batchIndex + 1}/${batches.length})`,
-      );
+      
+      // console.info(
+      //   `Progress: ${progressPercentage}% (Process Liquidity Events Batch ${batchIndex + 1}/${batches.length})`,
+      // );
 
       const tx = transaction || (await sequelize.transaction());
       try {
@@ -884,12 +903,15 @@ export class PairService {
             // Update pool stats
             await this.updatePoolStats(pair.id, tx);
           } catch (error) {
-            console.error(`Error processing event ${event.requestkey}:`, error);
+            console.error(`[ERROR][WORKER] Error processing event ${event.requestkey}:`, error);
           }
         }
       } catch (error) {
         await tx.rollback();
-        console.error(`Error processing batch ${batchIndex + 1}/${batches.length}:`, error);
+        console.error(
+          `[ERROR][WORKER] Error processing batch ${batchIndex + 1}/${batches.length}:`,
+          error,
+        );
       }
     }
   }
@@ -1032,7 +1054,7 @@ export class PairService {
       const amountStr = typeof amount === 'number' ? amount.toString() : amount.decimal;
       return prices.priceInUSD * Number(amountStr);
     } catch (error) {
-      console.error('Error calculating token USD value:', error);
+      console.error('[ERROR][DATA][DATA_FORMAT] Error calculating token USD value:', error);
       return undefined;
     }
   }
@@ -1076,7 +1098,7 @@ export class PairService {
       const priceInKDA = kdaAmount / 10 ** token.decimals;
       return { priceInUSD, priceInKDA };
     } catch (error) {
-      console.error('Error calculating token price:', error);
+      console.error('[ERROR][DATA][DATA_FORMAT] Error calculating token price:', error);
       return undefined;
     }
   }
@@ -1285,7 +1307,7 @@ export class PairService {
             console.warn(`Unknown event type: ${event.name}`);
         }
       } catch (error) {
-        console.error('Error processing exchange token event:', error);
+        console.error('[ERROR][WORKER] Error processing exchange token event:', error);
       }
     }
   }
@@ -1320,7 +1342,7 @@ export class PairService {
 
       return tvlUsd;
     } catch (error) {
-      console.error('Error calculating TVL USD:', error);
+      console.error('[ERROR][DATA][DATA_FORMAT] Error calculating TVL USD:', error);
       return 0;
     }
   }
@@ -1340,7 +1362,9 @@ export class PairService {
       ],
     });
     if (!pair) {
-      throw new Error(`Pair not found for id: ${pairId}`);
+      throw new Error(
+        `[ERROR][DB][PAIR_SERVICE][CALCULATE_TVL_USD_FROM_PAIR] Pair not found for id: ${pairId}`,
+      );
     }
     return this.calculateTvlUsd(pair);
   }

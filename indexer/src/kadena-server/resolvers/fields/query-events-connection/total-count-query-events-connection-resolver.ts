@@ -18,7 +18,8 @@ const schema = zod.object({
   minHeight: zod.number().nullable().optional(),
   minimumDepth: zod.number().nullable().optional(),
   requestKey: zod.string().nullable().optional(),
-  qualifiedEventName: zod.string(),
+  qualifiedEventName: zod.string().nullable().optional(),
+  moduleName: zod.string().nullable().optional(),
 });
 
 /**
@@ -40,6 +41,7 @@ export const totalCountQueryEventsConnectionResolver: QueryEventsConnectionResol
       minimumDepth,
       requestKey,
       qualifiedEventName,
+      moduleName,
     } = schema.parse(parent);
 
     const output = await context.eventRepository.getTotalEventsCount({
@@ -50,6 +52,7 @@ export const totalCountQueryEventsConnectionResolver: QueryEventsConnectionResol
       minimumDepth,
       requestKey,
       qualifiedEventName,
+      moduleName,
     });
     return output;
   };

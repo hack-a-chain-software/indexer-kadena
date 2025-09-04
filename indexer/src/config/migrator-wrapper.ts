@@ -73,7 +73,7 @@ async function isDatabaseAlreadyCreated() {
   try {
     await migrate();
   } catch (error) {
-    console.error('Migration failed:', error);
+    console.error('[ERROR][INFRA][INFRA_DEPLOY] Migration failed:', error);
     process.exit(1);
   } finally {
     await sequelize.close();

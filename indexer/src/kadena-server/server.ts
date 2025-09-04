@@ -266,6 +266,17 @@ export async function startGraphqlServer() {
     typeDefs,
     resolvers,
     introspection: true,
+    // Ensure every GraphQL error is logged through console.error so it gets forwarded by the monitoring hook
+    formatError(formattedError, _error) {
+      try {
+        const path = Array.isArray(formattedError.path) ? formattedError.path.join('.') : '';
+        // Log full message in the first arg so monitoring puts it in data.error
+        console.error(`[ERROR][GRAPHQL][DATA_FORMAT] ${formattedError.message}`, { path });
+      } catch {
+        // no-op
+      }
+      return formattedError;
+    },
     validationRules: [
       depthLimit({
         maxDepth: 9,
@@ -276,6 +287,50 @@ export async function startGraphqlServer() {
       createSentryPlugin(),
       validatePaginationParamsPlugin,
       securitySanitizationPlugin,
+      // Lightweight plugin to expose the operation name to the monitoring hook via global scope
+      {
+        async requestDidStart(ctx: any) {
+          try {
+            (global as any).__currentGraphQLOperationName =
+              ctx?.request?.operationName ?? 'AnonymousOperation';
+          } catch {}
+          return {
+            async didResolveOperation(rcx: any) {
+              try {
+                (global as any).__currentGraphQLOperationName =
+                  rcx?.request?.operationName ?? 'AnonymousOperation';
+              } catch {}
+            },
+            async willSendResponse() {
+              try {
+                (global as any).__currentGraphQLOperationName = undefined;
+              } catch {}
+            },
+          };
+        },
+      } as unknown as ApolloServerPlugin,
+      // Forward all GraphQL resolver errors to console.error so the monitoring hook can send them
+      {
+        async requestDidStart() {
+          return {
+            async didEncounterErrors(ctx: any) {
+              try {
+                const op = ctx.request.operationName ?? 'AnonymousOperation';
+                for (const err of ctx.errors) {
+                  const path = Array.isArray(err.path) ? err.path.join('.') : '';
+                  // Log full message first so monitoring puts it in data.error; details go in extra.args
+                  console.error(`[ERROR][GRAPHQL] ${err.message}`, {
+                    operation: op,
+                    path,
+                  });
+                }
+              } catch {
+                // no-op
+              }
+            },
+          };
+        },
+      } as unknown as ApolloServerPlugin,
       ApolloServerPluginDrainHttpServer({ httpServer }),
       {
         async serverWillStart() {
@@ -321,7 +376,7 @@ export async function startGraphqlServer() {
             // like compare it with max and throw error when the threshold is reached
             if (complexity > MAX_COMPLEXITY) {
               throw new Error(
-                'Sorry, too complicated query! Exceeded the maximum allowed complexity.',
+                '[ERROR][GRAPHQL][VALID_RANGE] Sorry, too complicated query! Exceeded the maximum allowed complexity.',
               );
             }
           },
@@ -411,13 +466,13 @@ export async function startGraphqlServer() {
       onConnect: ctx => {
         const ip = ctx.extra.request.socket.remoteAddress || 'unknown';
         activeConnections++;
-        console.log('New connection -> ', ip, 'Total connections opened:', activeConnections);
+        console.info('New connection -> ', ip, 'Total connections opened:', activeConnections);
         return true; // Allow the connection
       },
       onDisconnect: ctx => {
         const ip = ctx.extra.request.socket.remoteAddress || 'unknown';
         activeConnections--;
-        console.log('Closed connection -> ', ip, 'Total connections opened:', activeConnections);
+        console.info('Closed connection -> ', ip, 'Total connections opened:', activeConnections);
       },
     },
     wsServer,

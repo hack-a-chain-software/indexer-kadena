@@ -1,10 +1,7 @@
 import { rootPgPool, sequelize } from '@/config/database';
 import { getRequiredEnvString } from '@/utils/helpers';
 import { processPayload, saveBlock } from './streaming';
-import { Transaction } from 'sequelize';
-import Block from '@/models/block';
 
-const CANONICAL_BASE_LINE_LENGTH = 200;
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const NETWORK_ID = getRequiredEnvString('SYNC_NETWORK');
 
@@ -14,7 +11,7 @@ export async function startMissingBlocksBeforeStreamingProcess() {
     await fillChainGaps(chainIdDiffs);
   } catch (error) {
     console.error(
-      `[ERROR][SYNC][MISSING] Error starting missing blocks before streaming process:`,
+      `[ERROR][SYNC][SYNC_TIMEOUT] Error starting missing blocks before streaming process:`,
       error,
     );
     throw error;
@@ -57,7 +54,7 @@ async function checkBigBlockGapsForAllChains() {
     };
   });
 
-  const chainIdDiffs = await Promise.all(promises);
+  const chainIdDiffs = (await Promise.all(promises)).filter(chainIdDiff => chainIdDiff.diff > 0);
 
   const minMissingBlocks = 150; // 1 hour
   const chainsWithLessThan150MissingBlocks = chainIdDiffs.filter(
@@ -78,12 +75,11 @@ async function checkBigBlockGapsForAllChains() {
 
   if (chainsWithMoreThan7WeeksMissingBlocks.length > 0) {
     console.error(
-      `[ERROR] These chains have more than ${maxMissingBlocks} missing blocks in a row: ${chainsWithMoreThan7WeeksMissingBlocks.map(
-        chainIdDiffs => chainIdDiffs.chainId,
-      )}`,
-      console.error(
-        `[ERROR] Please make the backfill process individually for these chains. Exiting...`,
-      ),
+      `[ERROR][DATA][DATA_MISSING] These chains exceed ${maxMissingBlocks} missing blocks. Please backfill these chains individually. Exiting...`,
+      {
+        chains: chainsWithMoreThan7WeeksMissingBlocks.map(c => c.chainId),
+        severityHint: 'degraded',
+      },
     );
     process.exit(1);
   }
@@ -132,7 +128,7 @@ async function fillChainGaps(
       try {
         const promises = data.items.map(async (item: any) => {
           const payload = processPayload(item.payloadWithOutputs);
-          return saveBlock({ header: item.header, payload }, tx);
+          return saveBlock({ header: item.header, payload, canonical: true }, tx);
         });
 
         await Promise.all(promises);
@@ -214,7 +210,7 @@ export async function fillChainGapsBeforeDefiningCanonicalBaseline({
     console.info(`[INFO][SYNC][MISSING] Initial chain gaps filled:`, chainId, fromHeight, toHeight);
   } catch (error) {
     console.error(
-      `[ERROR][SYNC][MISSING] Error filling chain ${chainId} gaps before defining canonical baseline:`,
+      `[ERROR][SYNC][SYNC_TIMEOUT] Error filling chain ${chainId} gaps before defining canonical baseline:`,
       error,
     );
   }
@@ -250,7 +246,10 @@ export async function checkCanonicalPathForAllChains() {
       );
     }
   } catch (error) {
-    console.error(`[ERROR][SYNC][MISSING] Error checking canonical path for all chains:`, error);
+    console.error(
+      `[ERROR][SYNC][SYNC_TIMEOUT] Error checking canonical path for all chains:`,
+      error,
+    );
   }
 }
 
@@ -279,7 +278,7 @@ async function checkCanonicalPathStartingFromSpecificBlock(
 
   if (ancestors.length < CANONICAL_BASE_LINE_LENGTH) {
     throw new Error(
-      `[INFO][SYNC][MISSING] Failed to build complete canonical path after ${maxAttempts} attempts. Only found ${ancestors.length} blocks.`,
+      `[ERROR][SYNC][SYNC_TIMEOUT] Failed to build complete canonical path after ${maxAttempts} attempts. Only found ${ancestors.length} blocks.`,
     );
   }
 
@@ -340,3 +339,4 @@ async function fetchAndSaveBlocks(chainId: number, height: number) {
     throw err;
   }
 }
+

@@ -34,7 +34,7 @@ export const blockQueryResolver: QueryResolvers<ResolverContext>['block'] = asyn
   const output = await context.blockRepository.getBlockByHash(hash);
 
   if (!output) {
-    throw new Error('[ERROR][DB][DATA_MISSING] Block not found.');
+    throw new Error('[ERROR][GRAPHQL][DB][DATA_MISSING] Block not found.');
   }
 
   return buildBlockOutput(output);

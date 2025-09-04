@@ -17,7 +17,9 @@ const DB_PASSWORD = getRequiredEnvString('DB_PASSWORD');
 const DB_NAME = getRequiredEnvString('DB_NAME');
 const DB_HOST = getRequiredEnvString('DB_HOST');
 const DB_SSL_ENABLED = getRequiredEnvString('DB_SSL_ENABLED');
-const DB_CONNECTION = `postgres://${DB_USERNAME}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}/${DB_NAME}`;
+// Optional DB port (defaults to 5432)
+const DB_PORT = process.env.DB_PORT ? Number(process.env.DB_PORT) : 5432;
+const DB_CONNECTION = `postgres://${DB_USERNAME}:${encodeURIComponent(DB_PASSWORD)}@${DB_HOST}:${DB_PORT}/${DB_NAME}`;
 
 // Determine if SSL is enabled for database connections
 const isSslEnabled = DB_SSL_ENABLED === 'true';
@@ -78,6 +80,7 @@ export const sequelize = new Sequelize(
   process.env.DB_PASSWORD as string,
   {
     host: process.env.DB_HOST || 'localhost',
+    port: DB_PORT,
     dialect: 'postgres',
     pool: {
       max: 20,

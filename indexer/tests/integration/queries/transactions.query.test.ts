@@ -18,6 +18,7 @@ import { transactionsFixture015 } from '../fixtures/transactions/transactions.fi
 import { transactionsFixture016 } from '../fixtures/transactions/transactions.fixture.016';
 import { transactionsFixture017 } from '../fixtures/transactions/transactions.fixture.017';
 import { transactionsFixture018 } from '../fixtures/transactions/transactions.fixture.018';
+import { transactionsFixture019 } from '../fixtures/transactions/transactions.fixture.019';
 
 const client = new GraphQLClient(process.env.API_URL ?? 'http://localhost:3001/graphql');
 

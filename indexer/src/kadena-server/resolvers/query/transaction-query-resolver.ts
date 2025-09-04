@@ -35,26 +35,27 @@ export const transactionQueryResolver: QueryResolvers<ResolverContext>['transact
   const { requestKey, blockHash, minimumDepth } = args;
 
   if (minimumDepth !== undefined && minimumDepth !== null && minimumDepth < 1) {
-    throw new Error('Minimum depth must not be lower than 1.');
+    throw new Error('[ERROR][GRAPHQL][VALID_RANGE] Minimum depth must not be lower than 1.');
   }
 
   if (minimumDepth !== undefined && minimumDepth !== null && minimumDepth > 100) {
-    throw new Error('Minimum depth must not be higher than 100.');
+    throw new Error('[ERROR][GRAPHQL][VALID_RANGE] Minimum depth must not be higher than 100.');
   }
 
+  const currentChainHeights = await context.networkRepository.getCurrentChainHeights();
   const transactions = await context.transactionRepository.getTransactionsByRequestKey({
     requestKey,
     blockHash,
     minimumDepth,
+    currentChainHeights,
   });
 
   if (transactions.length === 0) return null;
 
-  const [first, ...rest] =
-    await context.blockRepository.getTransactionsOrderedByBlockDepth(transactions);
+  const [canonical, ...orphanedTransactions] = transactions;
 
   return {
-    ...buildTransactionOutput(first),
-    orphanedTransactions: rest.map(r => buildTransactionOutput(r)),
+    ...buildTransactionOutput(canonical),
+    orphanedTransactions: orphanedTransactions.map(tx => buildTransactionOutput(tx)),
   };
 };

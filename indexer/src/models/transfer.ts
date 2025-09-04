@@ -51,6 +51,8 @@ export interface TransferAttributes {
   canonical?: boolean;
   /** Index representing the order of the transfer within its transaction */
   orderIndex?: number;
+  /** The creation time of the transaction (e.g., "1715747797"). */
+  creationtime?: string;
 }
 
 /**
@@ -101,6 +103,9 @@ class Transfer extends Model<TransferAttributes> implements TransferAttributes {
 
   /* The transfer order */
   declare orderIndex?: number;
+
+  /** The creation time of the transaction (e.g., "1715747797"). */
+  declare creationtime?: string;
 }
 
 /**
@@ -192,6 +197,11 @@ Transfer.init(
       type: DataTypes.INTEGER,
       allowNull: true,
       comment: 'The transfer order',
+    },
+    creationtime: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'The creation time of the transaction (e.g., "1715747797").',
     },
   },
   {
