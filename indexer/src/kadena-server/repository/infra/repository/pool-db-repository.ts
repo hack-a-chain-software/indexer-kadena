@@ -169,7 +169,7 @@ export default class PoolDbRepository {
     });
 
     if (!pairResult) {
-      throw new Error(`Token pair not found for pool ${id}`);
+      throw new Error(`[ERROR][GRAPHQL][DB][DATA_MISSING] Token pair not found for pool ${id}`);
     }
     const pair = pairResult as Pair;
 
@@ -188,7 +188,7 @@ export default class PoolDbRepository {
     const token0 = tokens.find((t: any) => t.id === pair.token0Id) as TokenModel;
     const token1 = tokens.find((t: any) => t.id === pair.token1Id) as TokenModel;
     if (!token0 || !token1) {
-      throw new Error(`Tokens not found for pool ${id}`);
+      throw new Error(`[ERROR][GRAPHQL][DB][DATA_MISSING] Tokens not found for pool ${id}`);
     }
 
     // Get the latest pool stats

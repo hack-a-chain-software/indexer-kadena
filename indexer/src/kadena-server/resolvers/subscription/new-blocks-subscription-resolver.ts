@@ -39,7 +39,7 @@ async function* iteratorFn({
   quantity,
 }: IteratorFnParams): AsyncGenerator<BlockOutput[], void, unknown> {
   if (quantity > 100) {
-    throw new Error('[ERROR][SUBSCRIPTION][PARAMS] Quantity must be less than 100.');
+    throw new Error('[ERROR][GRAPHQL][VALID_RANGE] Quantity must be less than 100.');
   }
 
   const startingTimestamp = new Date().getTime() / 1000;
@@ -47,6 +47,7 @@ async function* iteratorFn({
   let lastBlockId: number | undefined;
 
   while (context.signal) {
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const newBlocks = await context.blockRepository.getLatestBlocks({
       creationTime: startingTimestamp,
       lastBlockId,

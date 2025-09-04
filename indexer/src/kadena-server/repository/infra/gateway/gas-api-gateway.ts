@@ -81,7 +81,7 @@ export default class GasApiGateway implements GasGateway {
     } catch (error) {
       // Wrap and rethrow any errors in our custom error type
       throw new GasLimitEstimationError(
-        'Chainweb Node was unable to estimate the gas limit',
+        '[ERROR][GAS_API_GATEWAY][ESTIMATE_GAS] Chainweb Node was unable to estimate the gas limit',
         error,
       );
     }

@@ -135,7 +135,9 @@ export const buildTransactionPayload = (input: UserInput, networkId: string): IU
 
     // Handle unexpected input types
     default:
-      throw new GasLimitEstimationError('Something went wrong generating the transaction.');
+      throw new GasLimitEstimationError(
+        '[ERROR][GAS][TRANSACTION] Something went wrong generating the transaction.',
+      );
   }
 
   return transaction;

@@ -32,7 +32,7 @@ export function uint64ToInt64(uint64Value: any): bigint {
 
   // Ensure the value is in the valid uint64 range
   if (bigIntValue < 0n || bigIntValue > UINT64_MAX) {
-    throw new Error('Value is out of range for uint64');
+    throw new Error('[ERROR][VALID][VALID_RANGE] Value is out of range for uint64');
   }
 
   if (bigIntValue <= INT64_MAX) {
@@ -61,7 +61,7 @@ export function int64ToUint64String(bigintString: any) {
 
   // Validate the range for int64
   if (int64Value < INT64_MIN || int64Value > INT64_MAX) {
-    throw new RangeError('Value is out of range for int64');
+    throw new RangeError('[ERROR][VALID][VALID_RANGE] Value is out of range for int64');
   }
 
   // Convert int64 to uint64

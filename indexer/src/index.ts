@@ -12,6 +12,8 @@ import dotenv from 'dotenv';
 console.info('[INFO][INFRA][INFRA_CONFIG] Loading environment variables...');
 dotenv.config();
 
+import { initializeErrorMonitoring } from './services/monitoring';
+
 import { program } from 'commander';
 import { startGraphqlServer } from './kadena-server/server';
 import { startStreaming } from './services/streaming';
@@ -48,6 +50,7 @@ const options = program.opts();
 async function main() {
   try {
     console.info('Starting v1.0.2.2 with pair creation');
+    initializeErrorMonitoring();
     setupAssociations();
     PriceUpdaterService.getInstance();
 

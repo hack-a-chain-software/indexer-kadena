@@ -759,7 +759,9 @@ export default class TransactionDbRepository implements TransactionRepository {
     );
 
     if (rows.length !== eventIds.length) {
-      throw new Error('There was an issue fetching blocks for event IDs.');
+      throw new Error(
+        `[ERROR][DB][DATA_CORRUPT] Fetched blocks count (${rows.length}) does not match event IDs count (${eventIds.length}).`,
+      );
     }
 
     const transactionMap = rows.reduce(

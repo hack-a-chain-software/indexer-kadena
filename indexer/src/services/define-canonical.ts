@@ -31,7 +31,7 @@ export async function defineCanonicalBaseline(
   const tipBlock = await blockRepository.getBlockByHash(blockHash);
   if (!tipBlock) {
     // this scenario should not happen, but if it does, terminate the app.
-    console.error(`[ERROR][SYNC][DEFINE_CANONICAL] Block ${blockHash} not found in database`);
+    console.error(`[ERROR][DB][DEFINE_CANONICAL] Block ${blockHash} not found in database`);
     process.exit(1);
   }
 
@@ -87,7 +87,7 @@ async function fillChainGapAndConfirmBlockPath(blockHash: string, height: number
   try {
     blocksByHash = await fetchBlocksFromChainwebNode(chainId, height);
   } catch (error) {
-    console.error(`[ERROR][SYNC][FILL_GAPS] Failed to get blocks to fill gaps:`, error);
+    console.error('[ERROR][SYNC][BIZ_FLOW] Error defining canonical:', error);
     throw error;
   }
 

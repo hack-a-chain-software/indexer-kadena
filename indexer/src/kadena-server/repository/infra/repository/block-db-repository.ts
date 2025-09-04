@@ -117,7 +117,7 @@ export default class BlockDbRepository implements BlockRepository {
       lastHeight = parseInt(heightStr, 10);
       lastId = parseInt(idStr, 10);
       if (isNaN(lastHeight) || isNaN(lastId)) {
-        throw new Error('Invalid after cursor');
+        throw new Error(`[ERROR][VALID][VALID_FORMAT] Invalid 'after' cursor:', ${after}`);
       }
     }
 
@@ -126,7 +126,7 @@ export default class BlockDbRepository implements BlockRepository {
       lastHeight = parseInt(heightStr, 10);
       lastId = parseInt(idStr, 10);
       if (isNaN(lastHeight) || isNaN(lastId)) {
-        throw new Error('Invalid before cursor');
+        throw new Error(`[ERROR][VALID][VALID_FORMAT] Invalid 'before' cursor:', ${before}`);
       }
     }
 
@@ -308,7 +308,7 @@ export default class BlockDbRepository implements BlockRepository {
       const beforeId = parseInt(id, 10);
 
       if (isNaN(beforeHeight) || isNaN(beforeId)) {
-        throw new Error('Invalid before cursor');
+        throw new Error(`[ERROR][VALID][VALID_FORMAT] Invalid 'before' cursor:', ${before}`);
       }
 
       queryParams.push(beforeHeight, beforeId);
@@ -322,7 +322,7 @@ export default class BlockDbRepository implements BlockRepository {
       const afterId = parseInt(id, 10);
 
       if (isNaN(afterHeight) || isNaN(afterId)) {
-        throw new Error('Invalid after cursor');
+        throw new Error(`[ERROR][VALID][VALID_FORMAT] Invalid 'after' cursor:', ${after}`);
       }
       queryParams.push(afterHeight, afterId);
       conditions += `\nAND (b.height, b.id) > ($${queryParams.length - 1}, $${queryParams.length})`;
@@ -407,7 +407,9 @@ export default class BlockDbRepository implements BlockRepository {
     const [balanceRow] = balanceRows;
 
     if (!balanceRow) {
-      throw new Error("Miner didn't exist.");
+      throw new Error(
+        `[ERROR][DB][DATA_MISSING] Miner account not found for block ${hash} on chain ${chainId}.`,
+      );
     }
 
     const res = await handleSingleQuery({
@@ -609,7 +611,9 @@ export default class BlockDbRepository implements BlockRepository {
     );
 
     if (blockRows.length !== eventIds.length) {
-      throw new Error('There was an issue fetching blocks for event IDs.');
+      throw new Error(
+        `[ERROR][DB][DATA_CORRUPT] Fetched blocks count (${blockRows.length}) does not match event IDs count (${eventIds.length}).`,
+      );
     }
 
     const blockMap = blockRows.reduce(
@@ -660,7 +664,9 @@ export default class BlockDbRepository implements BlockRepository {
     );
 
     if (blockRows.length !== transactionIds.length) {
-      throw new Error('There was an issue fetching blocks for transaction IDs.');
+      throw new Error(
+        `[ERROR][DB][DATA_CORRUPT] Fetched blocks count (${blockRows.length}) does not match transaction IDs count (${transactionIds.length}).`,
+      );
     }
 
     const blockMap = blockRows.reduce(
@@ -709,7 +715,9 @@ export default class BlockDbRepository implements BlockRepository {
     );
 
     if (blockRows.length !== hashes.length) {
-      throw new Error('There was an issue fetching blocks for transaction IDs.');
+      throw new Error(
+        `[ERROR][DB][DATA_CORRUPT] Fetched blocks count (${blockRows.length}) does not match requested hashes count (${hashes.length}).`,
+      );
     }
 
     const blockMap = blockRows.reduce(

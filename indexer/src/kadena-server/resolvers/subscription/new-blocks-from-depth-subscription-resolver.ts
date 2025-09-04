@@ -41,10 +41,11 @@ async function* iteratorFn({
   minimumDepth,
 }: IteratorFnParams): AsyncGenerator<BlockOutput[], void, unknown> {
   if (quantity > 100) {
-    throw new Error('[ERROR][SUBSCRIPTION][PARAMS] Quantity must be less than 100.');
+    throw new Error('[ERROR][GRAPHQL][VALID_RANGE] Quantity must be less than 100.');
   }
 
   const startingTimestamp = new Date().getTime() / 1000000;
+  // TODO: [ERROR-OPTIMIZATION] missing try catch block
   const blockResult = await context.blockRepository.getLastBlocksWithDepth(
     chainIds,
     minimumDepth,
@@ -60,6 +61,7 @@ async function* iteratorFn({
   }
 
   while (context.signal) {
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const newBlocks = await context.blockRepository.getLastBlocksWithDepth(
       chainIds,
       minimumDepth,
