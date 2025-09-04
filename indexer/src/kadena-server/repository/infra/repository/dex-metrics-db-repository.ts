@@ -44,26 +44,41 @@ export default class DexMetricsDbRepository implements DexMetricsRepository {
 
     // Get TVL history
     const tvlHistoryQuery = `
-     SELECT
-        date_trunc('day', t.timestamp) AS timestamp,
-        SUM(CAST(t."tvlUsd" AS DECIMAL)) AS value
-      FROM (
+      WITH ranked_tvl AS (
         SELECT
+          date_trunc('day', d.day) AS day,
           pc."pairId",
           pc."tvlUsd",
-          pc."timestamp",
           ROW_NUMBER() OVER (
-            PARTITION BY pc."pairId", date_trunc('day', pc."timestamp")
+            PARTITION BY d.day, pc."pairId"
             ORDER BY pc."timestamp" DESC
-          ) as rn
-        FROM "PoolCharts" pc
+          ) AS rn
+        FROM (
+          SELECT generate_series(
+            $1::timestamp,
+            $2::timestamp,
+            interval '1 day'
+          ) AS day
+        ) d
+        JOIN "PoolCharts" pc
+          ON pc."timestamp" < d.day + interval '1 day'
         JOIN "Pairs" p ON p.id = pc."pairId"
-        WHERE pc.timestamp BETWEEN $1 AND $2
-          AND p.address = $3
-      ) t
-      WHERE t.rn = 1
-      GROUP BY date_trunc('day', t.timestamp)
-      ORDER BY timestamp ASC;
+        WHERE p.address = $3
+      ),
+      latest_tvl_per_day AS (
+        SELECT
+          day,
+          "pairId",
+          CAST("tvlUsd" AS DECIMAL) AS tvl_usd
+        FROM ranked_tvl
+        WHERE rn = 1
+      )
+      SELECT
+        day AS timestamp,
+        SUM(tvl_usd) AS value
+      FROM latest_tvl_per_day
+      GROUP BY day
+      ORDER BY day ASC;
     `;
 
     const tvlHistory = await sequelize.query(tvlHistoryQuery, {
