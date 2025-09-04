@@ -1,8 +1,8 @@
 import { gql } from 'graphql-request';
 
 export const transfersQueryGql = gql`
-  query {
-    transfers(blockHash: "OT7c7X4Mql24dslm4Hvsc5tyKrjjxPDImyopqlRJKiQ", first: 25) {
+  query transfers($blockHash: String!) {
+    transfers(blockHash: $blockHash, first: 500) {
       totalCount
       pageInfo {
         hasNextPage

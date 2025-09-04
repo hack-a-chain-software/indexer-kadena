@@ -49,6 +49,7 @@ const options = program.opts();
  */
 async function main() {
   try {
+    console.info('Starting v1.0.2.2 with pair creation');
     initializeErrorMonitoring();
     setupAssociations();
     PriceUpdaterService.getInstance();

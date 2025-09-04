@@ -24,6 +24,7 @@ export const transactionsBlockResolver: BlockResolvers<ResolverContext>['transac
   const { first, last, before, after } = args;
   const output = await context.transactionRepository.getTransactions({
     blockHash: hash,
+    isCoinbase: false,
     first,
     last,
     before,

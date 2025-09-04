@@ -12,6 +12,7 @@ import zod from 'zod';
  */
 const schema = zod.object({
   accountName: zod.string(),
+  hasTokenId: zod.boolean(),
 });
 
 /**
@@ -25,11 +26,11 @@ const schema = zod.object({
  */
 export const totalCountNonFungibleAccountTransfersConnectionResolver: NonFungibleAccountTransfersConnectionResolvers<ResolverContext>['totalCount'] =
   async (parent, _args, context) => {
-    const { accountName } = schema.parse(parent);
+    const { accountName, hasTokenId } = schema.parse(parent);
 
     const output = await context.transferRepository.getTotalCountOfTransfers({
       accountName,
-      hasTokenId: true,
+      hasTokenId,
     });
 
     return output;

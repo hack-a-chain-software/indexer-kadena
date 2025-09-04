@@ -121,6 +121,19 @@ type Subscription {
 
 type Query {
   """
+  Retrieve live balances for a given account with optional filtering by chains and module. Default page size is 20.
+  """
+  balance(
+    accountName: String
+    chainIds: [String!]
+    module: String
+    after: String
+    before: String
+    first: Int
+    last: Int
+  ): QueryBalanceConnection! @complexity(value: 1, multipliers: ["first", "last"])
+
+  """
   Retrieve a block by hash.
   """
   block(hash: String!): Block @complexity(value: 1)
@@ -182,17 +195,18 @@ type Query {
   events(
     after: String
     before: String
-    blockHash: String
-    chainId: String
     first: Int
     last: Int
+    qualifiedEventName: String
+    moduleName: String
+    blockHash: String
+    requestKey: String
+    chainId: String
     maxHeight: Int
     minHeight: Int
     minimumDepth: Int
     orderIndex: Int
     parametersFilter: String
-    qualifiedEventName: String!
-    requestKey: String
   ): QueryEventsConnection! @complexity(value: 1, multipliers: ["first", "last"])
 
   """
@@ -325,6 +339,17 @@ type Query {
   ): QueryTransactionsByPublicKeyConnection! @complexity(value: 1, multipliers: ["first", "last"])
 
   """
+  Retrieve all transactions by a given pact code.
+  """
+  transactionsByPactCode(
+    after: String
+    before: String
+    first: Int
+    last: Int
+    pactCode: String!
+  ): QueryTransactionsByPactCodeConnection! @complexity(value: 1, multipliers: ["first", "last"])
+
+  """
   Retrieve transfers. Default page size is 20.
   """
   transfers(
@@ -408,6 +433,11 @@ type Query {
   ): DexMetrics! @complexity(value: 1)
 
   """
+  Get last price for a specific token in KDA
+  """
+  lastTokenPriceInKda(moduleName: String!): Decimal
+
+  """
   Get price for a specific token
   """
   tokenPrice(tokenAddress: String!, protocolAddress: String): TokenPrice @complexity(value: 1)
@@ -416,6 +446,50 @@ type Query {
   Get prices for all tokens in a protocol
   """
   tokenPrices(protocolAddress: String): [TokenPrice!]! @complexity(value: 1)
+}
+
+type QueryTransactionsByPactCodeConnection {
+  edges: [QueryTransactionsByPactCodeConnectionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type QueryTransactionsByPactCodeConnectionEdge {
+  cursor: String!
+  node: TransactionSummary!
+}
+
+type TransactionSummary {
+  requestKey: String!
+  height: BigInt!
+  chainId: BigInt!
+  canonical: Boolean!
+  creationTime: DateTime!
+  badResult: String
+  sender: String!
+  gas: String!
+  gasLimit: String!
+  gasPrice: String!
+  code: String
+}
+
+"""
+Connection type for balance query results.
+"""
+type QueryBalanceConnection {
+  edges: [QueryBalanceConnectionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type QueryBalanceConnectionEdge {
+  cursor: String!
+  node: BalanceNode!
+}
+
+type BalanceNode {
+  accountName: String!
+  module: String!
+  chainId: String!
+  balance: String!
 }
 
 """
@@ -555,6 +629,7 @@ type QueryEventsConnectionEdge {
 type QueryBlocksFromHeightConnection {
   edges: [QueryBlocksFromHeightConnectionEdge!]!
   pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type QueryBlocksFromHeightConnectionEdge {
@@ -627,6 +702,7 @@ type Block implements Node {
   canonical: Boolean!
 
   parent: Block @complexity(value: 1)
+  totalGasUsedInKda: Decimal!
   """
   Default page size is 20.
   """
@@ -988,6 +1064,11 @@ type Transfer implements Node {
   receiverAccount: String!
   requestKey: String!
   senderAccount: String!
+
+  """
+  The token id if this is a poly-fungible transfer.
+  """
+  tokenId: String
   """
   The transaction that initiated this transfer.
   """
@@ -1047,6 +1128,14 @@ type NetworkInfo {
   nodePackageVersion: String!
   nodeServiceDate: DateTime
   nodeLatestBehaviorHeight: Int!
+  countersOfEachChain: [CountersOfEachChain!]! @complexity(value: 1)
+}
+
+type CountersOfEachChain {
+  chainId: String!
+  blocksCount: Int!
+  transactionCount: Int!
+  totalGasUsedInKda: String!
 }
 
 type GenesisHeight {

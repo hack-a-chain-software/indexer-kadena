@@ -1,7 +1,6 @@
 package process
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -24,7 +23,6 @@ func GetAmountForTransfer(amount any) (float64, bool) {
 		if decimalStr, exists := amountMap["decimal"]; exists {
 			if str, ok := decimalStr.(string); ok {
 				if value, err := strconv.ParseFloat(str, 64); err == nil {
-					fmt.Println("decimalStr", decimalStr)
 					return value, true
 				}
 			}
@@ -35,7 +33,6 @@ func GetAmountForTransfer(amount any) (float64, bool) {
 		if integerStr, exists := amountMap["integer"]; exists {
 			if str, ok := integerStr.(string); ok {
 				if value, err := strconv.ParseFloat(str, 64); err == nil {
-					fmt.Println("integerStr", integerStr)
 					return value, true
 				}
 			}

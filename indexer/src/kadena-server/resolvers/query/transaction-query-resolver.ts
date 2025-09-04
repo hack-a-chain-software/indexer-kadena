@@ -42,19 +42,20 @@ export const transactionQueryResolver: QueryResolvers<ResolverContext>['transact
     throw new Error('[ERROR][GRAPHQL][VALID_RANGE] Minimum depth must not be higher than 100.');
   }
 
+  const currentChainHeights = await context.networkRepository.getCurrentChainHeights();
   const transactions = await context.transactionRepository.getTransactionsByRequestKey({
     requestKey,
     blockHash,
     minimumDepth,
+    currentChainHeights,
   });
 
   if (transactions.length === 0) return null;
 
-  const [first, ...rest] =
-    await context.blockRepository.getTransactionsOrderedByBlockDepth(transactions);
+  const [canonical, ...orphanedTransactions] = transactions;
 
   return {
-    ...buildTransactionOutput(first),
-    orphanedTransactions: rest.map(r => buildTransactionOutput(r)),
+    ...buildTransactionOutput(canonical),
+    orphanedTransactions: orphanedTransactions.map(tx => buildTransactionOutput(tx)),
   };
 };

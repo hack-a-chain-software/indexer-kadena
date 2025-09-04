@@ -1,10 +1,7 @@
 import { rootPgPool, sequelize } from '@/config/database';
 import { getRequiredEnvString } from '@/utils/helpers';
 import { processPayload, saveBlock } from './streaming';
-import { Transaction } from 'sequelize';
-import Block from '@/models/block';
 
-const CANONICAL_BASE_LINE_LENGTH = 200;
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const NETWORK_ID = getRequiredEnvString('SYNC_NETWORK');
 
@@ -57,7 +54,7 @@ async function checkBigBlockGapsForAllChains() {
     };
   });
 
-  const chainIdDiffs = await Promise.all(promises);
+  const chainIdDiffs = (await Promise.all(promises)).filter(chainIdDiff => chainIdDiff.diff > 0);
 
   const minMissingBlocks = 150; // 1 hour
   const chainsWithLessThan150MissingBlocks = chainIdDiffs.filter(
@@ -131,7 +128,7 @@ async function fillChainGaps(
       try {
         const promises = data.items.map(async (item: any) => {
           const payload = processPayload(item.payloadWithOutputs);
-          return saveBlock({ header: item.header, payload }, tx);
+          return saveBlock({ header: item.header, payload, canonical: true }, tx);
         });
 
         await Promise.all(promises);
@@ -342,3 +339,4 @@ async function fetchAndSaveBlocks(chainId: number, height: number) {
     throw err;
   }
 }
+

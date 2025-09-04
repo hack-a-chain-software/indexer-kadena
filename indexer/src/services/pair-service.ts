@@ -127,15 +127,18 @@ export class PairService {
       batches.push(pairs.slice(i, i + BATCH_SIZE));
     }
 
-    console.info(`Starting to process ${batches.length} batches of ${BATCH_SIZE} pairs each`);
+
+    // console.info(`Starting to process ${batches.length} batches of ${BATCH_SIZE} pairs each`);
 
     // Process batches sequentially
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
       const progressPercentage = (((batchIndex + 1) / batches.length) * 100).toFixed(2);
-      console.info(
-        `Progress: ${progressPercentage}% (Create Pairs Batch ${batchIndex + 1}/${batches.length})`,
-      );
+
+      // console.info(
+      //   `Progress: ${progressPercentage}% (Create Pairs Batch ${batchIndex + 1}/${batches.length})`,
+      // );
+
 
       const tx = transaction || (await sequelize.transaction());
       try {
@@ -176,7 +179,8 @@ export class PairService {
         );
       }
     }
-    console.info('Finished processing all pair creation batches');
+
+    // console.info('Finished processing all pair creation batches');
   }
 
   /**
@@ -230,15 +234,17 @@ export class PairService {
       batches.push(updateEvents.slice(i, i + BATCH_SIZE));
     }
 
-    console.info(`Starting to process ${batches.length} batches of ${BATCH_SIZE} events each`);
+
+    // console.info(`Starting to process ${batches.length} batches of ${BATCH_SIZE} events each`);
 
     // Process batches sequentially
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
       const progressPercentage = (((batchIndex + 1) / batches.length) * 100).toFixed(2);
-      console.info(
-        `Progress: ${progressPercentage}% (Update Pairs Batch ${batchIndex + 1}/${batches.length})`,
-      );
+
+      // console.info(
+      //   `Progress: ${progressPercentage}% (Update Pairs Batch ${batchIndex + 1}/${batches.length})`,
+      // );
 
       const tx = transaction || (await sequelize.transaction());
       try {
@@ -414,7 +420,8 @@ export class PairService {
         );
       }
     }
-    console.info('Finished processing all update batches');
+
+    // console.info('Finished processing all update batches');
   }
 
   /**
@@ -635,15 +642,16 @@ export class PairService {
       batches.push(swapEvents.slice(i, i + BATCH_SIZE));
     }
 
-    console.info(`Starting to process ${batches.length} batches of ${BATCH_SIZE} swap events each`);
+    // console.info(`Starting to process ${batches.length} batches of ${BATCH_SIZE} swap events each`);
 
     // Process batches sequentially
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
       const progressPercentage = (((batchIndex + 1) / batches.length) * 100).toFixed(2);
-      console.info(
-        `Progress: ${progressPercentage}% (Process Swaps Batch ${batchIndex + 1}/${batches.length})`,
-      );
+
+      // console.info(
+      //   `Progress: ${progressPercentage}% (Process Swaps Batch ${batchIndex + 1}/${batches.length})`,
+      // );
 
       const tx = transaction || (await sequelize.transaction());
       try {
@@ -735,7 +743,8 @@ export class PairService {
         );
       }
     }
-    console.info('Finished processing all swap batches');
+
+    // console.info('Finished processing all swap batches');
   }
 
   /**
@@ -767,17 +776,18 @@ export class PairService {
       batches.push(liquidityEvents.slice(i, i + BATCH_SIZE));
     }
 
-    console.info(
-      `Starting to process ${batches.length} batches of ${BATCH_SIZE} liquidity events each`,
-    );
+    // console.info(
+    //   `Starting to process ${batches.length} batches of ${BATCH_SIZE} liquidity events each`,
+    // );
 
     // Process batches sequentially
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
       const progressPercentage = (((batchIndex + 1) / batches.length) * 100).toFixed(2);
-      console.info(
-        `Progress: ${progressPercentage}% (Process Liquidity Events Batch ${batchIndex + 1}/${batches.length})`,
-      );
+      
+      // console.info(
+      //   `Progress: ${progressPercentage}% (Process Liquidity Events Batch ${batchIndex + 1}/${batches.length})`,
+      // );
 
       const tx = transaction || (await sequelize.transaction());
       try {

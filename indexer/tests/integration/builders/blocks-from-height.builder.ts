@@ -1,8 +1,8 @@
 import { gql } from 'graphql-request';
 
-export const getBlocksFromHeightQuery = (params: any): string => {
+const buildBlocksFromHeightQuery = (params: any, includeTotalCount: boolean = true): string => {
   if (Object.keys(params).length === 0) {
-    throw new Error('No parameters provided to getBlocksFromHeightQuery.');
+    throw new Error('No parameters provided to buildBlocksFromHeightQuery.');
   }
 
   const query = Object.entries(params)
@@ -14,9 +14,12 @@ export const getBlocksFromHeightQuery = (params: any): string => {
     })
     .join(', ');
 
+  const totalCountField = includeTotalCount ? 'totalCount' : '';
+
   const queryGql = gql`
     query {
       blocksFromHeight(${query}) {
+        ${totalCountField}
         edges {
           cursor
           node {
@@ -54,7 +57,6 @@ export const getBlocksFromHeightQuery = (params: any): string => {
             id
             minerAccount {
               accountName
-              balance
               chainId
               fungibleName
               guard {
@@ -100,4 +102,12 @@ export const getBlocksFromHeightQuery = (params: any): string => {
   `;
 
   return queryGql;
+};
+
+export const getBlocksFromHeightQuery = (params: any): string => {
+  return buildBlocksFromHeightQuery(params, true);
+};
+
+export const getBlocksFromHeightWithoutTotalCountQuery = (params: any): string => {
+  return buildBlocksFromHeightQuery(params, false);
 };

@@ -183,7 +183,7 @@ export async function processTransaction(
     hash: transactionInfo.hash,
     result: receiptInfo.result || null,
     logs: receiptInfo.logs || null,
-    num_events: eventsData ? eventsData.length : 0,
+    num_events: eventsData.length,
     requestkey: receiptInfo.reqKey,
     sender: cmdData?.meta?.sender || null,
     txid: receiptInfo.txId ? receiptInfo.txId.toString() : null,
@@ -235,38 +235,11 @@ export async function processTransaction(
     );
 
     const events = await Promise.all(eventsAttributes);
-    // Note: Should not summit debug to the 'main' branch
-    // const swapEvents = events.filter(event => event.name === 'SWAP');
-    // console.log('swapEvents', JSON.stringify(swapEvents, null, 2));
-    // const addLiquidityEvents = events.filter(event => event.name === 'ADD_LIQUIDITY');
-    // console.log('addLiquidityEvents', JSON.stringify(addLiquidityEvents, null, 2));
-    // const mintEvents = events.filter(event => event.name === 'MINT_EVENT');
-    // console.log('mintEvents', JSON.stringify(mintEvents, null, 2));
-    // console.log('------------------------------------- end -------------------------------');
     const eventsWithTransactionId = events.map(event => ({
       ...event,
       transactionId,
     }));
     await Event.bulkCreate(eventsWithTransactionId, { transaction: tx });
-
-    // Process pair creation events
-    try {
-      await processPairCreationEvents(eventsWithTransactionId, tx);
-    } catch (error) {
-      // These events are not critical for transaction persistence; log with identifiers and emit a metric-like log
-      const requestKey = transactionAttributes.requestkey;
-      const txHash = transactionInfo.hash;
-      const chainId = transactionAttributes.chainId;
-      console.error(
-        `[ERROR][WORKER] Error processing pair creation events: ${
-          error instanceof Error ? error.message : String(error)
-        } | blockId=${block.id} requestKey=${requestKey} txHash=${txHash} chainId=${chainId}`,
-      );
-      // Metric-style log for monitoring data loss of pair events
-      console.warn(
-        `[METRIC][DATA_LOSS][PAIR_EVENTS] count=1 blockId=${block.id} requestKey=${requestKey} txHash=${txHash} chainId=${chainId}`,
-      );
-    }
 
     const signers = (cmdData.signers ?? []).map((signer: any, index: number) => ({
       address: signer.address,

@@ -20,6 +20,7 @@
 import { rootPgPool } from '../../../../config/database';
 import TransactionRepository, {
   GetSignersParams,
+  GetTransactionsByPactCodeParams,
   GetTransactionsByPublicKeyParams,
   GetTransactionsByRequestKey,
   GetTransactionsCountParams,
@@ -33,6 +34,7 @@ import { signerMetaValidator } from '../schema-validator/signer-schema-validator
 import BlockDbRepository from './block-db-repository';
 import TransactionQueryBuilder from '../query-builders/transaction-query-builder';
 import { isNullOrUndefined } from '@/utils/helpers';
+import { transactionSummaryValidator } from '@/kadena-server/repository/infra/schema-validator/transaction-summary-schema-validator';
 
 /**
  * Database-specific implementation of the TransactionRepository interface.
@@ -92,7 +94,14 @@ export default class TransactionDbRepository implements TransactionRepository {
    * @returns Promise resolving to paginated transaction results
    */
   async getTransactions(params: GetTransactionsParams) {
-    const { after: afterEncoded, before: beforeEncoded, first, last, ...rest } = params;
+    const {
+      after: afterEncoded,
+      before: beforeEncoded,
+      isCoinbase: isCoinbaseParam,
+      first,
+      last,
+      ...rest
+    } = params;
 
     // Process pagination parameters
     const { limit, order, after, before } = getPaginationParams({
@@ -109,7 +118,7 @@ export default class TransactionDbRepository implements TransactionRepository {
         order,
         after,
         before,
-        isCoinbase: rest.isCoinbase,
+        isCoinbase: isCoinbaseParam,
       });
 
       // Execute the query with the constructed parameters
@@ -126,9 +135,8 @@ export default class TransactionDbRepository implements TransactionRepository {
       return pageInfo;
     }
 
-    const maxHeightFromDb = (await rootPgPool.query(`SELECT max(height) FROM "Blocks"`)).rows[0]
-      .max;
-
+    const maxHeightQuery = `SELECT max(height) FROM "Blocks"`;
+    const maxHeightFromDb = (await rootPgPool.query(maxHeightQuery)).rows[0].max;
     // If no minimumDepth is specified, we can use the normal query approach
     if (!rest.minimumDepth) {
       // Build and execute the query using the query builder
@@ -253,6 +261,40 @@ export default class TransactionDbRepository implements TransactionRepository {
   }
 
   /**
+   * Retrieves transactions by pact code with pagination.
+   *
+   * @param params - Pact code and pagination parameters
+   * @returns Promise resolving to paginated transaction results
+   */
+  async getTransactionsByPactCode(params: GetTransactionsByPactCodeParams) {
+    const { after: afterEncoded, before: beforeEncoded, first, last, pactCode } = params;
+
+    // Process pagination parameters
+    const { limit, order, after, before } = getPaginationParams({
+      after: afterEncoded,
+      before: beforeEncoded,
+      first,
+      last,
+    });
+
+    const { query, queryParams } = this.queryBuilder.buildTransactionByCodeQuery({
+      after,
+      before,
+      order,
+      limit,
+      transactionCode: pactCode,
+    });
+
+    const { rows } = await rootPgPool.query(query, queryParams);
+
+    const edges = rows.slice(0, limit).map(tx => ({
+      cursor: `${tx.creationTime.toString()}:${tx.id.toString()}`,
+      node: transactionSummaryValidator.validate(tx),
+    }));
+
+    return getPageInfo({ edges, order, limit, after, before });
+  }
+  /**
    * Retrieves a transaction associated with a specific transfer.
    * This method finds the transaction that contains a specific transfer by ID.
    *
@@ -337,7 +379,7 @@ export default class TransactionDbRepository implements TransactionRepository {
    * @returns Promise resolving to matching transactions
    */
   async getTransactionsByRequestKey(params: GetTransactionsByRequestKey) {
-    const { requestKey, blockHash, minimumDepth } = params;
+    const { requestKey, blockHash, minimumDepth, currentChainHeights } = params;
     const queryParams: (string | number)[] = [requestKey];
     let conditions = '';
 
@@ -360,6 +402,7 @@ export default class TransactionDbRepository implements TransactionRepository {
       b.height as "height",
       b."hash" as "blockHash",
       b."chainId" as "chainId",
+      b.canonical as canonical,
       t.result as "result",
       td.gas as "gas",
       td.step as step,
@@ -376,17 +419,14 @@ export default class TransactionDbRepository implements TransactionRepository {
 
     const { rows } = await rootPgPool.query(query, queryParams);
 
-    let transactions: TransactionOutput[] = [...rows];
+    const canonicalTxs = rows.filter(r => r.canonical === true);
+    const orphanedTxs = rows.filter(r => r.canonical === false);
+    let transactions: TransactionOutput[] = [...canonicalTxs, ...orphanedTxs];
 
     if (minimumDepth) {
-      const blockRepository = new BlockDbRepository();
-      const blockHashToDepth = await blockRepository.createBlockDepthMap(
-        rows.map(row => ({ hash: row.blockHash })),
-        'hash',
-        minimumDepth,
+      const filteredTxs = rows.filter(
+        row => currentChainHeights[row.chainId] - row.height >= minimumDepth,
       );
-
-      const filteredTxs = rows.filter(event => blockHashToDepth[event.blockHash] >= minimumDepth);
       transactions = [...filteredTxs];
     }
 

@@ -43,6 +43,7 @@ const schema = zod.object({
   coinbase: zod.any(),
   canonical: zod.boolean().nullable(),
   transactionsCount: zod.number(),
+  totalGasUsed: zod.string().nullable(),
 });
 
 /**
@@ -100,6 +101,7 @@ const validate = (row: any): BlockOutput => {
     })),
     numTransactions: res.transactionsCount,
     blockId: res.id,
+    totalGasUsedInKda: res.totalGasUsed ?? '0',
   };
 };
 
@@ -137,6 +139,7 @@ const mapFromSequelize = (blockModel: BlockAttributes): BlockOutput => {
     })),
     numTransactions: blockModel.transactionsCount,
     blockId: blockModel.id,
+    totalGasUsedInKda: blockModel.totalGasUsed ?? '0',
   };
 };
 
