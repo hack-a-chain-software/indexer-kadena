@@ -794,7 +794,15 @@ export class PairService {
             // Parse the parameters
             const [sender, to, token0Ref, token1Ref, amount0, amount1, liquidity] = JSON.parse(
               event.parameters,
-            ) as [string, string, TokenReference, TokenReference, TokenAmount, TokenAmount, number];
+            ) as [
+              string,
+              string,
+              TokenReference,
+              TokenReference,
+              TokenAmount,
+              TokenAmount,
+              TokenAmount,
+            ];
 
             // Convert TokenAmount to string representation
             const amount0Str = typeof amount0 === 'number' ? amount0.toString() : amount0.decimal;
@@ -836,10 +844,12 @@ export class PairService {
             );
 
             let totalSupply = Number(pair.totalSupply);
+            const liquidityStr =
+              typeof liquidity === 'number' ? liquidity.toString() : liquidity.decimal;
             if (event.name === 'ADD_LIQUIDITY') {
-              totalSupply = Number(pair.totalSupply) + Number(liquidity);
+              totalSupply = Number(pair.totalSupply) + Number(liquidityStr);
             } else {
-              totalSupply = Number(pair.totalSupply) - Number(liquidity);
+              totalSupply = Number(pair.totalSupply) - Number(liquidityStr);
             }
             await pair.update(
               {
