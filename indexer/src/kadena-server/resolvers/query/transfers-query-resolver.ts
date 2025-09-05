@@ -6,9 +6,11 @@
  * It supports querying both fungible and non-fungible token transfers across the blockchain.
  */
 
+import { isFieldRequested } from '@/utils/graphql';
 import { ResolverContext } from '../../config/apollo-server-config';
 import { QueryResolvers } from '../../config/graphql-types';
 import { buildTransferOutput } from '../output/build-transfer-output';
+import { isNullOrUndefined } from '@/utils/helpers';
 
 /**
  * Resolver function for the 'transfers' query
@@ -25,12 +27,14 @@ import { buildTransferOutput } from '../output/build-transfer-output';
  * @param _parent - Parent resolver object (unused in this root resolver)
  * @param args - GraphQL query arguments containing filtering and pagination parameters
  * @param context - Resolver context containing repository implementations
+ * @param info - GraphQL resolve info containing the query AST for field selection analysis
  * @returns Promise resolving to a transfers connection with edges, pagination info, and metadata
  */
 export const transfersQueryResolver: QueryResolvers<ResolverContext>['transfers'] = async (
   _parent,
   args,
   context,
+  info,
 ) => {
   // Extract all query parameters from the GraphQL arguments
   const {
@@ -46,12 +50,24 @@ export const transfersQueryResolver: QueryResolvers<ResolverContext>['transfers'
     isNFT,
   } = args;
 
-  if (isNFT && fungibleName) {
+  if (isNFT && !isNullOrUndefined(fungibleName)) {
     throw new Error('[ERROR][GRAPHQL][VALID_PARAM] isNFT and fungibleName cannot be used together');
   }
 
-  // Call the repository layer to retrieve the filtered and paginated transfers
-  const output = await context.transferRepository.getTransfers({
+  const hasTotalCountField = isFieldRequested(info, 'totalCount');
+  let totalCountPromise: Promise<number> | null = null;
+  if (hasTotalCountField) {
+    totalCountPromise = context.transferRepository.getTotalCountOfTransfers({
+      accountName,
+      blockHash,
+      chainId,
+      fungibleName,
+      requestKey,
+      hasTokenId: isNFT,
+    });
+  }
+
+  const outputPromise = context.transferRepository.getTransfers({
     blockHash,
     accountName,
     chainId,
@@ -64,6 +80,8 @@ export const transfersQueryResolver: QueryResolvers<ResolverContext>['transfers'
     hasTokenId: isNFT,
   });
 
+  const [output, totalCount] = await Promise.all([outputPromise, totalCountPromise]);
+
   // Transform repository outputs into GraphQL-compatible transfer nodes
   const edges = output.edges.map(e => ({
     cursor: e.cursor,
@@ -73,13 +91,13 @@ export const transfersQueryResolver: QueryResolvers<ResolverContext>['transfers'
   // Return a complete GraphQL connection object with:
   // 1. Transformed transfer edges
   // 2. Pagination information for navigating the result set
-  // 3. Additional metadata needed by related field resolvers (like totalCount)
+  // 3. Actual totalCount computed in parallel with the main query
   // 4. Filter parameters to support field resolvers that need this context
   return {
     edges,
     pageInfo: output.pageInfo,
-    // Set totalCount to -1 as a signal that it needs to be resolved separately
-    totalCount: -1,
+    // Include the actual totalCount computed in parallel
+    totalCount: totalCount ?? -1,
     // Include all filter parameters to support field resolvers
     accountName,
     blockHash,
