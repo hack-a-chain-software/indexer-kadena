@@ -58,7 +58,7 @@ async function main() {
     if (options.streaming) {
       await startStreaming();
     } else if (options.graphql) {
-      startOutboxConsumer();
+      // startOutboxConsumer();
       await startGraphqlServer();
     } else if (options.backfillPairs) {
       await backfillPairEvents();
