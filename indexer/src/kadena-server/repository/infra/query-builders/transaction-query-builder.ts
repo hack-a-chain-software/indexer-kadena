@@ -355,27 +355,32 @@ export default class TransactionQueryBuilder {
     limit: number;
     isCoinbase?: boolean | null;
   }) {
-    let whereCondition = '';
-    let queryParams: (string | number)[] = [params.limit];
+    const queryParams: (string | number)[] = [params.limit];
+    const conditions: string[] = [];
+
+    conditions.push('b.canonical = true');
 
     if (params.after) {
       const [creationTime, id] = params.after.split(':');
       queryParams.push(creationTime, id);
-      whereCondition = ` WHERE (t.creationtime, t.id) < ($2, $3)`;
+      conditions.push(
+        `(t.creationtime, t.id) < ($${queryParams.length - 1}, $${queryParams.length})`,
+      );
     }
+
     if (params.before) {
       const [creationTime, id] = params.before.split(':');
       queryParams.push(creationTime, id);
-      whereCondition = ` WHERE (t.creationtime, t.id) > ($2, $3)`;
+      conditions.push(
+        `(t.creationtime, t.id) > ($${queryParams.length - 1}, $${queryParams.length})`,
+      );
     }
 
     if (!params.isCoinbase) {
-      whereCondition += ` AND t.sender != 'coinbase'`;
+      conditions.push(`t.sender != 'coinbase'`);
     }
 
-    whereCondition += ` AND b.canonical = true`;
-
-    let query = `
+    const query = `
       SELECT
         t.id AS id,
         t.creationtime AS "creationTime",
@@ -399,8 +404,13 @@ export default class TransactionQueryBuilder {
         t.result AS "result",
         t.requestkey AS "requestKey"
       FROM "Transactions" t
-      JOIN "Blocks" b ON b.id = t."blockId"
-      ${whereCondition}
+      JOIN "Blocks" b ON b.id = t."blockId"${
+        conditions.length
+          ? `
+      WHERE ${conditions.join(`
+        AND `)}`
+          : ''
+      }
       ORDER BY t.creationtime ${params.order}, t.id ${params.order}
       LIMIT $1
     `;
