@@ -1,0 +1,1656 @@
+export const blocksFromHeightFixture010 = {
+  data: {
+    blocksFromHeight: {
+      totalCount: 7097948,
+      edges: [
+        {
+          cursor: 'NTAwMDA6MTEyNTMxNzc4',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:48:49.068Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '17126705885783394533',
+            hash: 'u938K7Ss4btYbH2VP4qn5UGxLmbTSxsTHMhcH4usgt4',
+            height: 50000,
+            id: 'QmxvY2s6dTkzOEs3U3M0YnRZYkgyVlA0cW41VUd4TG1iVFN4c1RITWhjSDR1c2d0NA==',
+            minerAccount: {
+              accountName: '2db09958b3da796954ebc01cd5c2875824a8b03dc3cedd8b9bacaaa1336f552b',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['2db09958b3da796954ebc01cd5c2875824a8b03dc3cedd8b9bacaaa1336f552b'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["2db09958b3da796954ebc01cd5c2875824a8b03dc3cedd8b9bacaaa1336f552b"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjJkYjA5OTU4YjNkYTc5Njk1NGViYzAxY2Q1YzI4NzU4MjRhOGIwM2RjM2NlZGQ4YjliYWNhYWExMzM2ZjU1MmIiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'JznzNLMSGw1ONCJ2MV478Z8wSZAR8udARgPU6De-k9s',
+              },
+              {
+                chainId: '3',
+                hash: 'rYvukqDnYJPjNiQZIet1Cg7t76hpIL33A09Xjk71v70',
+              },
+              {
+                chainId: '5',
+                hash: 'hBKfthWt4CwQltQy6a_A5jYAWNtGBfy1slleNajwXeQ',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'pHxLFdyx4vV8mbgqZj5x1faFSUNmNc4F-bk8fv5OdPM',
+            powHash: '000000000041dd1885d3e1ebe732a4374dbd796b7c33561723052849d749244a',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'ZuXWBq2KeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMDE6MTEyNTMxNzc3',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:49:13.663Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '4503615279837074',
+            hash: '2NOfAyF38vxXFnsaKRNo08akCuBcPSajVHqNo0yDQEI',
+            height: 50001,
+            id: 'QmxvY2s6Mk5PZkF5RjM4dnhYRm5zYUtSTm8wOGFrQ3VCY1BTYWpWSHFObzB5RFFFSQ==',
+            minerAccount: {
+              accountName: '0ddf46cff040fe468b3b4a4eeb8c61aa9155fd4861ecdcf60f15bf1769944290',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['0ddf46cff040fe468b3b4a4eeb8c61aa9155fd4861ecdcf60f15bf1769944290'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["0ddf46cff040fe468b3b4a4eeb8c61aa9155fd4861ecdcf60f15bf1769944290"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjBkZGY0NmNmZjA0MGZlNDY4YjNiNGE0ZWViOGM2MWFhOTE1NWZkNDg2MWVjZGNmNjBmMTViZjE3Njk5NDQyOTAiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'l07WqfQV7z1usdOkD7zZI86snC0yofDI6_QFPydcOLI',
+              },
+              {
+                chainId: '3',
+                hash: 'vgvR5QwJl3Z6hD5r8uLYjj-vQtbCRucR5jehS8XfCSw',
+              },
+              {
+                chainId: '5',
+                hash: 'kL1tqhUa6rIiB7-ViJG0T9m0hEfebOn7j711tlvf8V8',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'yKl33JfJzaOwixahXlBVPmwc7f3i2BvqUiKT5cnI9qg',
+            powHash: '000000000016b865f990eaaae9d9c3aaa9cb31151c81f611c489f8073315821e',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: '_o3t5BSOeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMDI6MTEyNTMxNzc2',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:49:41.817Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '845976876167833280',
+            hash: 'n2dKQHEHUKUI0Kg9bU1zsPbuH4ABdfek1z1AezQNbx8',
+            height: 50002,
+            id: 'QmxvY2s6bjJkS1FIRUhVS1VJMEtnOWJVMXpzUGJ1SDRBQmRmZWsxejFBZXpRTmJ4OA==',
+            minerAccount: {
+              accountName: 'd88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['d88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["d88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsImQ4OGRhMGFmZDUwY2I4MzYxMTFkNWRhZDYxMGQ2YWRkMGFmZTI3NzdmZTFhOWJjODliMGIxYTQxMzdmNTZmMjciXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'SLAAkAGLq-s7heYlVZFN9-cMrDMfeuHyKZxAd1nRUw4',
+              },
+              {
+                chainId: '3',
+                hash: 'TRTIbjfGrdWRQuTS2jZAeSiKzvLnWsFTIT_1FQp6-Jc',
+              },
+              {
+                chainId: '5',
+                hash: 'T-JHL40jwL5CUYyX6l9m0CL0YfzG2SXKFnnCpB4-8VU',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'xgnXz6r5O_ll4TgghUykl0apZSHPg-d3qKMCtRjhq64',
+            powHash: '00000000002cc9a19be7c8ad92158f7548245a0cdff861e242a3afde437bd62d',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'ljYEw3yReQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMDM6MTEyNTMxNzc1',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:50:03.621Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '909034101220808596',
+            hash: 'pJqSi7-v4pWGpCGKURSYbaVG-KNxjfpr7JTqyFeBIhI',
+            height: 50003,
+            id: 'QmxvY2s6cEpxU2k3LXY0cFdHcENHS1VSU1liYVZHLUtOeGpmcHI3SlRxeUZlQkloSQ==',
+            minerAccount: {
+              accountName:
+                'a30ffd3ba7fa08d4aafcfd9f15594d20e732b8fdda43f02470d76b7ebfa467e6" (read-keyset "miner-keyset") 23045.23)(coin.coinbase "a30ffd3ba7fa08d4aafcfd9f15594d20e732b8fdda43f02470d76b7ebfa467e6',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {},
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsImEzMGZmZDNiYTdmYTA4ZDRhYWZjZmQ5ZjE1NTk0ZDIwZTczMmI4ZmRkYTQzZjAyNDcwZDc2YjdlYmZhNDY3ZTYiIChyZWFkLWtleXNldCAibWluZXIta2V5c2V0IikgMjMwNDUuMjMpKGNvaW4uY29pbmJhc2UgImEzMGZmZDNiYTdmYTA4ZDRhYWZjZmQ5ZjE1NTk0ZDIwZTczMmI4ZmRkYTQzZjAyNDcwZDc2YjdlYmZhNDY3ZTYiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: '-uTKr9MOG256FzgntD_3VtnIsElJ-TJbuYvJCcLqgHc',
+              },
+              {
+                chainId: '3',
+                hash: 'd9JGFF-yxQR89LyIQ0b4XLm8yrZDvg5e--35hOxM1sw',
+              },
+              {
+                chainId: '5',
+                hash: 'iEtL8fa0utae5gwivkN4VurregQi0C3bINRlua7Z8KQ',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'fyKCCgmGusqhB3xApCvOMj17ENGpfmWIga_2JJjhpKQ',
+            powHash: '00000000004a15de8f00ec5eb2555e2f92bd107f20dd8a19a1bb9c913d555713',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'Lt8aoeSUeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMDQ6MTEyNTMxNzc0',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:50:53.156Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '12667438004473098098',
+            hash: 'OS_tvg33mkghh9QOn_PAaq_ddJh0_KMWvBtihs0Y6yE',
+            height: 50004,
+            id: 'QmxvY2s6T1NfdHZnMzNta2doaDlRT25fUEFhcV9kZEpoMF9LTVd2QnRpaHMwWTZ5RQ==',
+            minerAccount: {
+              accountName: 'd88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['d88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["d88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsImQ4OGRhMGFmZDUwY2I4MzYxMTFkNWRhZDYxMGQ2YWRkMGFmZTI3NzdmZTFhOWJjODliMGIxYTQxMzdmNTZmMjciXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'k0P1mFCtQiGc3SHs24mzyS14kxqoZtaTOeDpHK11Oqo',
+              },
+              {
+                chainId: '3',
+                hash: '1V6ow3gVMkDJtFWdQXuIWOsa5oNjgJwtgMTxgDCOxPo',
+              },
+              {
+                chainId: '5',
+                hash: 'XDSeX7qjV2AAUG_KhCdo0uTfyBK8aewwwfKfEkomHYk',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'Kx1cGQjTeo2ZI3doxoA3-IXs_bg3OIX0oGYn4Jdmkgs',
+            powHash: '000000000030c24a0b8f9f3931186ea6c2ec9f497bc6592bf90333d154b7833d',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'xocxf0yYeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMDU6MTEyNTMxNzcz',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:51:43.107Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '14122641296958094003',
+            hash: 'PoFGYBMu8fhrjmEPNtXKyK9Td5Of6t0oLbvROYJ6SOI',
+            height: 50005,
+            id: 'QmxvY2s6UG9GR1lCTXU4Zmhyam1FUE50WEt5SzlUZDVPZjZ0MG9MYnZST1lKNlNPSQ==',
+            minerAccount: {
+              accountName: '4c693d4fc62e90274248396196e049559ace6c8f035a2d047bc72d6f59f65ef3',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['4c693d4fc62e90274248396196e049559ace6c8f035a2d047bc72d6f59f65ef3'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["4c693d4fc62e90274248396196e049559ace6c8f035a2d047bc72d6f59f65ef3"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjRjNjkzZDRmYzYyZTkwMjc0MjQ4Mzk2MTk2ZTA0OTU1OWFjZTZjOGYwMzVhMmQwNDdiYzcyZDZmNTlmNjVlZjMiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'prx5pZYTSl7OYR5eABiwn34JTl4NtMRsmSCPJ2cTQz0',
+              },
+              {
+                chainId: '3',
+                hash: 'R7m_3LL5C3Md9vSVvBv-nwC0--o5yt4YEK__ptstEPU',
+              },
+              {
+                chainId: '5',
+                hash: '4ogqKqkxv4rloOWTiLjus_gJiS45G2Tmb8DUfGNklZc',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'HcEFA4LwAKdGE0tk993S3xkcmKs-qRUGgZg4vWsKXKs',
+            powHash: '00000000003244343d8cac201f9d75a80da519ade7f382b73596ecd55985d84f',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'XjBIXbSbeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMDY6MTEyNTMxNzcy',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:51:54.010Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '17637203570503096613',
+            hash: '7lzleUsXotqEX2lToSnO6Eiu9C7lcfTwdQgyWGekbKY',
+            height: 50006,
+            id: 'QmxvY2s6N2x6bGVVc1hvdHFFWDJsVG9Tbk82RWl1OUM3bGNmVHdkUWd5V0dla2JLWQ==',
+            minerAccount: {
+              accountName: '49bda4e13aa707d9fde87c46c31d19eba9d88a661de84c336a0053834be81f78',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['49bda4e13aa707d9fde87c46c31d19eba9d88a661de84c336a0053834be81f78'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["49bda4e13aa707d9fde87c46c31d19eba9d88a661de84c336a0053834be81f78"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjQ5YmRhNGUxM2FhNzA3ZDlmZGU4N2M0NmMzMWQxOWViYTlkODhhNjYxZGU4NGMzMzZhMDA1MzgzNGJlODFmNzgiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'jHHQzzYigUhkZXKL2bLy2277pjm4G3XoZIafokr5noo',
+              },
+              {
+                chainId: '3',
+                hash: '2DsvSq8SCjEJEhXmJ1JPb8HAVKZGuTUkzdzLEupdvvs',
+              },
+              {
+                chainId: '5',
+                hash: 'JWHmBblXCukMbHlmcoRTfqZJO28s7ekHsIpWsJOQkBU',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'u7eZeXLrisgWUj5ZHyRnGUa5T0jexzIWvAgPdSg6ErA',
+            powHash: '00000000000b0faae322a4cffd596b0cc1a7f4e597a2c3f7c470ac9cbecad753',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: '9theOxyfeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMDc6MTEyNTMxNzcx',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:52:19.448Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '2758525746546289417',
+            hash: 'poq6GShwMvyQvO83mC5t5Cdv2Ww7ZdYBfGWRdfBDXUc',
+            height: 50007,
+            id: 'QmxvY2s6cG9xNkdTaHdNdnlRdk84M21DNXQ1Q2R2Mld3N1pkWUJmR1dSZGZCRFhVYw==',
+            minerAccount: {
+              accountName: 'b24cedefbc43968c34f9228096909a8a7bd59c4d93067b348ebf80850a97de16',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['b24cedefbc43968c34f9228096909a8a7bd59c4d93067b348ebf80850a97de16'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["b24cedefbc43968c34f9228096909a8a7bd59c4d93067b348ebf80850a97de16"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsImIyNGNlZGVmYmM0Mzk2OGMzNGY5MjI4MDk2OTA5YThhN2JkNTljNGQ5MzA2N2IzNDhlYmY4MDg1MGE5N2RlMTYiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'NUxvPMzY65rVbm6tfNMAKfbbTbSsDg0TJoiXx2LVO88',
+              },
+              {
+                chainId: '3',
+                hash: 'bPMVWigpWicCn6q7RqiQ7cRJlIcSzKRSiK1kJTjtsKc',
+              },
+              {
+                chainId: '5',
+                hash: 'OlHmFqpRYGAJF76H8uPyKBUFMfvyFUrbRuGyveFSZFI',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'bHrZpS2Kzs9Py7SIr1QUnLwfj-tAMw8htssrEseNVyM',
+            powHash: '0000000000241120d5bc479d07450d6d78aeb627126ec4a283ad482695eeb21d',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'joF1GYSieQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMDg6MTEyNTMxNzcw',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:52:36.365Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '6151083993720875202',
+            hash: 'BJLGguwCQmjqg5N_xfveV9h5hdiL8c4jDxg8NACxA24',
+            height: 50008,
+            id: 'QmxvY2s6QkpMR2d1d0NRbWpxZzVOX3hmdmVWOWg1aGRpTDhjNGpEeGc4TkFDeEEyNA==',
+            minerAccount: {
+              accountName: '04f17ee3813bedf33479b2b700686eda1854e0867a9fa68e84bb28158f20910f',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['04f17ee3813bedf33479b2b700686eda1854e0867a9fa68e84bb28158f20910f'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["04f17ee3813bedf33479b2b700686eda1854e0867a9fa68e84bb28158f20910f"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjA0ZjE3ZWUzODEzYmVkZjMzNDc5YjJiNzAwNjg2ZWRhMTg1NGUwODY3YTlmYTY4ZTg0YmIyODE1OGYyMDkxMGYiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'NKVPBMqucGUMcENqwXfGWuPlaqKirpv8lptll95htfo',
+              },
+              {
+                chainId: '3',
+                hash: 'Ino_NWemrQZsnFl16C21ZDhiMNAFvMNOsKACXpZ8TAk',
+              },
+              {
+                chainId: '5',
+                hash: 'xImvNxZuBFvKLEkQlQTmkjP4oO6DiTfZpcqgWUaNJSc',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'vaJO83hjOz4sBNoZwQacpYK0WO4oMg-ypCuEjsLZ0NM',
+            powHash: '00000000001e8749383fa3879e081848e36c7aacb7a1b9684f6fdefe2f3918e6',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'JiqM9-uleQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMDk6MTEyNTMxNzY5',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:53:16.351Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '10887537226063230658',
+            hash: 'vrU77PMY6AkaZBRMlCBYwv2YbLljRjBOzDf6ZX95CVc',
+            height: 50009,
+            id: 'QmxvY2s6dnJVNzdQTVk2QWthWkJSTWxDQll3djJZYkxsalJqQk96RGY2Wlg5NUNWYw==',
+            minerAccount: {
+              accountName: 'fcb27527481392e5ecc9739a7fc50f93c20788530db9c8a0f0cd686ec8dcf544',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['fcb27527481392e5ecc9739a7fc50f93c20788530db9c8a0f0cd686ec8dcf544'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["fcb27527481392e5ecc9739a7fc50f93c20788530db9c8a0f0cd686ec8dcf544"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsImZjYjI3NTI3NDgxMzkyZTVlY2M5NzM5YTdmYzUwZjkzYzIwNzg4NTMwZGI5YzhhMGYwY2Q2ODZlYzhkY2Y1NDQiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'CjuJVvtXRMBHE3ib5S9Y6IQfNRogkUSVEhlA32i40K8',
+              },
+              {
+                chainId: '3',
+                hash: 'nI3XCLZ1k59pRh2rwz0psQxR1Z67qRsztz5xs5qx1ic',
+              },
+              {
+                chainId: '5',
+                hash: 'rBA6C0FAVA5iQd-NgFgmXYbmqnPDntUJ9pJtzOOvON0',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'qjCcLmRMfYrRuqgRAYLx_iYiKvPTmtd5wHAKv8qHWG0',
+            powHash: '00000000000a88413c853574e8a3848c9093d26c34318bcb44e504877635f28e',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'vtKi1VOpeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMTA6MTEyNTMxNzY4',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:54:02.957Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '18443846724067523151',
+            hash: 'YEzj-sj4aHaJY0i0ROGDHQNqIcCIpM5m-HUFme8OUgo',
+            height: 50010,
+            id: 'QmxvY2s6WUV6ai1zajRhSGFKWTBpMFJPR0RIUU5xSWNDSXBNNW0tSFVGbWU4T1Vnbw==',
+            minerAccount: {
+              accountName: '2db09958b3da796954ebc01cd5c2875824a8b03dc3cedd8b9bacaaa1336f552b',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['2db09958b3da796954ebc01cd5c2875824a8b03dc3cedd8b9bacaaa1336f552b'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["2db09958b3da796954ebc01cd5c2875824a8b03dc3cedd8b9bacaaa1336f552b"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjJkYjA5OTU4YjNkYTc5Njk1NGViYzAxY2Q1YzI4NzU4MjRhOGIwM2RjM2NlZGQ4YjliYWNhYWExMzM2ZjU1MmIiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'YZygPIurKYGycTXhBtIdSLuBgvufBM9ZXy7elKNh-jM',
+              },
+              {
+                chainId: '3',
+                hash: 'Xja8qEOIYZCHei7YN3YeUPahWhWvMb7IGuq26S2e7y8',
+              },
+              {
+                chainId: '5',
+                hash: 'XPicvrijh0p-IFMkeMr5qWcRRudlYN6B4S2nvplWf_Q',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'fQWVowVlP0BdoFPfQ2IFPbiFFqTG5frKQmRKtY8epqU',
+            powHash: '00000000002a36f1d02d41070e95996473efd5b3d464929b6600edc41de59fc2',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'Vnu5s7useQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMTE6MTEyNTMxNzY3',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:54:05.157Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '575854899396495237',
+            hash: '980QD89w62_lKCJvoI-01DsZYI-HVQD7qTab3L4olv8',
+            height: 50011,
+            id: 'QmxvY2s6OTgwUUQ4OXc2Ml9sS0NKdm9JLTAxRHNaWUktSFZRRDdxVGFiM0w0b2x2OA==',
+            minerAccount: {
+              accountName: '49bda4e13aa707d9fde87c46c31d19eba9d88a661de84c336a0053834be81f78',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['49bda4e13aa707d9fde87c46c31d19eba9d88a661de84c336a0053834be81f78'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["49bda4e13aa707d9fde87c46c31d19eba9d88a661de84c336a0053834be81f78"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjQ5YmRhNGUxM2FhNzA3ZDlmZGU4N2M0NmMzMWQxOWViYTlkODhhNjYxZGU4NGMzMzZhMDA1MzgzNGJlODFmNzgiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'kVsI9tZT4j5fTriJuYkN2rFYwqY11m1i8G5V_ZP0POA',
+              },
+              {
+                chainId: '3',
+                hash: '3ILcFaL9I518KvVPmyt2ywZ6ImA4WJNH6Zp4PKmJ84w',
+              },
+              {
+                chainId: '5',
+                hash: 'EJHRGJ9zJL7-PDsRHc5X4PoSfBkYQ2WK_XmrLUjRoxc',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'YSj-ZFT7UW6wOf_0un3JT_DjifC6_KfGihRbvImb8rY',
+            powHash: '000000000004bbd45c9409190a96ffe98ed1d743cf499acbdd06d936ce48c8a5',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: '7iPQkSOweQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMTI6MTEyNTMxNzY2',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:54:58.973Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '1501201650148818',
+            hash: '9VDPXBctLh8Ed3akkDHCguMuLQE2__Gb8a1jhnUTzUY',
+            height: 50012,
+            id: 'QmxvY2s6OVZEUFhCY3RMaDhFZDNha2tESENndU11TFFFMl9fR2I4YTFqaG5VVHpVWQ==',
+            minerAccount: {
+              accountName: '730f3ee4dc399aa5b343ad82cf4f9d7052f85911825abad40850bb9d92a3d5fd',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['730f3ee4dc399aa5b343ad82cf4f9d7052f85911825abad40850bb9d92a3d5fd'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["730f3ee4dc399aa5b343ad82cf4f9d7052f85911825abad40850bb9d92a3d5fd"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjczMGYzZWU0ZGMzOTlhYTViMzQzYWQ4MmNmNGY5ZDcwNTJmODU5MTE4MjVhYmFkNDA4NTBiYjlkOTJhM2Q1ZmQiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'YVVB0ySeScV8WWk47fBwInifUx28WTiaMBeAxtuBDrc',
+              },
+              {
+                chainId: '3',
+                hash: '6LvnlR-_LLkAFvFQTez6fKsszYL088fW089sSh-emU8',
+              },
+              {
+                chainId: '5',
+                hash: 'xcqT6yTUq-zpZmd18DjZplBSE_XAMkK3DiF5XmMsJps',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'UZp1Jtw0KollTS9ctGRZkHIHr7DDWN5D2lgA7QlSuto',
+            powHash: '00000000001cb6d047041d22503cca4ccaa5960f235b94c363ddd5285cb9b01b',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'hszmb4uzeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMTM6MTEyNTMxNzY1',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:55:14.968Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '16450116492274070291',
+            hash: 'qpK2LgwtmSCzBfcHwm8pu8uEMAlwfQPhXgNGXZlninY',
+            height: 50013,
+            id: 'QmxvY2s6cXBLMkxnd3RtU0N6QmZjSHdtOHB1OHVFTUFsd2ZRUGhYZ05HWFpsbmluWQ==',
+            minerAccount: {
+              accountName: 'd48b46edb2c1c3a37d57d42a758d3ed7223a5cf0506df5e697a5b71aeecee7c2',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['d48b46edb2c1c3a37d57d42a758d3ed7223a5cf0506df5e697a5b71aeecee7c2'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["d48b46edb2c1c3a37d57d42a758d3ed7223a5cf0506df5e697a5b71aeecee7c2"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsImQ0OGI0NmVkYjJjMWMzYTM3ZDU3ZDQyYTc1OGQzZWQ3MjIzYTVjZjA1MDZkZjVlNjk3YTViNzFhZWVjZWU3YzIiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'uIwhnYyXvlU4v95xgjvw2ymIjos5jOeM1ktmfaBzi1w',
+              },
+              {
+                chainId: '3',
+                hash: 'hFBiVGk-9GRNdg39hsy2Q4AJ1BBJrgap7IWx1sWbXpc',
+              },
+              {
+                chainId: '5',
+                hash: 'ld2vCc59TSUzWgy6T-fcRZhjqbQQzHiw8ZDNAiqSTVM',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'OewVnnnFMq1E2ttkkyQlE3X0XePviAxqHiyOwBl68Tw',
+            powHash: '000000000008c3c78c0e153387a39d77ee5605d9d237873e7065ad39d5a7738f',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'HnX9TfO2eQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMTQ6MTEyNTMxNzY0',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:55:56.135Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '9186653534627859868',
+            hash: 'Y56Tx0iMVW4qErWTjxGaQW3Skv-cDNxdsQAu8ZmATQY',
+            height: 50014,
+            id: 'QmxvY2s6WTU2VHgwaU1WVzRxRXJXVGp4R2FRVzNTa3YtY0ROeGRzUUF1OFptQVRRWQ==',
+            minerAccount: {
+              accountName: '2db09958b3da796954ebc01cd5c2875824a8b03dc3cedd8b9bacaaa1336f552b',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['2db09958b3da796954ebc01cd5c2875824a8b03dc3cedd8b9bacaaa1336f552b'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["2db09958b3da796954ebc01cd5c2875824a8b03dc3cedd8b9bacaaa1336f552b"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjJkYjA5OTU4YjNkYTc5Njk1NGViYzAxY2Q1YzI4NzU4MjRhOGIwM2RjM2NlZGQ4YjliYWNhYWExMzM2ZjU1MmIiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'L8lmwq63LkUhNoT7PeETwSlhK-trPeGbwS5JnNWXLeI',
+              },
+              {
+                chainId: '3',
+                hash: 'Lj2FN2F9pgL0XdeAF-RGL98QgWDBp4XFlOGQgTq37F8',
+              },
+              {
+                chainId: '5',
+                hash: '8tKSn8cgL2jlTQuxrdlt_S5tmd3OWyCFm8yH3gDzbnA',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: '07rlJKK9sP166fSnzZABmwpZPgfCgzoDftxKfF53fVA',
+            powHash: '000000000017c1e4c33e86b9917e1d139855a4ca002d4dc665a0f74a754904bc',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'th0ULFu6eQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMTU6MTEyNTMxNzYz',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:56:03.617Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '11528970231099602209',
+            hash: 'cq3ovO5w5EZQBfTJg8150lbwNAPuWNA_TvELzAOIZyM',
+            height: 50015,
+            id: 'QmxvY2s6Y3Ezb3ZPNXc1RVpRQmZUSmc4MTUwbGJ3TkFQdVdOQV9UdkVMekFPSVp5TQ==',
+            minerAccount: {
+              accountName: 'd88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['d88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["d88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsImQ4OGRhMGFmZDUwY2I4MzYxMTFkNWRhZDYxMGQ2YWRkMGFmZTI3NzdmZTFhOWJjODliMGIxYTQxMzdmNTZmMjciXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'RXVHOds_f58UdLAMQCR-1_9ahNEuafbRr2CsoIzzM5c',
+              },
+              {
+                chainId: '3',
+                hash: 'oEJzu-43QnW48hA1Mw8I1xsqEE77ZMw6yPcW3axfAGs',
+              },
+              {
+                chainId: '5',
+                hash: 'Zacow7LAQ2hakGjvAi3r78V1BUqAsmrVJ7oGkAJejRg',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'f-6tTwAiamqa0g_baXai4oJSODBQV94aGxyFDNH6_WU',
+            powHash: '00000000002980bb6a13f337bc7d20a762bf8ccd86b98c16874a16e0b039bb6e',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'TsYqCsO9eQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMTY6MTEyNTMxNzYy',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:56:27.317Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '13263190038286452582',
+            hash: '3gfqZMyJMEdKZ29MCQOt2Em2LtFqY9T5TzwkRcNOnUE',
+            height: 50016,
+            id: 'QmxvY2s6M2dmcVpNeUpNRWRLWjI5TUNRT3QyRW0yTHRGcVk5VDVUendrUmNOT25VRQ==',
+            minerAccount: {
+              accountName: '46073a0bd593531dce2189bea10a154820af16a950d2c1c69e952baa6a3c1962',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['46073a0bd593531dce2189bea10a154820af16a950d2c1c69e952baa6a3c1962'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["46073a0bd593531dce2189bea10a154820af16a950d2c1c69e952baa6a3c1962"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjQ2MDczYTBiZDU5MzUzMWRjZTIxODliZWExMGExNTQ4MjBhZjE2YTk1MGQyYzFjNjllOTUyYmFhNmEzYzE5NjIiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'aXXpaB7xg3L3kivk_W2GXgxfQSck8Sa9n4z5bmD2Wx0',
+              },
+              {
+                chainId: '3',
+                hash: 'lYY3AD9ZAK7JzYrNWRt9JOSuQtUVTnLrwlY409Vm6Gc',
+              },
+              {
+                chainId: '5',
+                hash: 'Nfn5lz8hregADxgivnc03Y5PSO4VzfLDpGzVU6GVQ0k',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'ItOr6OMXs39et7qtdAgNxM-IbRJ7GeG5cYblyLgYKts',
+            powHash: '0000000000179dcc45e3f23a21c9a023763355c16710d872876edfa03e930f67',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: '5m5B6CrBeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMTc6MTEyNTMxNzYx',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:57:33.814Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '533104823708367929',
+            hash: 'HkMeEE4VrPqWpL3n2G3m-Bf4pph5I8ChzYnNe_IQaBU',
+            height: 50017,
+            id: 'QmxvY2s6SGtNZUVFNFZyUHFXcEwzbjJHM20tQmY0cHBoNUk4Q2h6WW5OZV9JUWFCVQ==',
+            minerAccount: {
+              accountName: '1505f8d8a69e26a3ef03a2b0d0811c27e99adb3bcab21754ebabeb32f1bf9a03',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['1505f8d8a69e26a3ef03a2b0d0811c27e99adb3bcab21754ebabeb32f1bf9a03'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["1505f8d8a69e26a3ef03a2b0d0811c27e99adb3bcab21754ebabeb32f1bf9a03"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjE1MDVmOGQ4YTY5ZTI2YTNlZjAzYTJiMGQwODExYzI3ZTk5YWRiM2JjYWIyMTc1NGViYWJlYjMyZjFiZjlhMDMiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: '9he3Uy6P4nnsYJZJuqXNzmg4erjULMyKqNzpB16juzQ',
+              },
+              {
+                chainId: '3',
+                hash: 'bEM_KmvmS9El5FkZBtrbEIObUifW-uV5bQ-bVoE11PE',
+              },
+              {
+                chainId: '5',
+                hash: '4HkynXi3AvTwjN-nOVH73OqJTtI_uIPF26JLD5Ua4-s',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'wjh3kgq_9CoqwLI5LwU65eniloHTSDdkrTLh_DwFJnM',
+            powHash: '00000000000daf9240264db205dd5c492ba010e7264259a5453175b9ace22ff4',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'fhdYxpLEeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMTg6MTEyNTMxNzYw',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:58:13.490Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '9218061470836251974',
+            hash: '_69w5JgM7ACRLlzJHkMTUaf5EZEGRlV4VRKtNB_Qxv0',
+            height: 50018,
+            id: 'QmxvY2s6XzY5dzVKZ003QUNSTGx6SkhrTVRVYWY1RVpFR1JsVjRWUkt0TkJfUXh2MA==',
+            minerAccount: {
+              accountName: 'd88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['d88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["d88da0afd50cb836111d5dad610d6add0afe2777fe1a9bc89b0b1a4137f56f27"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsImQ4OGRhMGFmZDUwY2I4MzYxMTFkNWRhZDYxMGQ2YWRkMGFmZTI3NzdmZTFhOWJjODliMGIxYTQxMzdmNTZmMjciXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'ZOW_5lNE8SNsQ4k3Tkb_ft-mjYoHgh7a6v0LZ5a90LY',
+              },
+              {
+                chainId: '3',
+                hash: 'PLNZuZdYvtdoWDzFN8n7POwWot7v-sLCvuiNQUWlHbU',
+              },
+              {
+                chainId: '5',
+                hash: 'oCWk62c3XMAK7U-p3N2x0BeyRLyWL1PqAm-_sLvgXpo',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'I3KoN8XGrHJaV4iC_GZIexbyF68WYi5qVFEU9VVdaD0',
+            powHash: '000000000025b4fb58f3da8bf3d2d51ad833bdef0fd96a8c50e65a121834b9bc',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'FsBupPrHeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMTk6MTEyNTMxNzU5',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:58:42.107Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '4490982643553694713',
+            hash: 'YIgUaq1dMIhL03dmrvnfJAsZze5Td5S31ptrKjoTdK8',
+            height: 50019,
+            id: 'QmxvY2s6WUlnVWFxMWRNSWhMMDNkbXJ2bmZKQXNaemU1VGQ1UzMxcHRyS2pvVGRLOA==',
+            minerAccount: {
+              accountName: '49bda4e13aa707d9fde87c46c31d19eba9d88a661de84c336a0053834be81f78',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['49bda4e13aa707d9fde87c46c31d19eba9d88a661de84c336a0053834be81f78'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["49bda4e13aa707d9fde87c46c31d19eba9d88a661de84c336a0053834be81f78"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjQ5YmRhNGUxM2FhNzA3ZDlmZGU4N2M0NmMzMWQxOWViYTlkODhhNjYxZGU4NGMzMzZhMDA1MzgzNGJlODFmNzgiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'BT6JyEKOKnryvESmtRqC9Qf3bYNeKQWLGTC1p2K_pIw',
+              },
+              {
+                chainId: '3',
+                hash: 'hTxV3tiqYYZI__-v9bjXHg9Q5r746OgZ9urK1awCQkY',
+              },
+              {
+                chainId: '5',
+                hash: 'bEVuDVFGWz97T9OwBHfAZ1_j3dtL6L4mlt3eQDAxvnA',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'PfMM96o4ZaF-fLqAitFsNy_PEBZCuPd1mqdvUmWzjY4',
+            powHash: '00000000003f68471125ff505a60a437f46b99292cd81722107ab051fca70fab',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'rmiFgmLLeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMjA6MTEyNTMxNzU4',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:59:23.788Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '15889319794552844924',
+            hash: 'QL05xzkIX4D18gijQwiVAi3k7Iwd57ttRiBaMPjFDh8',
+            height: 50020,
+            id: 'QmxvY2s6UUwwNXh6a0lYNEQxOGdpalF3aVZBaTNrN0l3ZDU3dHRSaUJhTVBqRkRoOA==',
+            minerAccount: {
+              accountName: '28481ce2b9ea2450f1abd24f3d37ce181422e5f8db120a64823ecf118e32a7af',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['28481ce2b9ea2450f1abd24f3d37ce181422e5f8db120a64823ecf118e32a7af'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["28481ce2b9ea2450f1abd24f3d37ce181422e5f8db120a64823ecf118e32a7af"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjI4NDgxY2UyYjllYTI0NTBmMWFiZDI0ZjNkMzdjZTE4MTQyMmU1ZjhkYjEyMGE2NDgyM2VjZjExOGUzMmE3YWYiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'VOFSkhD4Qm4GEkIsuV5SEQiq7QCKEeRH2DcD1lxF6Kc',
+              },
+              {
+                chainId: '3',
+                hash: 'Onbyw1bTXsR_UPXq3W34vVZ-MC0t8p7pct4Z4xNrVt8',
+              },
+              {
+                chainId: '5',
+                hash: 'TOz5S3Akz1loaKqiexBx-1bgtMwMt9ZW1JO1KhmGPYg',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'zewH33JXmXfQpW-PllkXNmB70tev-CoKqylJ-8p8dxo',
+            powHash: '000000000019ee4d1e96215b4e4c5a35a07cabfff81929d9cf3468a066109b7a',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'RhGcYMrOeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMjE6MTEyNTMxNzU3',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T03:59:39.272Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '16218160645105700601',
+            hash: 'XuYmP8DFpxK7tAmCbAyGJ-3qo-c-hmYURZNlNTTxvyU',
+            height: 50021,
+            id: 'QmxvY2s6WHVZbVA4REZweEs3dEFtQ2JBeUdKLTNxby1jLWhtWVVSWk5sTlRUeHZ5VQ==',
+            minerAccount: {
+              accountName: 'd48b46edb2c1c3a37d57d42a758d3ed7223a5cf0506df5e697a5b71aeecee7c2',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['d48b46edb2c1c3a37d57d42a758d3ed7223a5cf0506df5e697a5b71aeecee7c2'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["d48b46edb2c1c3a37d57d42a758d3ed7223a5cf0506df5e697a5b71aeecee7c2"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsImQ0OGI0NmVkYjJjMWMzYTM3ZDU3ZDQyYTc1OGQzZWQ3MjIzYTVjZjA1MDZkZjVlNjk3YTViNzFhZWVjZWU3YzIiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'E12z2ZFeoGNFYYMw8vge3pMbH-2iCxrwzzqY--7gGSA',
+              },
+              {
+                chainId: '3',
+                hash: 'psfMCCokGYLIj7gl9DGV0mKEYJNB-Y4U8-guacYYopg',
+              },
+              {
+                chainId: '5',
+                hash: '2J9zDsOBj2DGLnIe1CkfAQMpMxsajGOpVkgTRw147WE',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: '_uYHrCA-l0jjFAUFeXcePaPWcQcTbBHXzkZVBOY3DSY',
+            powHash: '00000000004629d4b744b5fe39e059900a9ea23a99a9f06eb0e8735d007bf64a',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: '3rmyPjLSeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMjI6MTEyNTMxNzU2',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T04:00:05.294Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '11690247225855389599',
+            hash: '-WMfhSMSqw4zSclf8FRcrCQ4P75GPVEphybKy2zAmiw',
+            height: 50022,
+            id: 'QmxvY2s6LVdNZmhTTVNxdzR6U2NsZjhGUmNyQ1E0UDc1R1BWRXBoeWJLeTJ6QW1pdw==',
+            minerAccount: {
+              accountName: '1505f8d8a69e26a3ef03a2b0d0811c27e99adb3bcab21754ebabeb32f1bf9a03',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['1505f8d8a69e26a3ef03a2b0d0811c27e99adb3bcab21754ebabeb32f1bf9a03'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["1505f8d8a69e26a3ef03a2b0d0811c27e99adb3bcab21754ebabeb32f1bf9a03"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjE1MDVmOGQ4YTY5ZTI2YTNlZjAzYTJiMGQwODExYzI3ZTk5YWRiM2JjYWIyMTc1NGViYWJlYjMyZjFiZjlhMDMiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'nN0wTU6VGX3CC60SmZqjkXwKOTDWLxvivlZ663d2BQU',
+              },
+              {
+                chainId: '3',
+                hash: 'csBkBAzpudiPcMViE4K0lsb3exl4F08RhAT1HAquyvQ',
+              },
+              {
+                chainId: '5',
+                hash: 'k_HOa4j2O86m7od_tGQTsZnshSSNNpeqnddfGg_Tc6w',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'sLUJ2O5uLR6zvtXL0j7sfbV5_OOWrhvpPlmvyx9JCL4',
+            powHash: '000000000041a7f095aea941b1e39abee22917cf86eb3369b771c4bfd1b298ae',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'dmLJHJrVeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMjM6MTEyNTMxNzU1',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T04:00:31.852Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '7416094331604531223',
+            hash: 'RrDMO_M06D0la-k6355f9PEl-XLWSuUE6MvRIZzWT5A',
+            height: 50023,
+            id: 'QmxvY2s6UnJETU9fTTA2RDBsYS1rNjM1NWY5UEVsLVhMV1N1VUU2TXZSSVp6V1Q1QQ==',
+            minerAccount: {
+              accountName: '5216d62989dc5b3fb95f46950dfcd3c234a25a7927ee7247ecbe8c1a5a8adcbb',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['5216d62989dc5b3fb95f46950dfcd3c234a25a7927ee7247ecbe8c1a5a8adcbb'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["5216d62989dc5b3fb95f46950dfcd3c234a25a7927ee7247ecbe8c1a5a8adcbb"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsIjUyMTZkNjI5ODlkYzViM2ZiOTVmNDY5NTBkZmNkM2MyMzRhMjVhNzkyN2VlNzI0N2VjYmU4YzFhNWE4YWRjYmIiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'FQvyxl_kxfzR2L1_na4iSN2Gz3pab_tEbout_B9G9hQ',
+              },
+              {
+                chainId: '3',
+                hash: 'g2_p1OYAc47aq-qwN1bvCCqPoEH71P73picoI0AumY0',
+              },
+              {
+                chainId: '5',
+                hash: 'XjOCINTfkMPiJOq-6cJbCRYlJbE6BwLV9p2boTeKQ74',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'bE1wb1xQcsSpC827H7WjWQhN99_aF1OwkFu8CfXIVEk',
+            powHash: '00000000001add4b0fce1016a76febdab0b564b7f391e55bdb3360519fb252b7',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'Dgvg-gHZeQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+        {
+          cursor: 'NTAwMjQ6MTEyNTMxNzU0',
+          node: {
+            chainId: 0,
+            creationTime: '2019-11-16T04:00:56.710Z',
+            difficulty: 3744642541720,
+            epoch: '2019-11-16T03:09:42.523Z',
+            events: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            flags: '1286744688178418',
+            hash: '2mos7J1DRDtdigU2fOJVAC8ju1gZ64v4lEnaDqC1QD4',
+            height: 50024,
+            id: 'QmxvY2s6Mm1vczdKMURSRHRkaWdVMmZPSlZBQzhqdTFnWjY0djRsRW5hRHFDMVFENA==',
+            minerAccount: {
+              accountName: 'd8879e2c815c62796b0f61e26ecf4f0c69c7c941f657100f8373a08900eeeb8f',
+              chainId: '0',
+              fungibleName: 'coin',
+              guard: {
+                keys: ['d8879e2c815c62796b0f61e26ecf4f0c69c7c941f657100f8373a08900eeeb8f'],
+                predicate: 'keys-all',
+                raw: '{"pred":"keys-all","keys":["d8879e2c815c62796b0f61e26ecf4f0c69c7c941f657100f8373a08900eeeb8f"]}',
+              },
+              id: 'RnVuZ2libGVDaGFpbkFjY291bnQ6WyIwIiwiY29pbiIsImQ4ODc5ZTJjODE1YzYyNzk2YjBmNjFlMjZlY2Y0ZjBjNjljN2M5NDFmNjU3MTAwZjgzNzNhMDg5MDBlZWViOGYiXQ==',
+            },
+            neighbors: [
+              {
+                chainId: '2',
+                hash: 'jJILk4DFPSEdzyY53Y3cACN6dUe7we9-CxIQj6A313I',
+              },
+              {
+                chainId: '3',
+                hash: 'gz79oAy2lZ9M-BqfdM9q2xSolxXcvnHqKZ4-zYzpZak',
+              },
+              {
+                chainId: '5',
+                hash: 'K77mEvwrZXVumW4mJ0tiUyhKaqAFsZbQU-nqOgHf9aI',
+              },
+            ],
+            nonce: '0',
+            parent: {
+              chainId: 0,
+            },
+            payloadHash: 'Eeapwp4Ud_xspQm5x2DgSfAH0Lc_Gp4-YXlvOOQh6PU',
+            powHash: '0000000000083ea9f5c6a0bb93898af78bcc82260fb63d198ad6e8097ac74f95',
+            target: '5br5NN6Xk_6qXls4J2AGI0YsKKgjQWuN2SpLAAAAAAA',
+            transactions: {
+              totalCount: 0,
+              pageInfo: {
+                endCursor: null,
+                hasNextPage: false,
+                hasPreviousPage: false,
+                startCursor: null,
+              },
+              edges: [],
+            },
+            weight: 'prP22GnceQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+        },
+      ],
+    },
+  },
+};

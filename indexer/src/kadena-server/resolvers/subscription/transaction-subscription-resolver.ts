@@ -39,6 +39,7 @@ async function* iteratorFn({
   chainId,
 }: IteratorFnParams): AsyncGenerator<TransactionOutput | undefined, void, unknown> {
   while (context.signal) {
+    // TODO: [ERROR-OPTIMIZATION] missing try catch block
     const { edges } = await context.transactionRepository.getTransactions({
       requestKey,
       chainId,
@@ -46,6 +47,7 @@ async function* iteratorFn({
     const transactions = edges.map(e => e.node);
 
     if (transactions.length > 0) {
+      // TODO: [ERROR-OPTIMIZATION] missing try catch block
       const [first, ...rest] =
         await context.blockRepository.getTransactionsOrderedByBlockDepth(transactions);
 

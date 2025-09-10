@@ -6,7 +6,7 @@ import (
 	"go-backfill/repository"
 )
 
-func PrepareTransfers(network string, payload fetch.ProcessedPayload, transactionsId []int64) ([]repository.TransferAttributes, error) {
+func PrepareTransfers(network string, payload fetch.ProcessedPayload, transactionsId []int64, txCreationTimes []string) ([]repository.TransferAttributes, error) {
 	transactions := payload.Transactions
 
 	const avgTransfersPerTransaction = 80
@@ -14,8 +14,8 @@ func PrepareTransfers(network string, payload fetch.ProcessedPayload, transactio
 
 	for index, t := range transactions {
 		ChainId := payload.Header.ChainId
-		coinTransfers := GetCoinTransfers(t.Events, ChainId, t.ReqKey, transactionsId[index])
-		nftTransfers := GetNftTransfers(network, ChainId, t.Events, t.ReqKey, transactionsId[index])
+		coinTransfers := GetCoinTransfers(t.Events, ChainId, t.ReqKey, transactionsId[index], txCreationTimes[index])
+		nftTransfers := GetNftTransfers(network, ChainId, t.Events, t.ReqKey, transactionsId[index], txCreationTimes[index])
 		transfers = append(transfers, coinTransfers...)
 		transfers = append(transfers, nftTransfers...)
 	}
@@ -26,7 +26,8 @@ func PrepareTransfers(network string, payload fetch.ProcessedPayload, transactio
 	}
 
 	var coinbaseTxId = transactionsId[len(transactionsId)-1]
-	coinTransfers := GetCoinTransfers(coinbaseDecoded.Events, payload.Header.ChainId, coinbaseDecoded.ReqKey, coinbaseTxId)
+	var coinbaseTxCreationTime = txCreationTimes[len(txCreationTimes)-1]
+	coinTransfers := GetCoinTransfers(coinbaseDecoded.Events, payload.Header.ChainId, coinbaseDecoded.ReqKey, coinbaseTxId, coinbaseTxCreationTime)
 	transfers = append(transfers, coinTransfers...)
 
 	return transfers, nil

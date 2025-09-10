@@ -74,6 +74,7 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 	}
 
 	var transactionIdsToSave [][]int64
+	var txCreationTimesToSave [][]string
 	var totalGasUsedInChain float64 = 0
 
 	// Accumulators for ClickHouse backfill
@@ -141,11 +142,19 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 		txsSize := approximateSize(txs)
 		dataSizeTracker.TransactionsKB += txsSize
 		transactionIdsToSave = append(transactionIdsToSave, transactionIds)
+
+		var txCreationTimes []string
+		for _, tx := range txs {
+			txCreationTimes = append(txCreationTimes, tx.CreationTime)
+		}
+		txCreationTimes = append(txCreationTimes, txCoinbase.CreationTime)
+		txCreationTimesToSave = append(txCreationTimesToSave, txCreationTimes)
+
 		counters.Transactions += len(transactionIds)
 	}
 
 	for index, processedPayload := range processedPayloads {
-		events, err := PrepareEvents(network, processedPayload, transactionIdsToSave[index])
+		events, err := PrepareEvents(network, processedPayload, transactionIdsToSave[index], txCreationTimesToSave[index])
 		if err != nil {
 			return Counters{}, DataSizeTracker{}, fmt.Errorf("preparing events -> %w", err)
 		}
@@ -171,7 +180,7 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 	}
 
 	for index, processedPayload := range processedPayloads {
-		transfers, err := PrepareTransfers(network, processedPayload, transactionIdsToSave[index])
+		transfers, err := PrepareTransfers(network, processedPayload, transactionIdsToSave[index], txCreationTimesToSave[index])
 		if err != nil {
 			return Counters{}, DataSizeTracker{}, fmt.Errorf("preparing transfers -> %w", err)
 		}
@@ -216,8 +225,6 @@ func savePayloads(network string, chainId int, processedPayloads []fetch.Process
 	if env.IsSingleChain {
 		log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
 	}
-
-	log.Printf("Saved payloads in %fs\n", time.Since(startTime).Seconds())
 
 	if err := tx.Commit(context.Background()); err != nil {
 		return Counters{}, DataSizeTracker{}, fmt.Errorf("committing transaction: %w", err)

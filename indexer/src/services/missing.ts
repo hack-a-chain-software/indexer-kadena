@@ -1,25 +1,22 @@
 import { rootPgPool, sequelize } from '@/config/database';
 import { getRequiredEnvString } from '@/utils/helpers';
 import { processPayload, saveBlock } from './streaming';
+import { Transaction } from 'sequelize';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const NETWORK_ID = getRequiredEnvString('SYNC_NETWORK');
 
 export async function startMissingBlocksBeforeStreamingProcess() {
-  // try {
-  //   const chainIdDiffs = await checkBigBlockGapsForAllChains();
-  //   await fillChainGaps(chainIdDiffs);
-  // } catch (error) {
-  //   console.error(
-  //     `[ERROR][SYNC][MISSING] Error starting missing blocks before streaming process:`,
-  //     error,
-  //   );
-  //   throw error;
-  // }
-  // DEV OVERRIDE: Skip missing-blocks pre-check entirely for local/testing runs.
-  // NOTE: Do NOT commit this change to production without re-enabling the pre-check.
-  console.info('[INFO][SYNC][MISSING] Skipping missing-blocks pre-check (dev override).');
-  return;
+  try {
+    const chainIdDiffs = await checkBigBlockGapsForAllChains();
+    await fillChainGaps(chainIdDiffs);
+  } catch (error) {
+    console.error(
+      `[ERROR][SYNC][SYNC_TIMEOUT] Error starting missing blocks before streaming process:`,
+      error,
+    );
+    throw error;
+  }
 }
 
 async function checkBigBlockGapsForAllChains() {
@@ -77,17 +74,16 @@ async function checkBigBlockGapsForAllChains() {
     chainIdDiffs => chainIdDiffs.diff > maxMissingBlocks,
   );
 
-  // if (chainsWithMoreThan7WeeksMissingBlocks.length > 0) {
-  //   console.error(
-  //     `[ERROR] These chains have more than ${maxMissingBlocks} missing blocks in a row: ${chainsWithMoreThan7WeeksMissingBlocks.map(
-  //       chainIdDiffs => chainIdDiffs.chainId,
-  //     )}`,
-  //     console.error(
-  //       `[ERROR] Please make the backfill process individually for these chains. Exiting...`,
-  //     ),
-  //   );
-  //   process.exit(1);
-  // }
+  if (chainsWithMoreThan7WeeksMissingBlocks.length > 0) {
+    console.error(
+      `[ERROR][DATA][DATA_MISSING] These chains exceed ${maxMissingBlocks} missing blocks. Please backfill these chains individually. Exiting...`,
+      {
+        chains: chainsWithMoreThan7WeeksMissingBlocks.map(c => c.chainId),
+        severityHint: 'degraded',
+      },
+    );
+    process.exit(1);
+  }
 
   return chainIdDiffs;
 }
@@ -150,5 +146,79 @@ async function fillChainGaps(
     }
 
     console.info('[INFO][SYNC][MISSING] Processed:', chainIdDiff);
+  }
+}
+
+export async function fillChainGapsBeforeDefiningCanonicalBaseline({
+  chainId,
+  lastHeight,
+  tx,
+}: {
+  chainId: number;
+  lastHeight: number;
+  tx: Transaction;
+}): Promise<void> {
+  try {
+    console.info('[INFO][SYNC][MISSING] Filling initial chain gaps:', chainId);
+    const cutUrl = `${SYNC_BASE_URL}/${NETWORK_ID}/cut`;
+    const cutRes = await fetch(cutUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const cutData = await cutRes.json();
+
+    const chainsAndHashes = Object.keys(cutData.hashes).map(chainId => ({
+      chainId,
+      hash: cutData.hashes[chainId].hash,
+    }));
+
+    const dbQuery = `
+      SELECT MAX(height) as height
+      FROM "Blocks"
+      WHERE "chainId" = $1
+    `;
+
+    const { rows } = await rootPgPool.query(dbQuery, [chainId]);
+
+    const fromHeight = rows[0].height + 1;
+    const toHeight = lastHeight - 1;
+
+    if (fromHeight > toHeight) {
+      console.info(`[INFO][SYNC][MISSING] No gaps to fill for chain ${chainId}`);
+      return;
+    }
+
+    const url = `${SYNC_BASE_URL}/${NETWORK_ID}/chain/${chainId}/block/branch?minheight=${fromHeight}&maxheight=${toHeight}`;
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        upper: [chainsAndHashes[chainId].hash],
+      }),
+    });
+
+    const data = await res.json();
+
+    const promises = data.items.map(async (item: any) => {
+      const payload = processPayload(item.payloadWithOutputs);
+      return saveBlock({ header: item.header, payload, canonical: true }, tx);
+    });
+
+    await Promise.all(promises);
+
+    console.info(`[INFO][SYNC][MISSING] Initial chain gaps filled:`, chainId, fromHeight, toHeight);
+  } catch (error) {
+    console.error(
+      `[FATAL][SYNC][MISSING] Error filling chain ${chainId} gaps before defining canonical baseline:`,
+      error,
+    );
+    process.exit(1);
   }
 }

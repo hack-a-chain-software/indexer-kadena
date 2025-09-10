@@ -77,8 +77,6 @@ export interface GetTransactionsCountParams {
   hasTokenId?: boolean | null;
   /** Filter by coinbase */
   isCoinbase?: boolean | null;
-  /** Filter by transaction code */
-  transactionCode?: string | null;
 }
 
 /**
@@ -114,15 +112,17 @@ export type TransactionOutput = Omit<Transaction, 'cmd'> & {
 };
 
 export type TransactionByPactCodeOutput = {
-  creationTime: string;
   requestKey: string;
-  chainId: string;
-  height: string;
+  height: any;
+  chainId: any;
   canonical: boolean;
+  creationTime: Date;
+  badResult: any;
+  sender: string;
   gas: string;
   gasLimit: string;
   gasPrice: string;
-  sender: string;
+  code?: string | null;
 };
 
 /**

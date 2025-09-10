@@ -42,6 +42,8 @@ export interface EventAttributes {
   requestkey: string;
   /** Order index of the event within its transaction */
   orderIndex: number;
+  /** The creation time of the transaction (e.g., "1715747797"). */
+  creationtime: string;
 }
 
 /**
@@ -81,6 +83,9 @@ class Event extends Model<EventAttributes> implements EventAttributes {
 
   /** The order index of the event within its transaction. */
   declare orderIndex: number;
+
+  /** The creation time of the transaction (e.g., "1715747797"). */
+  declare creationtime: string;
 }
 
 /**
@@ -144,6 +149,11 @@ Event.init(
       type: DataTypes.INTEGER,
       allowNull: true,
       comment: 'The event order.',
+    },
+    creationtime: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'The creation time of the transaction (e.g., "1715747797").',
     },
   },
   {

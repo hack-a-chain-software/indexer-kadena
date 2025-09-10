@@ -20,10 +20,11 @@ import { buildTransferOutput } from '../../output/build-transfer-output';
 export const transfersNonFungibleChainAccountResolver: NonFungibleChainAccountResolvers<ResolverContext>['transfers'] =
   async (parent, args, context) => {
     const { first, after, before, last } = args;
+    const hasTokenId = true;
     const output = await context.transferRepository.getTransfers({
       accountName: parent.accountName,
       chainId: parent.chainId,
-      hasTokenId: true,
+      hasTokenId,
       after,
       first,
       last,
@@ -42,7 +43,7 @@ export const transfersNonFungibleChainAccountResolver: NonFungibleChainAccountRe
       // for resolvers
       accountName: parent.accountName,
       chainId: parent.chainId,
-      hasTokenId: true,
+      hasTokenId,
       totalCount: -1, // Placeholder value; actual count is resolved by a separate resolver
     };
   };

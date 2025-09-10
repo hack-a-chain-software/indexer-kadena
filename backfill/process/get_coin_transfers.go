@@ -11,6 +11,7 @@ func GetCoinTransfers(
 	chainId int,
 	requestKey string,
 	transactionId int64,
+	txCreationTime string,
 ) []repository.TransferAttributes {
 	const TransferCoinSignature = "TRANSFER"
 	const TransferCoinParamsLength = 3
@@ -37,6 +38,7 @@ func GetCoinTransfers(
 				ChainId:       chainId,
 				FromAcct:      fromAcct,
 				ModuleHash:    event.ModuleHash,
+				CreationTime:  txCreationTime,
 				ModuleName:    moduleName,
 				RequestKey:    requestKey,
 				ToAcct:        toAcct,

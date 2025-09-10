@@ -29,6 +29,7 @@ export type Scalars = {
 
 export type BalanceNode = {
   __typename?: 'BalanceNode';
+  accountName: Scalars['String']['output'];
   balance: Scalars['String']['output'];
   chainId: Scalars['String']['output'];
   module: Scalars['String']['output'];
@@ -769,6 +770,8 @@ export type Query = {
   graphConfiguration: GraphConfiguration;
   /** Get the height of the block with the highest height. */
   lastBlockHeight?: Maybe<Scalars['BigInt']['output']>;
+  /** Get last price for a specific token in KDA */
+  lastTokenPriceInKda?: Maybe<Scalars['Decimal']['output']>;
   /** Get user's liquidity positions */
   liquidityPositions: LiquidityPositionsConnection;
   /** Get information about the network. */
@@ -807,7 +810,7 @@ export type Query = {
 };
 
 export type QueryBalanceArgs = {
-  accountName: Scalars['String']['input'];
+  accountName?: InputMaybe<Scalars['String']['input']>;
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   chainIds?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -865,9 +868,10 @@ export type QueryEventsArgs = {
   maxHeight?: InputMaybe<Scalars['Int']['input']>;
   minHeight?: InputMaybe<Scalars['Int']['input']>;
   minimumDepth?: InputMaybe<Scalars['Int']['input']>;
+  moduleName?: InputMaybe<Scalars['String']['input']>;
   orderIndex?: InputMaybe<Scalars['Int']['input']>;
   parametersFilter?: InputMaybe<Scalars['String']['input']>;
-  qualifiedEventName: Scalars['String']['input'];
+  qualifiedEventName?: InputMaybe<Scalars['String']['input']>;
   requestKey?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -901,6 +905,10 @@ export type QueryFungibleChainAccountsByPublicKeyArgs = {
 
 export type QueryGasLimitEstimateArgs = {
   input: Array<Scalars['String']['input']>;
+};
+
+export type QueryLastTokenPriceInKdaArgs = {
+  moduleName: Scalars['String']['input'];
 };
 
 export type QueryLiquidityPositionsArgs = {
@@ -989,7 +997,6 @@ export type QueryTransactionsArgs = {
   before?: InputMaybe<Scalars['String']['input']>;
   blockHash?: InputMaybe<Scalars['String']['input']>;
   chainId?: InputMaybe<Scalars['String']['input']>;
-  code?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   fungibleName?: InputMaybe<Scalars['String']['input']>;
   isCoinbase?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1401,13 +1408,15 @@ export type TransactionSignature = {
 
 export type TransactionSummary = {
   __typename?: 'TransactionSummary';
+  badResult?: Maybe<Scalars['String']['output']>;
   canonical: Scalars['Boolean']['output'];
-  chainId: Scalars['String']['output'];
-  creationTime: Scalars['String']['output'];
+  chainId: Scalars['BigInt']['output'];
+  code?: Maybe<Scalars['String']['output']>;
+  creationTime: Scalars['DateTime']['output'];
   gas: Scalars['String']['output'];
   gasLimit: Scalars['String']['output'];
   gasPrice: Scalars['String']['output'];
-  height: Scalars['String']['output'];
+  height: Scalars['BigInt']['output'];
   requestKey: Scalars['String']['output'];
   sender: Scalars['String']['output'];
 };
@@ -2172,6 +2181,7 @@ export type BalanceNodeResolvers<
   ContextType = any,
   ParentType extends ResolversParentTypes['BalanceNode'] = ResolversParentTypes['BalanceNode'],
 > = {
+  accountName?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   balance?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   chainId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   module?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
@@ -2973,7 +2983,7 @@ export type QueryResolvers<
     ResolversTypes['QueryBalanceConnection'],
     ParentType,
     ContextType,
-    RequireFields<QueryBalanceArgs, 'accountName'>
+    Partial<QueryBalanceArgs>
   >;
   block?: Resolver<
     Maybe<ResolversTypes['Block']>,
@@ -3009,7 +3019,7 @@ export type QueryResolvers<
     ResolversTypes['QueryEventsConnection'],
     ParentType,
     ContextType,
-    RequireFields<QueryEventsArgs, 'qualifiedEventName'>
+    Partial<QueryEventsArgs>
   >;
   fungibleAccount?: Resolver<
     Maybe<ResolversTypes['FungibleAccount']>,
@@ -3052,6 +3062,12 @@ export type QueryResolvers<
   >;
   graphConfiguration?: Resolver<ResolversTypes['GraphConfiguration'], ParentType, ContextType>;
   lastBlockHeight?: Resolver<Maybe<ResolversTypes['BigInt']>, ParentType, ContextType>;
+  lastTokenPriceInKda?: Resolver<
+    Maybe<ResolversTypes['Decimal']>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryLastTokenPriceInKdaArgs, 'moduleName'>
+  >;
   liquidityPositions?: Resolver<
     ResolversTypes['LiquidityPositionsConnection'],
     ParentType,
@@ -3673,13 +3689,15 @@ export type TransactionSummaryResolvers<
   ParentType extends
     ResolversParentTypes['TransactionSummary'] = ResolversParentTypes['TransactionSummary'],
 > = {
+  badResult?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
   canonical?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  chainId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  creationTime?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  chainId?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  code?: Resolver<Maybe<ResolversTypes['String']>, ParentType, ContextType>;
+  creationTime?: Resolver<ResolversTypes['DateTime'], ParentType, ContextType>;
   gas?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   gasLimit?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   gasPrice?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  height?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  height?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   requestKey?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   sender?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

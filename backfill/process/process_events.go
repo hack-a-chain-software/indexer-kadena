@@ -7,13 +7,14 @@ import (
 	"go-backfill/repository"
 )
 
-func PrepareEvents(network string, payload fetch.ProcessedPayload, transactionsId []int64) ([]repository.EventAttributes, error) {
+func PrepareEvents(network string, payload fetch.ProcessedPayload, transactionsId []int64, txCreationTimes []string) ([]repository.EventAttributes, error) {
 	transactions := payload.Transactions
 
 	const avgEventsPerTransaction = 80
 	events := make([]repository.EventAttributes, 0, len(transactions)*avgEventsPerTransaction)
 
 	for txIndex, t := range transactions {
+		txCreationTime := txCreationTimes[txIndex]
 		for eventIndex, event := range t.Events {
 			module := buildModuleName(event.Module.Namespace, event.Module.Name)
 			qualName := buildModuleName(event.Module.Namespace, event.Module.Name)
@@ -32,6 +33,7 @@ func PrepareEvents(network string, payload fetch.ProcessedPayload, transactionsI
 				QualName:      qualName,
 				RequestKey:    t.ReqKey,
 				OrderIndex:    eventIndex,
+				CreationTime:  txCreationTime,
 			}
 			events = append(events, eventRecord)
 		}
@@ -43,6 +45,7 @@ func PrepareEvents(network string, payload fetch.ProcessedPayload, transactionsI
 	}
 
 	var coinbaseTxId = transactionsId[len(transactionsId)-1]
+	var coinbaseTxCreationTime = txCreationTimes[len(txCreationTimes)-1]
 	for eventIndex, event := range coinbaseDecoded.Events {
 
 		module := buildModuleName(event.Module.Namespace, event.Module.Name)
@@ -61,6 +64,7 @@ func PrepareEvents(network string, payload fetch.ProcessedPayload, transactionsI
 			QualName:      qualName,
 			RequestKey:    coinbaseDecoded.ReqKey,
 			OrderIndex:    eventIndex,
+			CreationTime:  coinbaseTxCreationTime,
 		}
 		events = append(events, eventRecord)
 	}

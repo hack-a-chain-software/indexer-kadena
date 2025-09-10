@@ -117,7 +117,7 @@ export default class BlockDbRepository implements BlockRepository {
       lastHeight = parseInt(heightStr, 10);
       lastId = parseInt(idStr, 10);
       if (isNaN(lastHeight) || isNaN(lastId)) {
-        throw new Error('Invalid after cursor');
+        throw new Error(`[ERROR][VALID][VALID_FORMAT] Invalid 'after' cursor:', ${after}`);
       }
     }
 
@@ -126,7 +126,7 @@ export default class BlockDbRepository implements BlockRepository {
       lastHeight = parseInt(heightStr, 10);
       lastId = parseInt(idStr, 10);
       if (isNaN(lastHeight) || isNaN(lastId)) {
-        throw new Error('Invalid before cursor');
+        throw new Error(`[ERROR][VALID][VALID_FORMAT] Invalid 'before' cursor:', ${before}`);
       }
     }
 
@@ -193,11 +193,18 @@ export default class BlockDbRepository implements BlockRepository {
   }
 
   /**
-   * Retrieves blocks within a specific height range
+   * Retrieves blocks within a specific height range using a sliding window approach
    *
    * This method fetches blocks between the specified start and end heights,
    * supporting cursor-based pagination and chain filtering for efficient
-   * navigation through large result sets.
+   * navigation through large result sets. To prevent large database queries,
+   * it implements a sliding window approach with a default window size of 50.
+   *
+   * Sliding window behavior:
+   * - If endHeight is not provided or is too far from the current cursor position,
+   *   the query is limited to a window of 50 heights from the current position
+   * - As pagination progresses (via 'after' cursor), the window slides forward
+   * - This prevents unnecessary large queries when users request broad ranges
    *
    * Uses keyset pagination with compound cursors (height:id) for better performance
    * when navigating through large datasets.
@@ -228,8 +235,70 @@ export default class BlockDbRepository implements BlockRepository {
       last,
     });
 
+    const heightQuery = `SELECT max("height") FROM "Blocks"`;
+
+    const { rows: maxHeightRows } = await rootPgPool.query(heightQuery);
+
+    const maxHeight = maxHeightRows[0].max;
+    // Default window size to prevent large database queries
+    const DEFAULT_WINDOW_SIZE = 50;
+
+    // Calculate effective window range
+    let effectiveStartHeight = startHeight;
+    let effectiveEndHeight: number;
+
+    // Determine current position from cursor for window calculation
+    let currentHeight = startHeight;
+    if (after) {
+      const [height] = after.split(':');
+      const afterHeight = parseInt(height, 10);
+      if (!isNaN(afterHeight)) {
+        currentHeight = afterHeight;
+      }
+    } else if (before) {
+      const [height] = before.split(':');
+      const beforeHeight = parseInt(height, 10);
+      if (!isNaN(beforeHeight)) {
+        currentHeight = beforeHeight;
+      }
+    }
+
+    // If no endHeight provided or endHeight is too far from current position,
+    // use sliding window approach
+    if (!endHeight || endHeight - currentHeight > DEFAULT_WINDOW_SIZE) {
+      if (after) {
+        // Forward pagination: window starts from cursor position
+        effectiveStartHeight = currentHeight;
+        effectiveEndHeight = effectiveStartHeight + DEFAULT_WINDOW_SIZE;
+      } else if (before) {
+        // Backward pagination: window ends at cursor position
+        effectiveEndHeight = currentHeight;
+        effectiveStartHeight = Math.max(startHeight, effectiveEndHeight - DEFAULT_WINDOW_SIZE);
+      } else {
+        // Initial request: check if it's 'last' pagination (backward from end)
+        if (last) {
+          // For 'last' without cursor, use the maximum height across all chains
+          const actualEndHeight = endHeight ? Math.min(endHeight, maxHeight) : maxHeight;
+          effectiveEndHeight = actualEndHeight;
+          effectiveStartHeight = Math.max(startHeight, actualEndHeight - DEFAULT_WINDOW_SIZE);
+        } else {
+          // Forward pagination: window starts from startHeight
+          effectiveStartHeight = startHeight;
+          effectiveEndHeight = effectiveStartHeight + DEFAULT_WINDOW_SIZE;
+        }
+      }
+
+      // If original endHeight is provided and within window, respect it (except for 'last' mode)
+      if (endHeight && endHeight <= effectiveEndHeight && !last) {
+        effectiveEndHeight = endHeight;
+      }
+    } else {
+      // Use the provided endHeight when it's within reasonable range
+      effectiveEndHeight = endHeight;
+    }
+
     const order = orderParam === 'ASC' ? 'DESC' : 'ASC';
-    const queryParams: (string | number | string[])[] = [limit, startHeight];
+    const queryParams: (string | number | string[])[] = [limit];
     let conditions = '';
 
     if (before) {
@@ -239,11 +308,11 @@ export default class BlockDbRepository implements BlockRepository {
       const beforeId = parseInt(id, 10);
 
       if (isNaN(beforeHeight) || isNaN(beforeId)) {
-        throw new Error('Invalid before cursor');
+        throw new Error(`[ERROR][VALID][VALID_FORMAT] Invalid 'before' cursor:', ${before}`);
       }
 
       queryParams.push(beforeHeight, beforeId);
-      conditions += `\nAND (b.height, b.id) > ($${queryParams.length - 1}, $${queryParams.length})`;
+      conditions += `\nAND (b.height, b.id) < ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
     if (after) {
@@ -253,10 +322,10 @@ export default class BlockDbRepository implements BlockRepository {
       const afterId = parseInt(id, 10);
 
       if (isNaN(afterHeight) || isNaN(afterId)) {
-        throw new Error('Invalid after cursor');
+        throw new Error(`[ERROR][VALID][VALID_FORMAT] Invalid 'after' cursor:', ${after}`);
       }
       queryParams.push(afterHeight, afterId);
-      conditions += `\nAND (b.height, b.id) < ($${queryParams.length - 1}, $${queryParams.length})`;
+      conditions += `\nAND (b.height, b.id) > ($${queryParams.length - 1}, $${queryParams.length})`;
     }
 
     if (chainIds?.length) {
@@ -264,10 +333,17 @@ export default class BlockDbRepository implements BlockRepository {
       conditions += `\nAND b."chainId" = ANY($${queryParams.length})`;
     }
 
-    if (endHeight) {
-      queryParams.push(endHeight);
-      conditions += `\nAND b."height" <= $${queryParams.length}`;
+    // Apply height range constraints
+    // Only add start height constraint if we don't have an 'after' cursor
+    // (cursor condition already handles the lower bound for 'after')
+    // For 'before' cursor, we still need the lower bound
+    if (!after) {
+      queryParams.push(effectiveStartHeight);
+      conditions += `\nAND b."height" >= $${queryParams.length}`;
     }
+
+    queryParams.push(effectiveEndHeight);
+    conditions += `\nAND b."height" <= $${queryParams.length}`;
 
     const query = `
       SELECT b.id,
@@ -288,7 +364,7 @@ export default class BlockDbRepository implements BlockRepository {
         b."transactionsCount" as "transactionsCount",
         b."totalGasUsed" as "totalGasUsed"
       FROM "Blocks" b
-      WHERE b.height ${before ? '<=' : '>='} $2
+      WHERE 1=1
       ${conditions}
       ORDER BY b.height ${order}, b.id ${order}
       LIMIT $1;
@@ -301,7 +377,7 @@ export default class BlockDbRepository implements BlockRepository {
       node: blockValidator.validate(row),
     }));
 
-    const pageInfo = getPageInfo({ edges, order, limit, after, before });
+    const pageInfo = getPageInfo({ edges, order: orderParam, limit, after, before });
     return pageInfo;
   }
 
@@ -331,7 +407,9 @@ export default class BlockDbRepository implements BlockRepository {
     const [balanceRow] = balanceRows;
 
     if (!balanceRow) {
-      throw new Error("Miner didn't exist.");
+      throw new Error(
+        `[ERROR][DB][DATA_MISSING] Miner account not found for block ${hash} on chain ${chainId}.`,
+      );
     }
 
     const res = await handleSingleQuery({
@@ -533,7 +611,9 @@ export default class BlockDbRepository implements BlockRepository {
     );
 
     if (blockRows.length !== eventIds.length) {
-      throw new Error('There was an issue fetching blocks for event IDs.');
+      throw new Error(
+        `[ERROR][DB][DATA_CORRUPT] Fetched blocks count (${blockRows.length}) does not match event IDs count (${eventIds.length}).`,
+      );
     }
 
     const blockMap = blockRows.reduce(
@@ -584,7 +664,9 @@ export default class BlockDbRepository implements BlockRepository {
     );
 
     if (blockRows.length !== transactionIds.length) {
-      throw new Error('There was an issue fetching blocks for transaction IDs.');
+      throw new Error(
+        `[ERROR][DB][DATA_CORRUPT] Fetched blocks count (${blockRows.length}) does not match transaction IDs count (${transactionIds.length}).`,
+      );
     }
 
     const blockMap = blockRows.reduce(
@@ -633,7 +715,9 @@ export default class BlockDbRepository implements BlockRepository {
     );
 
     if (blockRows.length !== hashes.length) {
-      throw new Error('There was an issue fetching blocks for transaction IDs.');
+      throw new Error(
+        `[ERROR][DB][DATA_CORRUPT] Fetched blocks count (${blockRows.length}) does not match requested hashes count (${hashes.length}).`,
+      );
     }
 
     const blockMap = blockRows.reduce(

@@ -471,7 +471,7 @@ export default class BalanceDbRepository implements BalanceRepository {
    * Retrieves live balances for an account with optional module and chain filters, paginated.
    */
   async getAccountBalances(params: {
-    accountName: string;
+    accountName?: string | null;
     chainIds?: string[] | null;
     module?: string | null;
     after?: string | null;
@@ -481,37 +481,83 @@ export default class BalanceDbRepository implements BalanceRepository {
   }) {
     const { accountName, chainIds, module } = params;
     const { limit, order, after, before } = getPaginationParams(params);
-
-    const queryParams: any[] = [accountName, limit];
-    let conditions = 'WHERE b.account = $1';
-
-    if (module) {
-      queryParams.push(module);
-      conditions += ` AND b.module = $${queryParams.length}`;
-    }
-
-    if (chainIds && chainIds.length) {
-      queryParams.push(chainIds);
-      conditions += ` AND b."chainId" = ANY($${queryParams.length})`;
-    }
-
-    if (after) {
-      queryParams.push(after);
-      conditions += ` AND b.id < $${queryParams.length}`;
-    }
-
-    if (before) {
-      queryParams.push(before);
-      conditions += ` AND b.id > $${queryParams.length}`;
-    }
-
-    // If module specified, return at most one row per chain (latest by id)
+    let queryParams: any[] = [];
     let query = '';
-    if (module) {
+
+    if (accountName) {
+      // Original behavior: filter by account, optionally by module and chains
+      queryParams = [accountName, limit];
+      let conditions = 'WHERE b.account = $1';
+
+      if (module) {
+        queryParams.push(module);
+        conditions += ` AND b.module = $${queryParams.length}`;
+      }
+
+      if (chainIds && chainIds.length) {
+        queryParams.push(chainIds);
+        conditions += ` AND b."chainId" = ANY($${queryParams.length})`;
+      }
+
+      if (after) {
+        queryParams.push(after);
+        conditions += ` AND b.id < $${queryParams.length}`;
+      }
+
+      if (before) {
+        queryParams.push(before);
+        conditions += ` AND b.id > $${queryParams.length}`;
+      }
+
+      // If module specified, return at most one row per chain (latest by id)
+      if (module) {
+        query = `
+          WITH ranked AS (
+            SELECT b.id, b."chainId", b.module, b.account,
+                   ROW_NUMBER() OVER (PARTITION BY b."chainId" ORDER BY b.id DESC) AS rn
+            FROM "Balances" b
+            ${conditions}
+          )
+          SELECT id, "chainId", module, account
+          FROM ranked
+          WHERE rn = 1
+          ORDER BY id ${order}
+          LIMIT $2
+        `;
+      } else {
+        query = `
+          SELECT b.id, b."chainId", b.module, b.account
+          FROM "Balances" b
+          ${conditions}
+          ORDER BY b.id ${order}
+          LIMIT $2
+        `;
+      }
+    } else {
+      // Holders mode: require module; get latest per (account, chainId)
+      // Build conditions starting with module filter
+      queryParams = [module, limit];
+      let conditions = 'WHERE b.module = $1';
+
+      if (chainIds && chainIds.length) {
+        queryParams.push(chainIds);
+        conditions += ` AND b."chainId" = ANY($${queryParams.length})`;
+      }
+
+      if (after) {
+        queryParams.push(after);
+        conditions += ` AND b.id < $${queryParams.length}`;
+      }
+
+      if (before) {
+        queryParams.push(before);
+        conditions += ` AND b.id > $${queryParams.length}`;
+      }
+
       query = `
         WITH ranked AS (
           SELECT b.id, b."chainId", b.module, b.account,
-                 ROW_NUMBER() OVER (PARTITION BY b."chainId" ORDER BY b.id DESC) AS rn
+                 ROW_NUMBER() OVER (PARTITION BY b.account, b."chainId" ORDER BY b.id DESC) AS rn
           FROM "Balances" b
           ${conditions}
         )
@@ -519,15 +565,6 @@ export default class BalanceDbRepository implements BalanceRepository {
         FROM ranked
         WHERE rn = 1
         ORDER BY id ${order}
-        LIMIT $2
-      `;
-    } else {
-      // Without module, allow multiple modules per chain
-      query = `
-        SELECT b.id, b."chainId", b.module, b.account
-        FROM "Balances" b
-        ${conditions}
-        ORDER BY b.id ${order}
         LIMIT $2
       `;
     }
@@ -543,7 +580,12 @@ export default class BalanceDbRepository implements BalanceRepository {
       const balance = formatBalance_NODE(res).toString();
       return {
         cursor: row.id.toString(),
-        node: { module: row.module, chainId: String(row.chainId), balance },
+        node: {
+          accountName: row.account,
+          module: row.module,
+          chainId: String(row.chainId),
+          balance,
+        },
       };
     });
 

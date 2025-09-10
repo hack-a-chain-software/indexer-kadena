@@ -11,7 +11,8 @@ export type GetTransactionEventsParams = GetTotalTransactionEventsCount & Pagina
 export type GetEventsParams = GetTotalEventsCount & PaginationsParams;
 
 export interface GetTotalEventsCount {
-  qualifiedEventName: string;
+  qualifiedEventName?: string | null;
+  moduleName?: string | null;
   blockHash?: string | null;
   chainId?: string | null;
   minHeight?: number | null;
@@ -52,7 +53,7 @@ export default interface EventRepository {
     pageInfo: PageInfo;
     edges: ConnectionEdge<EventOutput>[];
   }>;
-  getEventsWithQualifiedName(params: GetEventsParams): Promise<{
+  getEvents(params: GetEventsParams): Promise<{
     pageInfo: PageInfo;
     edges: ConnectionEdge<EventOutput>[];
   }>;

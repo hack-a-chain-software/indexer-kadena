@@ -27,7 +27,7 @@ export class PriceUpdaterService {
       const price = response.data.Price;
       this.priceService.setKdaUsdPrice(price);
     } catch (error) {
-      console.error('[ERROR][PRICE] Failed to update KDA/USD price:', error);
+      console.error('[ERROR][INT][INT_API] Failed to update KDA/USD price:', error);
     }
   }
 

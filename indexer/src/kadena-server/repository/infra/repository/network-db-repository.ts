@@ -224,7 +224,7 @@ export default class NetworkDbRepository implements NetworkRepository {
 
   async getCurrentChainHeights(): Promise<CurrentChainHeights> {
     const heightsQuery = `
-      SELECT "chainId", "canonicalBlocks" FROM "Counters" ORDER BY "canonicalBlocks"
+      SELECT "chainId", "canonicalBlocks" FROM "Counters"
     `;
 
     const { rows } = await rootPgPool.query(heightsQuery);

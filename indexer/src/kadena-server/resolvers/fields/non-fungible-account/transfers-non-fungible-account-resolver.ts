@@ -20,9 +20,10 @@ import { buildTransferOutput } from '../../output/build-transfer-output';
 export const transfersNonFungibleAccountResolver: NonFungibleAccountResolvers<ResolverContext>['transfers'] =
   async (parent, args, context) => {
     const { first, after, before, last } = args;
+    const hasTokenId = true;
     const output = await context.transferRepository.getTransfers({
       accountName: parent.accountName,
-      hasTokenId: true,
+      hasTokenId,
       after,
       first,
       last,
@@ -40,7 +41,7 @@ export const transfersNonFungibleAccountResolver: NonFungibleAccountResolvers<Re
 
       // for resolvers
       accountName: parent.accountName,
-      hasTokenId: true,
+      hasTokenId,
       totalCount: -1, // Placeholder value; actual count is resolved by a separate resolver
     };
   };

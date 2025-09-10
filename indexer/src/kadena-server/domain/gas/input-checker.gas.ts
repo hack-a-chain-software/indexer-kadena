@@ -101,6 +101,6 @@ export function determineInputType(input: IGasLimitEstimationInput): UserInput {
 
   // If none of the above formats match, throw error
   throw new GasLimitEstimationError(
-    'Unknown input type. Please see the README for the accepted input format.',
+    '[ERROR][GRAPHQL][GAS][INPUT_CHECKER] Unknown input type. Please see the README for the accepted input format.',
   );
 }

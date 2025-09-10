@@ -12,10 +12,10 @@ import { buildTransferOutput } from '../../output/build-transfer-output';
  * Requires a potentially nullable string for the pactId field and a non-nullable string for amount.
  */
 const schema = zod.object({
-  pactId: zod.string().nullable(),
   amount: zod.string(),
   receiverAccount: zod.string(),
   senderAccount: zod.string(),
+  transactionId: zod.string(),
 });
 
 /**
@@ -29,16 +29,15 @@ const schema = zod.object({
  */
 export const crossChainTransferTransferResolver: TransferResolvers<ResolverContext>['crossChainTransfer'] =
   async (parent, _args, context) => {
-    const { pactId, amount, receiverAccount, senderAccount } = schema.parse(parent);
+    const { amount, receiverAccount, senderAccount, transactionId } = schema.parse(parent);
 
     if (receiverAccount !== '' && senderAccount !== '') return null;
-    if (!pactId) return null;
 
     const output = await context.transferRepository.getCrossChainTransferByPactId({
-      pactId,
       amount,
       receiverAccount,
       senderAccount,
+      transactionId,
     });
 
     if (!output) return null;

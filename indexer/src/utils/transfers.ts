@@ -89,6 +89,7 @@ export function getNftTransfers(
       modulehash: eventData.moduleHash,
       modulename: modulename,
       requestkey: transactionAttributes.requestkey,
+      creationtime: transactionAttributes.creationtime,
       to_acct: to_acct,
       hasTokenId: true,
       tokenId: tokenId,
@@ -176,6 +177,8 @@ export function getCoinTransfers(
         modulename,
         // The unique request key of the transaction
         requestkey: transactionAttributes.requestkey,
+        // The creation time of the transaction
+        creationtime: transactionAttributes.creationtime,
         // The receiver's account address
         to_acct: to_acct,
         // Flag indicating this is NOT a token with a unique ID (false for fungible tokens)

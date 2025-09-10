@@ -48,7 +48,7 @@ async function* iteratorFn({
   minimumDepth,
 }: IteratorFnParams): AsyncGenerator<EventOutput[] | undefined, void, unknown> {
   if (quantity > 100) {
-    throw new Error('[ERROR][SUBSCRIPTION][PARAMS] Quantity must be less than 100.');
+    throw new Error('[ERROR][GRAPHQL][VALID_RANGE] Quantity must be less than 100.');
   }
 
   let lastEventId = await context.eventRepository.getLastEventId();

@@ -17,10 +17,12 @@ import { buildTransferOutput } from '../../output/build-transfer-output';
 export const transfersFungibleChainAccountResolver: FungibleChainAccountResolvers<ResolverContext>['transfers'] =
   async (parent, args, context) => {
     const { first, after, last, before } = args;
+    const hasTokenId = false;
     const output = await context.transferRepository.getTransfers({
       accountName: parent.accountName,
       fungibleName: parent.fungibleName,
       chainId: parent.chainId,
+      hasTokenId,
       after,
       first,
       last,
@@ -37,6 +39,7 @@ export const transfersFungibleChainAccountResolver: FungibleChainAccountResolver
       pageInfo: output.pageInfo,
       // for resolvers
       totalCount: -1, // Placeholder value for separate resolver
+      hasTokenId,
       accountName: parent.accountName,
       chainId: parent.chainId,
       fungibleName: parent.fungibleName,

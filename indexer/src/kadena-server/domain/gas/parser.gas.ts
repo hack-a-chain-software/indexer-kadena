@@ -53,7 +53,7 @@ export function parseInput(input: string): IGasLimitEstimationInput {
     return schema.parse(parsed);
   } catch (e) {
     throw new GasLimitEstimationError(
-      'Unable to parse input as JSON. Please see the README for the accepted input format.',
+      '[ERROR][GAS][PARSER] Unable to parse input as JSON. Please see the README for the accepted input format.',
     );
   }
 }

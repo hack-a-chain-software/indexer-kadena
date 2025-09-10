@@ -46,7 +46,6 @@ import { transactionsNonFungibleChainAccountResolver } from './fields/non-fungib
 import { totalCountQueryEventsConnectionResolver } from './fields/query-events-connection/total-count-query-events-connection-resolver';
 import { totalCountQueryTransactionsByPublicKeyConnectionResolver } from './fields/query-transactions-by-public-key-connection/total-count-query-transactions-by-public-key-connection-resolver';
 import { totalCountQueryTransactionsConnectionResolver } from './fields/query-transactions-connection/total-count-query-transactions-connection-resolver';
-import { totalCountQueryTransfersConnectionResolver } from './fields/query-transfers-connection/total-count-query-transfers-connection-resolver';
 import { metaTransactionCommandResolver } from './fields/transaction-command/meta-transaction-command-resolver';
 import { signersTransactionCommandResolver } from './fields/transaction-command/signers-transaction-command-resolver';
 import { blockTransactionResultResolver } from './fields/transaction-result/block-transaction-result-resolver';
@@ -104,6 +103,7 @@ import { transfersNonFungibleChainAccountResolver } from '@/kadena-server/resolv
 import { totalCountNonFungibleChainAccountTransfersConnectionResolver } from '@/kadena-server/resolvers/fields/non-fungible-chain-account/transfers-connection/total-count-non-fungible-chain-account-transfers-connection-resolver';
 import { totalCountQueryBlocksFromHeightConnectionResolver } from '@/kadena-server/resolvers/fields/query-blocks-from-height-connection/total-count-query-blocks-from-height-connection-resolver';
 import { transactionsByPactCodeQueryResolver } from '@/kadena-server/resolvers/query/transactions-by-pact-code-query-resolver';
+import { lastTokenPriceInKdaQueryResolver } from '@/kadena-server/resolvers/query/last-token-price-in-kda-resolver';
 /**
  * Complete resolver map for the GraphQL API
  *
@@ -157,6 +157,7 @@ export const resolvers: Resolvers<ResolverContext> = {
     transactionsByPublicKey: transactionsByPublicKeyQueryResolver,
     transfers: transfersQueryResolver,
     tokens: tokensQueryResolver,
+    lastTokenPriceInKda: lastTokenPriceInKdaQueryResolver,
     pool: poolQueryResolver,
     poolTransactions: poolTransactionsQueryResolver,
     liquidityPositions: liquidityPositionsQueryResolver,
@@ -251,9 +252,6 @@ export const resolvers: Resolvers<ResolverContext> = {
   },
   QueryEventsConnection: {
     totalCount: totalCountQueryEventsConnectionResolver,
-  },
-  QueryTransfersConnection: {
-    totalCount: totalCountQueryTransfersConnectionResolver,
   },
   QueryTransactionsConnection: {
     totalCount: totalCountQueryTransactionsConnectionResolver,

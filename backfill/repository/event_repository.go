@@ -18,6 +18,7 @@ type EventAttributes struct {
 	QualName      string          `json:"qualName"`
 	RequestKey    string          `json:"requestKey"`
 	OrderIndex    int             `json:"orderIndex"`
+	CreationTime  string          `json:"creationtime"`
 	CreatedAt     time.Time       `json:"createdAt"`
 	UpdatedAt     time.Time       `json:"updatedAt"`
 }
@@ -29,8 +30,8 @@ func SaveEventsToDatabase(events []EventAttributes, db pgx.Tx) error {
 
 	query := `
 		INSERT INTO "Events" 
-		("transactionId", "chainId", "module", name, params, qualname, requestkey, "orderIndex", "createdAt", "updatedAt", canonical)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		("transactionId", "chainId", "module", name, params, qualname, requestkey, "creationtime", "orderIndex", "createdAt", "updatedAt", canonical)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`
 
 	now := time.Now()
@@ -46,6 +47,7 @@ func SaveEventsToDatabase(events []EventAttributes, db pgx.Tx) error {
 			event.Params,
 			event.QualName,
 			event.RequestKey,
+			event.CreationTime,
 			event.OrderIndex,
 			now,
 			now,
