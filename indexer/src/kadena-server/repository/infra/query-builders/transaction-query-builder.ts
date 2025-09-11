@@ -360,6 +360,14 @@ export default class TransactionQueryBuilder {
 
     conditions.push('b.canonical = true');
 
+    if (!params.after && !params.before && params.order === 'ASC') {
+      const currentTime = 1574104787;
+      queryParams.push(currentTime, 1000);
+      conditions.push(
+        `(t.creationtime, t.id) < ($${queryParams.length - 1}, $${queryParams.length})`,
+      );
+    }
+
     if (params.after) {
       const [creationTime, id] = params.after.split(':');
       queryParams.push(creationTime, id);
