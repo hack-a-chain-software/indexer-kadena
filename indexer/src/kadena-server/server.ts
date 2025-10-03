@@ -355,7 +355,7 @@ export async function startGraphqlServer() {
   // Set up WebSocket server for subscriptions
   const wsServer = new WebSocketServer({
     server: httpServer,
-    path: '/wss/graphql',
+    path: '/graphql',
   });
 
   // Track active connections
