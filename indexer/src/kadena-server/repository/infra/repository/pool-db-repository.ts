@@ -388,7 +388,7 @@ export default class PoolDbRepository {
       paramIndex++;
     }
 
-    query += ` ORDER BY t.id ${order} LIMIT $${paramIndex}`;
+    query += ` ORDER BY t."timestamp" ${order} LIMIT $${paramIndex}`;
     queryParams.push(limit);
     const result = await sequelize.query(query, {
       type: QueryTypes.SELECT,
