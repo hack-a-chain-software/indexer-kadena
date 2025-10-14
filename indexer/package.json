@@ -78,6 +78,7 @@
     "dev:hot:graphql": "nodemon --exec ts-node -r tsconfig-paths/register src/index.ts --graphql",
     "graphql:generate-types": "npx graphql-codegen",
     "migrate:up": "ts-node -r tsconfig-paths/register src/config/migrator-wrapper.ts",
+    "verify:counter": "yarn ts-node -r tsconfig-paths/register src/scripts/verify-transaction-counters.ts",
     "migrate:down": "dotenv -e .env npx sequelize-cli db:migrate:undo",
     "test:unit": "jest tests/unit",
     "test:api-parity": "dotenv -e .env.testing jest tests/integration/api-parity/kadena-vs-hackachain.test",

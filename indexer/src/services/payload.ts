@@ -29,7 +29,7 @@ import TransactionDetails, { TransactionDetailsAttributes } from '@/models/trans
 import { mapToEventModel } from '@/models/mappers/event-mapper';
 import { processPairCreationEvents } from './pair';
 import { Decimal } from 'decimal.js';
-import { increaseCounters } from '@/services/counters';
+import { increaseCounters, updateTransactionCountersByBlocks } from '@/services/counters';
 
 // Constants for array indices in the transaction data structure
 const TRANSACTION_INDEX = 0;
@@ -97,6 +97,12 @@ export async function processPayloadKey(
     orphanTransactionsCount: 0,
     chainId: block.chainId,
     totalGasUsed: totalGasUsed.toNumber(),
+    tx,
+  });
+
+  await updateTransactionCountersByBlocks({
+    canonicalBlockIds: [block.id],
+    nonCanonicalBlockIds: [],
     tx,
   });
 

@@ -18,6 +18,8 @@ export interface CanonicalCounts {
   blocksBecameNonCanonical: number;
   transactionsBecameCanonical: number;
   transactionsBecameNonCanonical: number;
+  canonicalBlockIds: number[];
+  nonCanonicalBlockIds: number[];
 }
 
 export async function markCanonicalTip({
@@ -32,12 +34,15 @@ export async function markCanonicalTip({
   let blocksBecameNonCanonical = 0;
   let transactionsBecameCanonical = 0;
   let transactionsBecameNonCanonical = 0;
+  const canonicalBlockIds: number[] = [];
+  const nonCanonicalBlockIds: number[] = [];
 
   // Mark all blocks with higher height as non-canonical
   for (const block of blocksWithHigherHeightOfTipBlock) {
     if (block.canonical) {
       blocksBecameNonCanonical++;
       transactionsBecameNonCanonical += block.numTransactions;
+      nonCanonicalBlockIds.push(block.blockId);
     }
     changes.push({ block, canonical: false });
   }
@@ -64,6 +69,7 @@ export async function markCanonicalTip({
         if (block.canonical) {
           blocksBecameNonCanonical++;
           transactionsBecameNonCanonical += block.numTransactions;
+          nonCanonicalBlockIds.push(block.blockId);
         }
         changes.push({ block, canonical: false });
       }
@@ -73,6 +79,7 @@ export async function markCanonicalTip({
     if (currentBlock.canonical === false) {
       blocksBecameCanonical++;
       transactionsBecameCanonical += currentBlock.numTransactions;
+      canonicalBlockIds.push(currentBlock.blockId);
     }
     changes.push({ block: currentBlock, canonical: true });
 
@@ -116,6 +123,8 @@ export async function markCanonicalTip({
     blocksBecameNonCanonical,
     transactionsBecameCanonical,
     transactionsBecameNonCanonical,
+    canonicalBlockIds,
+    nonCanonicalBlockIds,
   };
 }
 

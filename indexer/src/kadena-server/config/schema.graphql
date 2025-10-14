@@ -313,18 +313,18 @@ type Query {
   """
   transactions(
     accountName: String
-    after: String
-    before: String
-    blockHash: String
     chainId: String
-    first: Int
     fungibleName: String
-    last: Int
-    maxHeight: Int
-    minHeight: Int
-    minimumDepth: Int
+    blockHash: String
     requestKey: String
     isCoinbase: Boolean
+    minimumDepth: Int
+    maxHeight: Int
+    minHeight: Int
+    after: String
+    before: String
+    first: Int
+    last: Int
   ): QueryTransactionsConnection! @complexity(value: 1, multipliers: ["first", "last"])
 
   """

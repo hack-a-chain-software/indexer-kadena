@@ -1,5 +1,5 @@
 import BlockDbRepository from '@/kadena-server/repository/infra/repository/block-db-repository';
-import { increaseCounters } from '@/services/counters';
+import { increaseCounters, updateTransactionCountersByBlocks } from '@/services/counters';
 import { markCanonicalTip } from '@/utils/canonical-tip';
 import { getRequiredEnvString } from '@/utils/helpers';
 import { processPayload, saveBlock } from './streaming';
@@ -11,7 +11,7 @@ const blockRepository = new BlockDbRepository();
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
 
-export async function defineCanonicalBaseline(blockHash: string) {
+export async function defineCanonicalBaseline(blockHash: string, blockId?: number) {
   let tipBlock: BlockOutput | null = null;
   try {
     tipBlock = await blockRepository.getBlockByHash(blockHash);
@@ -54,6 +54,8 @@ export async function defineCanonicalBaseline(blockHash: string) {
       blocksBecameNonCanonical,
       transactionsBecameCanonical,
       transactionsBecameNonCanonical,
+      canonicalBlockIds,
+      nonCanonicalBlockIds,
     } = await markCanonicalTip({
       blockRepository,
       blocksWithSameHeightOfTipBlock,
@@ -68,6 +70,12 @@ export async function defineCanonicalBaseline(blockHash: string) {
       canonicalTransactionsCount: transactionsBecameCanonical - transactionsBecameNonCanonical,
       orphanTransactionsCount: transactionsBecameNonCanonical - transactionsBecameCanonical,
       chainId: tipBlock.chainId,
+      tx,
+    });
+
+    await updateTransactionCountersByBlocks({
+      canonicalBlockIds,
+      nonCanonicalBlockIds: blockId ? [blockId] : nonCanonicalBlockIds,
       tx,
     });
     await tx.commit();

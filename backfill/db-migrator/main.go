@@ -32,6 +32,8 @@ func main() {
 		DuplicateCreationTimes()
 	case "reconcile":
 		InsertReconcileEvents()
+	case "tx-counters":
+		MakeTxCounters()
 	default:
 		log.Fatalf("Unknown command: %s", *command)
 	}

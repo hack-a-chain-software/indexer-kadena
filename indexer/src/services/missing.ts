@@ -183,13 +183,15 @@ export async function fillChainGapsBeforeDefiningCanonicalBaseline({
 
     const { rows } = await rootPgPool.query(dbQuery, [chainId]);
 
-    const fromHeight = rows[0].height + 1;
+    const fromHeightInit = rows[0].height + 1;
     const toHeight = lastHeight - 1;
 
-    if (fromHeight > toHeight) {
+    if (fromHeightInit > toHeight) {
       console.info(`[INFO][SYNC][MISSING] No gaps to fill for chain ${chainId}`);
       return;
     }
+
+    const fromHeight = Math.max(fromHeightInit, lastHeight - 70);
 
     const url = `${SYNC_BASE_URL}/${NETWORK_ID}/chain/${chainId}/block/branch?minheight=${fromHeight}&maxheight=${toHeight}`;
 

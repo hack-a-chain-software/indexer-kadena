@@ -624,12 +624,12 @@ export default class TransactionDbRepository implements TransactionRepository {
     }
 
     const {
-      blockHash,
       accountName,
-      requestKey,
-      fungibleName,
-      hasTokenId,
       chainId,
+      fungibleName,
+      blockHash,
+      requestKey,
+      hasTokenId,
       isCoinbase,
       maxHeight,
       minHeight,
@@ -641,6 +641,30 @@ export default class TransactionDbRepository implements TransactionRepository {
     let blocksConditions = '';
 
     const localOperator = (paramsLength: number) => (paramsLength > 1 ? `\nAND` : 'WHERE');
+
+    if (accountName || chainId || fungibleName) {
+      let conditions: string[] = [];
+
+      if (accountName) {
+        conditions.push(`sender = $1`);
+      }
+      if (chainId) {
+        conditions.push(`"chainId" = $2`);
+      }
+      if (fungibleName) {
+        conditions.push(`module = $3`);
+      }
+
+      const query = `
+        SELECT sum(counter) as total
+        FROM "TransactionCounters"
+        ${conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''}
+      `;
+
+      const { rows: countResult } = await rootPgPool.query(query, transactionsParams);
+      const totalCount = parseInt(countResult[0].total, 10);
+      return totalCount;
+    }
 
     if (accountName) {
       transactionsParams.push(accountName);
