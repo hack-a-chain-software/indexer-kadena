@@ -36,6 +36,7 @@
     "graphql-ws": "^5.16.0",
     "ip-range-check": "^0.2.0",
     "node-cache": "^5.1.2",
+    "opossum": "^9.0.0",
     "papaparse": "^5.5.2",
     "pg": "^8.11.3",
     "pg-hstore": "^2.3.4",

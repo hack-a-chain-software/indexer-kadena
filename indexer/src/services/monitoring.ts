@@ -1,5 +1,8 @@
 import axios from 'axios';
 import os from 'os';
+import { axiosPostWithRetry } from '@/utils/http';
+import { logDedup } from '@/utils/error-dedupe';
+import { fireWithBreaker } from '@/utils/circuit';
 
 export type ReportErrorPayload = {
   endpoint: string;
@@ -47,14 +50,25 @@ class HttpErrorReporter implements ErrorReporter {
     };
 
     try {
-      await axios.post(this.url, body, {
+      await axiosPostWithRetry(this.url, body, {
         headers: { 'Content-Type': 'application/json', 'x-api-key': this.apiKey },
-        timeout: 30000,
+        timeoutMs: 30000,
+        operation: 'monitoring.reportError',
       });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      err.message = `[ERROR][MONITORING][REPORT_ERROR] Failed to report error: ${err.message}`;
-      console.error(err);
+      logDedup(
+        {
+          message: '[WARN][MONITORING][REPORT_ERROR] Failed to report error',
+          operation: 'monitoring.reportError',
+          code: (error as any)?.code || String((error as any)?.response?.status || ''),
+          reason: 'http',
+        },
+        undefined,
+        { error: err.message },
+        60000,
+        'warn',
+      );
     }
   }
 }
