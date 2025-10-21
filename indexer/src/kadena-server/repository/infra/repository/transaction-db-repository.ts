@@ -642,17 +642,30 @@ export default class TransactionDbRepository implements TransactionRepository {
 
     const localOperator = (paramsLength: number) => (paramsLength > 1 ? `\nAND` : 'WHERE');
 
-    if (accountName || chainId || fungibleName) {
+    if (
+      (accountName || chainId || fungibleName) &&
+      !blockHash &&
+      !requestKey &&
+      !hasTokenId &&
+      !isCoinbase &&
+      !maxHeight &&
+      !minHeight &&
+      !minimumDepth
+    ) {
+      const conditionsParams: (string | number)[] = [];
       let conditions: string[] = [];
 
       if (accountName) {
-        conditions.push(`sender = $1`);
+        conditionsParams.push(accountName);
+        conditions.push(`sender = $${conditions.length}`);
       }
       if (chainId) {
-        conditions.push(`"chainId" = $2`);
+        conditionsParams.push(chainId);
+        conditions.push(`"chainId" = $${conditions.length}`);
       }
       if (fungibleName) {
-        conditions.push(`module = $3`);
+        conditionsParams.push(fungibleName);
+        conditions.push(`module = $${conditions.length}`);
       }
 
       const query = `

@@ -11,7 +11,7 @@ const blockRepository = new BlockDbRepository();
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
 
-export async function defineCanonicalBaseline(blockHash: string, blockId?: number) {
+export async function defineCanonicalBaseline(blockHash: string) {
   let tipBlock: BlockOutput | null = null;
   try {
     tipBlock = await blockRepository.getBlockByHash(blockHash);
@@ -75,7 +75,7 @@ export async function defineCanonicalBaseline(blockHash: string, blockId?: numbe
 
     await updateTransactionCountersByBlocks({
       canonicalBlockIds,
-      nonCanonicalBlockIds: blockId ? [blockId] : nonCanonicalBlockIds,
+      nonCanonicalBlockIds,
       tx,
     });
     await tx.commit();

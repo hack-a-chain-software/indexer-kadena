@@ -1,4 +1,4 @@
-import { Op, QueryTypes } from 'sequelize';
+import { Op, QueryOptions, QueryTypes } from 'sequelize';
 
 import { sequelize } from '../../../../config/database';
 import Pair from '../../../../models/pair';
@@ -38,6 +38,10 @@ const POOL_ORDER_BY_MAP: Record<
   APR_24H_DESC: { model: PoolStats, field: 'apr24h', direction: 'DESC' },
   TRANSACTION_COUNT_24H_ASC: { model: PoolStats, field: 'transactionCount24h', direction: 'ASC' },
   TRANSACTION_COUNT_24H_DESC: { model: PoolStats, field: 'transactionCount24h', direction: 'DESC' },
+};
+
+const wrapperSequelize = (query: string, queryOptions: QueryOptions) => {
+  const pairs = await sequelize.query(query, queryOptions);
 };
 
 export default class PoolDbRepository {
