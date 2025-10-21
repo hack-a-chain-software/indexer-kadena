@@ -40,10 +40,6 @@ const POOL_ORDER_BY_MAP: Record<
   TRANSACTION_COUNT_24H_DESC: { model: PoolStats, field: 'transactionCount24h', direction: 'DESC' },
 };
 
-const wrapperSequelize = (query: string, queryOptions: QueryOptions) => {
-  const pairs = await sequelize.query(query, queryOptions);
-};
-
 export default class PoolDbRepository {
   async getPools(params: GetPoolsParams): Promise<{
     pageInfo: PageInfo;
