@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"flag"
 	"fmt"
 	"go-backfill/config"
 	"log"
@@ -16,9 +15,6 @@ const (
 )
 
 func updateTransactionCounters() error {
-	envFile := flag.String("env", ".env", "Path to the .env file")
-	flag.Parse()
-	config.InitEnv(*envFile)
 	env := config.GetConfig()
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		env.DbHost, env.DbPort, env.DbUser, env.DbPassword, env.DbName)
