@@ -37,9 +37,7 @@ func updateTransactionCounters() error {
 	err = db.QueryRow(`
 		SELECT MIN(t.id), MAX(t.id)
 		FROM "Transactions" t
-		JOIN "Blocks" b ON b.id = t."blockId"
 		WHERE t.sender != 'coinbase'
-		AND b.canonical = true
 	`).Scan(&minID, &maxID)
 	if err != nil {
 		return fmt.Errorf("failed to get transaction ID range: %v", err)
