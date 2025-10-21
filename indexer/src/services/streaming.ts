@@ -52,7 +52,7 @@ const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
 export async function startStreaming() {
   console.info('[INFO][WORKER][BIZ_FLOW] Starting blockchain streaming service ...');
 
-  // await startMissingBlocksBeforeStreamingProcess();
+  await startMissingBlocksBeforeStreamingProcess();
 
   const nextBlocksToProcess: any[] = [];
   const initialChainGapsAlreadyFilled = new Set<number>();

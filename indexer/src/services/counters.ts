@@ -136,15 +136,6 @@ const upsertCounts = async (
 ) => {
   if (!rows.length) return;
 
-  // Log all decrements individually
-  const decrements = rows.filter(r => r.delta < 0);
-  if (decrements.length > 0) {
-    console.log(
-      `[DEBUG] All decrements:`,
-      decrements.map(d => `${d.sender}|${d.chainId}|${d.module}:${d.delta}`),
-    );
-  }
-
   // Process each row individually
   for (const row of rows) {
     try {
