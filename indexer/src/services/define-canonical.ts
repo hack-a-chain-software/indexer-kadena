@@ -4,6 +4,7 @@ import { markCanonicalTip } from '@/utils/canonical-tip';
 import { getRequiredEnvString } from '@/utils/helpers';
 import { processPayload, saveBlock } from './streaming';
 import { sequelize } from '@/config/database';
+import { fetchWithRetry } from '@/utils/http';
 import { Transaction } from 'sequelize';
 import { BlockOutput } from '@/kadena-server/repository/application/block-repository';
 
@@ -129,18 +130,22 @@ async function fetchBlocksFromChainwebNode(
   chainId: number,
   height: number,
 ): Promise<Record<string, any>> {
-  const cut = await fetch(`${SYNC_BASE_URL}/${SYNC_NETWORK}/cut`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
+  const cutData = await fetchWithRetry<{ hashes: Record<string, { hash: string }> }>(
+    `${SYNC_BASE_URL}/${SYNC_NETWORK}/cut`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      operation: 'canonical.getCut',
+      parseAs: 'json',
     },
-  });
-  const cutData = await cut.json();
+  );
 
   const upperHash = cutData.hashes[chainId].hash;
   const MIN_HEIGHT = height - 10; // 10 blocks is the max gap we can fill
   const url = `${SYNC_BASE_URL}/${SYNC_NETWORK}/chain/${chainId}/block/branch?minheight=${MIN_HEIGHT}&maxheight=${height}`;
-  const res = await fetch(url, {
+  const data = await fetchWithRetry<{ items: BlockOutput[] }>(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -148,9 +153,9 @@ async function fetchBlocksFromChainwebNode(
     body: JSON.stringify({
       upper: [upperHash],
     }),
+    operation: 'canonical.getBranch',
+    parseAs: 'json',
   });
-
-  const data = await res.json();
 
   // Create a map of blocks by hash for easy lookup
   const blocksByHash = data.items.reduce((acc: Record<string, any>, item: any) => {

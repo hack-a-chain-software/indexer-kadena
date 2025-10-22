@@ -43,7 +43,33 @@ export async function queryWithRetry(sql: string, params: unknown[], options: Db
   }
 }
 
-function classifyPgError(err: unknown) {
+export async function sequelizeQueryWithRetry<T = any>(
+  operation: string,
+  thunk: () => Promise<T>,
+  options?: { attempts?: number; signal?: AbortSignal; circuit?: DbQueryOptions['circuit'] },
+): Promise<T> {
+  const start = performance.now();
+  try {
+    return await withRetry<T>(operation, thunk, {
+      attempts:
+        options?.attempts ??
+        (process.env.DB_QUERY_RETRY_ATTEMPTS ? Number(process.env.DB_QUERY_RETRY_ATTEMPTS) : 2),
+      classify: classifyPgError,
+      signal: options?.signal,
+      circuit: options?.circuit,
+      onRetry: ({ attempt, error }) => {
+        console.warn('[WARN][DB][RETRY]', { operation, attempt, error });
+      },
+    });
+  } finally {
+    const durationMs = performance.now() - start;
+    if (durationMs > 1000) {
+      console.warn('[WARN][DB][SLOW_QUERY]', { operation, durationMs });
+    }
+  }
+}
+
+export function classifyPgError(err: unknown) {
   const anyErr = err as any;
   const code: string | undefined = anyErr?.code;
   // Non-retryable pg codes

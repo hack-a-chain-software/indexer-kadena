@@ -1,4 +1,7 @@
 import { PriceService } from './price.service';
+import { fetchWithRetry } from '@/utils/http';
+
+type DiaPriceResponse = { Price: number };
 
 export class PriceUpdaterService {
   private static instance: PriceUpdaterService;
@@ -19,23 +22,25 @@ export class PriceUpdaterService {
     return PriceUpdaterService.instance;
   }
 
+  public isDiaPriceResponse(value: unknown): value is DiaPriceResponse {
+    const v = value as any;
+    return !!v && typeof v.Price === 'number' && Number.isFinite(v.Price);
+  }
+
   private async updatePrice(): Promise<void> {
     try {
-      const response = await fetch(this.DIA_API_URL, {
+      const data = await fetchWithRetry<DiaPriceResponse>(this.DIA_API_URL, {
+        method: 'GET',
         headers: {
           Accept: 'application/json',
           'User-Agent': 'node-fetch',
         },
+        operation: 'price.update',
+        parseAs: 'json',
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status} - ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data?.Price === undefined) {
-        throw new Error('Price field is missing in API response');
+      if (!this.isDiaPriceResponse(data)) {
+        throw new Error('Invalid DIA response: Price must be a finite number');
       }
 
       this.priceService.setKdaUsdPrice(data.Price);

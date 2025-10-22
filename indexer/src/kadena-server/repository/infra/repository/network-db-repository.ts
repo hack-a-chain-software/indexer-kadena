@@ -22,7 +22,8 @@ import {
   calculateTotalDifficulty,
 } from '../../../../utils/difficulty';
 import { calculateNetworkHashRate } from '../../../../utils/hashrate';
-import { rootPgPool } from '../../../../config/database';
+import { queryWithRetry } from '@/utils/db';
+import { axiosPostWithRetry, fetchWithRetry } from '@/utils/http';
 import { nodeInfoValidator } from '../schema-validator/node-info-validator';
 import { getRequiredEnvString } from '../../../../utils/helpers';
 import { MEMORY_CACHE } from '../../../../cache/init';
@@ -66,16 +67,18 @@ export default class NetworkDbRepository implements NetworkRepository {
    * @returns Promise resolving to the current blockchain height as a number
    */
   async getCut(): Promise<number> {
-    const response = await fetch(`${SYNC_BASE_URL}/${NETWORK_ID}/cut`, {
+    const data = await fetchWithRetry(`${SYNC_BASE_URL}/${NETWORK_ID}/cut`, {
       method: 'GET',
       headers: {
         accept: 'application/json;charset=utf-8, application/json',
         'cache-control': 'no-cache',
       },
+      operation: 'network.getCut',
+      parseAs: 'json',
     });
-    const data = await response.json();
+    console.log(data);
 
-    return data.height as number;
+    return (data as { height: number }).height;
   }
 
   /**
@@ -93,7 +96,9 @@ export default class NetworkDbRepository implements NetworkRepository {
       WHERE b.id = (SELECT max(id) from "Blocks");
   `;
 
-    const { rows } = await rootPgPool.query(creationTimeQuery);
+    const { rows } = await queryWithRetry(creationTimeQuery, [], {
+      operation: 'network.latestCreationTime',
+    });
 
     const firstRow = rows?.[0]?.creationTime;
     const latestCreationTime = parseInt(firstRow, 10);
@@ -131,8 +136,10 @@ export default class NetworkDbRepository implements NetworkRepository {
       SELECT sum("canonicalTransactions") as "totalTransactionsCount" from "Counters"
     `;
 
-    const { rows: totalTransactionsCountRows } = await rootPgPool.query(
+    const { rows: totalTransactionsCountRows } = await queryWithRetry(
       totalTransactionsCountQuery,
+      [],
+      { operation: 'network.totalTransactionsCount' },
     );
     const transactionCount = parseInt(totalTransactionsCountRows[0].totalTransactionsCount, 10);
 
@@ -209,14 +216,15 @@ export default class NetworkDbRepository implements NetworkRepository {
    * @returns Promise resolving to validated node information
    */
   async getNodeInfo(): Promise<GetNodeInfo> {
-    const response = await fetch(`${HOST_URL}/info`, {
+    const data = await fetchWithRetry(`${HOST_URL}/info`, {
       method: 'GET',
       headers: {
         accept: 'application/json;charset=utf-8, application/json',
         'cache-control': 'no-cache',
       },
+      operation: 'network.getNodeInfo',
+      parseAs: 'json',
     });
-    const data = await response.json();
 
     const output = nodeInfoValidator.validate(data);
     return output;
@@ -227,7 +235,9 @@ export default class NetworkDbRepository implements NetworkRepository {
       SELECT "chainId", "canonicalBlocks" FROM "Counters"
     `;
 
-    const { rows } = await rootPgPool.query(heightsQuery);
+    const { rows } = await queryWithRetry(heightsQuery, [], {
+      operation: 'network.currentChainHeights',
+    });
 
     const output = rows.reduce((acc, row) => {
       acc[row.chainId] = row.canonicalBlocks;
@@ -244,7 +254,9 @@ export default class NetworkDbRepository implements NetworkRepository {
       ORDER BY "chainId"
     `;
 
-    const { rows } = await rootPgPool.query(countersQuery);
+    const { rows } = await queryWithRetry(countersQuery, [], {
+      operation: 'network.countersOfEachChain',
+    });
 
     const output = rows.map(row => {
       return {

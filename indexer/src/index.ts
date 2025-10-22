@@ -91,5 +91,13 @@ async function handleGracefulShutdown(signal: string) {
 process.on('SIGINT', handleGracefulShutdown);
 process.on('SIGTERM', handleGracefulShutdown);
 
+// Prevent process crashes from unhandled errors; log and continue where safe
+process.on('uncaughtException', error => {
+  console.error('[ERROR][INFRA][UNCAUGHT_EXCEPTION]', error);
+});
+process.on('unhandledRejection', reason => {
+  console.error('[ERROR][INFRA][UNHANDLED_REJECTION]', reason as any);
+});
+
 // Execute the main function to start the application
 main();

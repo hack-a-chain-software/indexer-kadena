@@ -1,6 +1,7 @@
 import { Op, QueryTypes } from 'sequelize';
 
 import { sequelize } from '../../../../config/database';
+import { sequelizeQueryWithRetry } from '@/utils/db';
 import Pair from '../../../../models/pair';
 import PoolStats from '../../../../models/pool-stats';
 import { getPageInfo, getPaginationParams } from '../../pagination';
@@ -105,9 +106,10 @@ export default class PoolDbRepository {
      order by ps."paginationCursor" ${pagination.order}
     `;
 
-    const pairs = await sequelize.query(query, {
-      type: QueryTypes.SELECT,
-    });
+    const pairs = (await sequelizeQueryWithRetry<any[]>(
+      'pool.getPools',
+      () => sequelize.query(query, { type: QueryTypes.SELECT }) as any,
+    )) as any[];
 
     const paginationCursorMap = new Map<string, number>();
 
@@ -163,10 +165,10 @@ export default class PoolDbRepository {
       WHERE p.id = $1
     `;
 
-    const [pairResult] = await sequelize.query(pairQuery, {
-      type: QueryTypes.SELECT,
-      bind: [id],
-    });
+    const [pairResult] = (await sequelizeQueryWithRetry<any>(
+      'pool.getPool.pair',
+      () => sequelize.query(pairQuery, { type: QueryTypes.SELECT, bind: [id] }) as any,
+    )) as any;
 
     if (!pairResult) {
       throw new Error(`[ERROR][GRAPHQL][DB][DATA_MISSING] Token pair not found for pool ${id}`);
@@ -180,10 +182,14 @@ export default class PoolDbRepository {
       WHERE t.id = $1 OR t.id = $2
     `;
 
-    const tokens = await sequelize.query(tokensQuery, {
-      type: QueryTypes.SELECT,
-      bind: [pair.token0Id, pair.token1Id],
-    });
+    const tokens = (await sequelizeQueryWithRetry<any[]>(
+      'pool.getPool.tokens',
+      () =>
+        sequelize.query(tokensQuery, {
+          type: QueryTypes.SELECT,
+          bind: [pair.token0Id, pair.token1Id],
+        }) as any,
+    )) as any[];
 
     const token0 = tokens.find((t: any) => t.id === pair.token0Id) as TokenModel;
     const token1 = tokens.find((t: any) => t.id === pair.token1Id) as TokenModel;
@@ -228,10 +234,10 @@ export default class PoolDbRepository {
       FROM current_stats cs
       LEFT JOIN previous_stats ps ON true
     `;
-    const [statsResult] = await sequelize.query(statsQuery, {
-      type: QueryTypes.SELECT,
-      bind: [id],
-    });
+    const [statsResult] = (await sequelizeQueryWithRetry<any>(
+      'pool.getPool.stats',
+      () => sequelize.query(statsQuery, { type: QueryTypes.SELECT, bind: [id] }) as any,
+    )) as any;
     const statsResult1 = (statsResult || {}) as any;
 
     interface Stats {
@@ -390,10 +396,10 @@ export default class PoolDbRepository {
 
     query += ` ORDER BY t.id ${order} LIMIT $${paramIndex}`;
     queryParams.push(limit);
-    const result = await sequelize.query(query, {
-      type: QueryTypes.SELECT,
-      bind: queryParams,
-    });
+    const result = (await sequelizeQueryWithRetry<any[]>(
+      'pool.getPoolTransactions',
+      () => sequelize.query(query, { type: QueryTypes.SELECT, bind: queryParams }) as any,
+    )) as any[];
 
     const edges =
       result.length > 0
@@ -423,10 +429,14 @@ export default class PoolDbRepository {
       ${type ? 'AND type = $2' : ''}
     `;
 
-    const countResult = await sequelize.query(countQuery, {
-      type: QueryTypes.SELECT,
-      bind: type ? [pairId, type] : [pairId],
-    });
+    const countResult = (await sequelizeQueryWithRetry<any[]>(
+      'pool.getPoolTransactions.count',
+      () =>
+        sequelize.query(countQuery, {
+          type: QueryTypes.SELECT,
+          bind: type ? [pairId, type] : [pairId],
+        }) as any,
+    )) as any[];
 
     const totalCount = parseInt((countResult[0] as any).count);
 

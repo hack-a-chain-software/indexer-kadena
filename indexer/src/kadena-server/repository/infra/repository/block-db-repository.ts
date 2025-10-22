@@ -15,7 +15,8 @@
  */
 
 import { Op, QueryTypes, Transaction } from 'sequelize';
-import { rootPgPool, sequelize } from '../../../../config/database';
+import { sequelize } from '../../../../config/database';
+import { queryWithRetry } from '@/utils/db';
 import BlockModel from '../../../../models/block';
 import BlockRepository, {
   BlockOutput,
@@ -155,7 +156,9 @@ export default class BlockDbRepository implements BlockRepository {
         LIMIT $1
       `;
 
-      const { rows: blockRows } = await rootPgPool.query(query, queryParams);
+      const { rows: blockRows } = await queryWithRetry(query, queryParams, {
+        operation: 'blocks.getBlocksFromDepth.batch',
+      });
 
       if (blockRows.length < batchSize) {
         hasMoreBlocks = false;
@@ -237,7 +240,9 @@ export default class BlockDbRepository implements BlockRepository {
 
     const heightQuery = `SELECT max("height") FROM "Blocks"`;
 
-    const { rows: maxHeightRows } = await rootPgPool.query(heightQuery);
+    const { rows: maxHeightRows } = await queryWithRetry(heightQuery, [], {
+      operation: 'blocks.maxHeight',
+    });
 
     const maxHeight = maxHeightRows[0].max;
     // Default window size to prevent large database queries
@@ -370,7 +375,9 @@ export default class BlockDbRepository implements BlockRepository {
       LIMIT $1;
     `;
 
-    const { rows: blockRows } = await rootPgPool.query(query, queryParams);
+    const { rows: blockRows } = await queryWithRetry(query, queryParams, {
+      operation: 'blocks.getBlocksBetweenHeights',
+    });
 
     const edges = blockRows.map(row => ({
       cursor: `${row.height.toString()}:${row.id.toString()}`,
@@ -452,7 +459,9 @@ export default class BlockDbRepository implements BlockRepository {
       FROM "Counters"
       WHERE "chainId" = ANY($1)
     `;
-    const { rows } = await rootPgPool.query(query, [chainIdsToUse]);
+    const { rows } = await queryWithRetry(query, [chainIdsToUse], {
+      operation: 'blocks.totalCount',
+    });
     return parseInt(rows[0].totalCount, 10) - minimumDepth * chainIdsToUse.length;
   }
 
@@ -496,7 +505,9 @@ export default class BlockDbRepository implements BlockRepository {
         LIMIT $2;
       `;
 
-      const { rows: heightRows } = await rootPgPool.query(query, [chainIds.length, heightCount]);
+      const { rows: heightRows } = await queryWithRetry(query, [chainIds.length, heightCount], {
+        operation: 'blocks.completedHeights.count',
+      });
 
       const totalCompletedHeights = heightRows.map(r => r.height) as number[];
 
@@ -530,7 +541,9 @@ export default class BlockDbRepository implements BlockRepository {
           LIMIT $1
         `;
 
-        const { rows: blockRows } = await rootPgPool.query(queryOne, queryParams);
+        const { rows: blockRows } = await queryWithRetry(queryOne, queryParams, {
+          operation: 'blocks.completedHeights.list',
+        });
 
         const edges = blockRows.map(row => ({
           cursor: row.id.toString(),
@@ -551,7 +564,9 @@ export default class BlockDbRepository implements BlockRepository {
       LIMIT $1
     `;
 
-    const { rows: heightRows } = await rootPgPool.query(queryTwo, [heightCount]);
+    const { rows: heightRows } = await queryWithRetry(queryTwo, [heightCount], {
+      operation: 'blocks.completedHeights.count2',
+    });
 
     const totalCompletedHeights = heightRows.map(r => r.height) as number[];
 
@@ -579,7 +594,9 @@ export default class BlockDbRepository implements BlockRepository {
       LIMIT $1
     `;
 
-    const { rows: blockRows } = await rootPgPool.query(queryThree, queryParams);
+    const { rows: blockRows } = await queryWithRetry(queryThree, queryParams, {
+      operation: 'blocks.completedHeights.list2',
+    });
 
     const edges = blockRows.map(row => ({
       cursor: row.id.toString(),
@@ -601,13 +618,14 @@ export default class BlockDbRepository implements BlockRepository {
    * @returns Promise resolving to an array of blocks
    */
   async getBlocksByEventIds(eventIds: readonly string[]) {
-    const { rows: blockRows } = await rootPgPool.query(
+    const { rows: blockRows } = await queryWithRetry(
       `SELECT b.*, e.id as "eventId"
         FROM "Events" e
         JOIN "Transactions" t ON t.id = e."transactionId"
         JOIN "Blocks" b ON b.id = t."blockId"
         WHERE e.id = ANY($1::int[])`,
       [eventIds],
+      { operation: 'blocks.getByEventIds' },
     );
 
     const blockMap = blockRows.reduce(
@@ -632,7 +650,7 @@ export default class BlockDbRepository implements BlockRepository {
    * @returns Promise resolving to an array of blocks
    */
   async getBlocksByTransactionIds(transactionIds: string[]) {
-    const { rows: blockRows } = await rootPgPool.query(
+    const { rows: blockRows } = await queryWithRetry(
       `SELECT b.id,
         b.hash,
         b."chainId",
@@ -655,6 +673,7 @@ export default class BlockDbRepository implements BlockRepository {
         JOIN "Transactions" t ON b.id = t."blockId"
         WHERE t.id = ANY($1::int[])`,
       [transactionIds],
+      { operation: 'blocks.getByTransactionIds' },
     );
 
     const blockMap = blockRows.reduce(
@@ -679,7 +698,7 @@ export default class BlockDbRepository implements BlockRepository {
    * @returns Promise resolving to an array of blocks
    */
   async getBlockByHashes(hashes: string[]): Promise<BlockOutput[]> {
-    const { rows: blockRows } = await rootPgPool.query(
+    const { rows: blockRows } = await queryWithRetry(
       `SELECT b.id,
         b.hash,
         b."chainId",
@@ -700,6 +719,7 @@ export default class BlockDbRepository implements BlockRepository {
         FROM "Blocks" b
         WHERE b.hash = ANY($1::text[])`,
       [hashes],
+      { operation: 'blocks.getByHashes' },
     );
 
     const blockMap = blockRows.reduce(
@@ -759,12 +779,13 @@ export default class BlockDbRepository implements BlockRepository {
    * @returns Promise resolving to the total count of transactions in the block
    */
   async getTotalCountOfBlockTransactions(blockHash: string): Promise<number> {
-    const { rows } = await rootPgPool.query(
+    const { rows } = await queryWithRetry(
       `SELECT COUNT(*) as "totalCount"
         FROM "Blocks" b
         JOIN "Transactions" t ON t."blockId" = b.id
         WHERE b.hash = $1 AND t.sender != 'coinbase'`,
       [blockHash],
+      { operation: 'blocks.countTransactions' },
     );
 
     return rows[0].totalCount ?? 0;
@@ -826,7 +847,9 @@ export default class BlockDbRepository implements BlockRepository {
       GROUP BY root_hash;
     `;
 
-    const { rows } = await rootPgPool.query(query, [transactions.map(t => t.blockHash)]);
+    const { rows } = await queryWithRetry(query, [transactions.map(t => t.blockHash)], {
+      operation: 'blocks.depths.byTx',
+    });
 
     rows.sort((a, b) => b.depth - a.depth);
 
@@ -881,7 +904,9 @@ export default class BlockDbRepository implements BlockRepository {
       `;
     }
 
-    const { rows: blockRows } = await rootPgPool.query(query, queryParams);
+    const { rows: blockRows } = await queryWithRetry(query, queryParams, {
+      operation: 'blocks.lastBlocksWithDepth',
+    });
 
     const blocksToReturn = blockRows.map(row => blockValidator.validate(row));
     const blockHashToDepth = await this.createBlockDepthMap(blocksToReturn, 'hash', minimumDepth);
@@ -905,7 +930,9 @@ export default class BlockDbRepository implements BlockRepository {
       FROM BlockDescendants;
     `;
 
-    const { rows } = await rootPgPool.query(query, [blockHash, minimumDepth]);
+    const { rows } = await queryWithRetry(query, [blockHash, minimumDepth], {
+      operation: 'blocks.confirmationDepth',
+    });
 
     if (rows.length && rows[0].depth) {
       return Number(rows[0].depth);
@@ -949,7 +976,9 @@ export default class BlockDbRepository implements BlockRepository {
         WHERE "chainId" = $1
       `;
 
-      const { rows } = await rootPgPool.query(query, [chainId]);
+      const { rows } = await queryWithRetry(query, [chainId], {
+        operation: 'blocks.maxHeight.byChain',
+      });
       return { [chainId.toString()]: parseInt(rows[0].max_height, 10) };
     });
 

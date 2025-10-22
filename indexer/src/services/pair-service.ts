@@ -1077,7 +1077,9 @@ export class PairService {
       const kdaAmount = await this.findOptimalKdaPricePath(token.id, oneToken, tx, protocolAddress);
 
       if (kdaAmount === undefined) {
-        console.warn(`No path found to calculate price for token ${token.code}`);
+        console.warn(
+          `[WARN][PAIR_SERVICE][NO_PATH_FOUND] No path found to calculate price for token ${token.code}`,
+        );
         return undefined;
       }
 

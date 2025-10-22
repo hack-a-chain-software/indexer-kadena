@@ -1,5 +1,7 @@
 import { rootPgPool, sequelize } from '@/config/database';
 import { getRequiredEnvString } from '@/utils/helpers';
+import { fetchWithRetry } from '@/utils/http';
+import { queryWithRetry } from '@/utils/db';
 import { processPayload, saveBlock } from './streaming';
 import { Transaction } from 'sequelize';
 
@@ -21,14 +23,14 @@ export async function startMissingBlocksBeforeStreamingProcess() {
 
 async function checkBigBlockGapsForAllChains() {
   const url = `${SYNC_BASE_URL}/${NETWORK_ID}/cut`;
-  const res = await fetch(url, {
+  const data = await fetchWithRetry<any>(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
     },
+    operation: 'missing.getCut',
+    parseAs: 'json',
   });
-
-  const data = await res.json();
 
   const chainsAndHashes = Object.keys(data.hashes).map(chainId => ({
     chainId,
@@ -43,7 +45,9 @@ async function checkBigBlockGapsForAllChains() {
   `;
 
   const promises = chainsAndHashes.map(async chainAndHash => {
-    const { rows } = await rootPgPool.query(query, [chainAndHash.chainId]);
+    const { rows } = await queryWithRetry(query, [chainAndHash.chainId], {
+      operation: 'missing.getMaxHeightByChain',
+    });
     const toHeight = chainAndHash.lastHeight;
     const fromHeight = (rows?.[0]?.height ?? 0) + 1;
     return {
@@ -112,7 +116,7 @@ async function fillChainGaps(
       let maxHeight = Math.min(i + THRESHOLD - 1, chainIdDiff.toHeight);
       const url = `${SYNC_BASE_URL}/${NETWORK_ID}/chain/${chainIdDiff.chainId}/block/branch?minheight=${minHeight}&maxheight=${maxHeight}`;
 
-      const res = await fetch(url, {
+      const data = await fetchWithRetry<any>(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,9 +125,9 @@ async function fillChainGaps(
         body: JSON.stringify({
           upper: [chainIdDiff.hash],
         }),
+        operation: 'missing.fillChainGaps',
+        parseAs: 'json',
       });
-
-      const data = await res.json();
 
       const tx = await sequelize.transaction();
       try {
@@ -161,14 +165,14 @@ export async function fillChainGapsBeforeDefiningCanonicalBaseline({
   try {
     console.info('[INFO][SYNC][MISSING] Filling initial chain gaps:', chainId);
     const cutUrl = `${SYNC_BASE_URL}/${NETWORK_ID}/cut`;
-    const cutRes = await fetch(cutUrl, {
+    const cutData = await fetchWithRetry<any>(cutUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
+      operation: 'missing.getCut',
+      parseAs: 'json',
     });
-
-    const cutData = await cutRes.json();
 
     const chainsAndHashes = Object.keys(cutData.hashes).map(chainId => ({
       chainId,
@@ -181,7 +185,9 @@ export async function fillChainGapsBeforeDefiningCanonicalBaseline({
       WHERE "chainId" = $1
     `;
 
-    const { rows } = await rootPgPool.query(dbQuery, [chainId]);
+    const { rows } = await queryWithRetry(dbQuery, [chainId], {
+      operation: 'missing.maxHeightByChain',
+    });
 
     const fromHeight = rows[0].height + 1;
     const toHeight = lastHeight - 1;
@@ -193,7 +199,7 @@ export async function fillChainGapsBeforeDefiningCanonicalBaseline({
 
     const url = `${SYNC_BASE_URL}/${NETWORK_ID}/chain/${chainId}/block/branch?minheight=${fromHeight}&maxheight=${toHeight}`;
 
-    const res = await fetch(url, {
+    const data = await fetchWithRetry<any>(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -202,9 +208,9 @@ export async function fillChainGapsBeforeDefiningCanonicalBaseline({
       body: JSON.stringify({
         upper: [chainsAndHashes[chainId].hash],
       }),
+      operation: 'missing.getBranch',
+      parseAs: 'json',
     });
-
-    const data = await res.json();
 
     const promises = data.items.map(async (item: any) => {
       const payload = processPayload(item.payloadWithOutputs);
@@ -216,7 +222,7 @@ export async function fillChainGapsBeforeDefiningCanonicalBaseline({
     console.info(`[INFO][SYNC][MISSING] Initial chain gaps filled:`, chainId, fromHeight, toHeight);
   } catch (error) {
     console.error(
-      `[FATAL][SYNC][MISSING] Error filling chain ${chainId} gaps before defining canonical baseline:`,
+      `[ERROR][SYNC][MISSING] Error filling chain ${chainId} gaps before defining canonical baseline:`,
       error,
     );
     process.exit(1);

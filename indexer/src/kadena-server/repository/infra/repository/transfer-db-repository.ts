@@ -14,7 +14,7 @@
  * - Counting transfers for statistics and pagination
  */
 
-import { rootPgPool } from '../../../../config/database';
+import { queryWithRetry } from '@/utils/db';
 import TransferRepository, {
   GetCrossChainTransferByPactIdParams,
   GetTotalCountParams,
@@ -208,7 +208,9 @@ export default class TransferDbRepository implements TransferRepository {
       `;
     }
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'transfers.getTransfers',
+    });
 
     const edges = rows.map((row: any) => ({
       cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
@@ -269,7 +271,9 @@ export default class TransferDbRepository implements TransferRepository {
       ${conditions}
     `;
 
-    const { rows } = await rootPgPool.query(query, [transactionId, amount]);
+    const { rows } = await queryWithRetry(query, [transactionId, amount], {
+      operation: 'transfers.getCrossChainTransferByPactId',
+    });
     const [row] = rows;
     if (!row) return null;
     const output = transferSchemaValidator.validate(row);
@@ -296,7 +300,9 @@ export default class TransferDbRepository implements TransferRepository {
       const totalTransfersCountQuery = `
         SELECT last_value as "totalTransfersCount" from "Transfers_id_seq"
       `;
-      const { rows } = await rootPgPool.query(totalTransfersCountQuery);
+      const { rows } = await queryWithRetry(totalTransfersCountQuery, [], {
+        operation: 'transfers.totalCount',
+      });
       const transfersCount = parseInt(rows[0].totalTransfersCount, 10);
       return transfersCount;
     }
@@ -365,8 +371,8 @@ export default class TransferDbRepository implements TransferRepository {
       `;
 
       const promises = await Promise.all([
-        rootPgPool.query(queryOne, queryParams),
-        rootPgPool.query(queryTwo, queryParams),
+        queryWithRetry(queryOne, queryParams, { operation: 'transfers.count.byFrom' }),
+        queryWithRetry(queryTwo, queryParams, { operation: 'transfers.count.byTo' }),
       ]);
 
       const countResultOne = parseInt(promises[0].rows[0].count, 10);
@@ -389,7 +395,9 @@ export default class TransferDbRepository implements TransferRepository {
 
     totalCountQuery += `\n${conditions}`;
 
-    const { rows: countResult } = await rootPgPool.query(totalCountQuery, queryParams);
+    const { rows: countResult } = await queryWithRetry(totalCountQuery, queryParams, {
+      operation: 'transfers.count',
+    });
 
     const totalCount = parseInt(countResult[0].count, 10);
     return totalCount;
@@ -459,7 +467,9 @@ export default class TransferDbRepository implements TransferRepository {
       LIMIT $1;
     `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'transfers.getTransfersByTransactionId',
+    });
 
     const edges = rows.map(row => ({
       cursor: row.id.toString(),

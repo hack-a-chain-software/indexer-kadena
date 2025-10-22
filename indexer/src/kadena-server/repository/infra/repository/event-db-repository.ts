@@ -14,7 +14,7 @@
  * - Counting events for statistics and pagination
  */
 
-import { rootPgPool } from '../../../../config/database';
+import { queryWithRetry } from '@/utils/db';
 import { PageInfo } from '../../../config/graphql-types';
 import EventRepository, {
   EventOutput,
@@ -77,7 +77,9 @@ export default class EventDbRepository implements EventRepository {
       LIMIT 1;
     `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'events.getEvent',
+    });
 
     const output = eventValidator.validate(rows[0]);
     return output;
@@ -137,7 +139,9 @@ export default class EventDbRepository implements EventRepository {
       LIMIT $1;
     `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'events.getBlockEvents',
+    });
 
     const edges = rows.map(row => ({
       cursor: `${row.creationTime}:${row.id}`,
@@ -167,7 +171,9 @@ export default class EventDbRepository implements EventRepository {
       WHERE b.hash = $1
     `;
 
-    const { rows: countResult } = await rootPgPool.query(totalCountQuery, [hash]);
+    const { rows: countResult } = await queryWithRetry(totalCountQuery, [hash], {
+      operation: 'events.count.block',
+    });
 
     const totalCount = parseInt(countResult[0].count, 10);
     return totalCount;
@@ -234,7 +240,9 @@ export default class EventDbRepository implements EventRepository {
         requestKey,
       });
 
-      const { rows } = await rootPgPool.query(query, queryParams);
+      const { rows } = await queryWithRetry(query, queryParams, {
+        operation: 'events.getEvents.batch',
+      });
 
       const edges = rows.map(row => ({
         cursor: `${row.creationTime}:${row.id}`,
@@ -265,7 +273,9 @@ export default class EventDbRepository implements EventRepository {
         requestKey,
       });
 
-      const { rows: eventBatch } = await rootPgPool.query(query, queryParams);
+      const { rows: eventBatch } = await queryWithRetry(query, queryParams, {
+        operation: 'events.getEvents.batch',
+      });
 
       hasMoreEvents = eventBatch.length === batchSize;
 
@@ -407,7 +417,9 @@ export default class EventDbRepository implements EventRepository {
 
     totalCountQuery += `\n${conditions}`;
 
-    const { rows: countResult } = await rootPgPool.query(totalCountQuery, queryParams);
+    const { rows: countResult } = await queryWithRetry(totalCountQuery, queryParams, {
+      operation: 'events.count',
+    });
     const totalCount = parseInt(countResult[0].count, 10);
     return totalCount;
   }
@@ -467,7 +479,9 @@ export default class EventDbRepository implements EventRepository {
       LIMIT $1
     `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'events.getTransactionEvents',
+    });
 
     const edges = rows.map(row => ({
       cursor: `${row.creationTime}:${row.id}`,
@@ -498,7 +512,9 @@ export default class EventDbRepository implements EventRepository {
       WHERE t.id = $1
     `;
 
-    const { rows: countResult } = await rootPgPool.query(totalCountQuery, queryParams);
+    const { rows: countResult } = await queryWithRetry(totalCountQuery, queryParams, {
+      operation: 'events.count.transaction',
+    });
     const totalCount = parseInt(countResult[0].count, 10);
     return totalCount;
   }
@@ -514,7 +530,7 @@ export default class EventDbRepository implements EventRepository {
    */
   async getLastEventId(): Promise<number> {
     const query = `SELECT last_value AS "lastValue" from "Events_id_seq"`;
-    const { rows } = await rootPgPool.query(query);
+    const { rows } = await queryWithRetry(query, [], { operation: 'events.lastEventId' });
     const totalCount = parseInt(rows[0].lastValue, 10);
     return totalCount;
   }
@@ -578,7 +594,9 @@ export default class EventDbRepository implements EventRepository {
       ${limitCondition}
     `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'events.getLastEvents',
+    });
 
     const events = rows.map(e => eventValidator.validate(e));
 

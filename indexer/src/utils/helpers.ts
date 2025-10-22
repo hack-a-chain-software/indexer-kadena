@@ -33,11 +33,21 @@ export function delay(ms: number): Promise<void> {
  * @throws {Error} If the environment variable is not set.
  */
 export function getRequiredEnvString(key: string): string {
-  const value = process.env[key];
-  if (!value) {
+  const value = process.env[key]?.trim();
+  if (!value || value === '') {
     throw new Error(`[ERROR][ENV][MISSING] Environment variable ${key} is required`);
   }
   return value;
+}
+
+/**
+ * Checks if the DEBUG environment variable is set to 'true'.
+ *
+ * @returns True if the DEBUG environment variable is set to 'true', false otherwise.
+ */
+export function isDebugEnabled(): boolean {
+  const value = process.env['DEBUG']?.trim();
+  return value === 'true' || value === undefined || value === '';
 }
 
 /**

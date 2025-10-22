@@ -35,6 +35,7 @@ import BlockDbRepository from './block-db-repository';
 import TransactionQueryBuilder from '../query-builders/transaction-query-builder';
 import { isNullOrUndefined } from '@/utils/helpers';
 import { transactionSummaryValidator } from '@/kadena-server/repository/infra/schema-validator/transaction-summary-schema-validator';
+import { queryWithRetry } from '@/utils/db';
 
 /**
  * Database-specific implementation of the TransactionRepository interface.
@@ -66,7 +67,9 @@ export default class TransactionDbRepository implements TransactionRepository {
       WHERE td."transactionId" = ANY($1::int[])
     `;
 
-    const { rows } = await rootPgPool.query(query, [transactionIds]);
+    const { rows } = await queryWithRetry(query, [transactionIds], {
+      operation: 'transactions.fetchTransactionDetailsMap',
+    });
     return rows.reduce<Record<number, any>>((map, row) => {
       map[row.transactionId] = row;
       return map;
@@ -122,7 +125,9 @@ export default class TransactionDbRepository implements TransactionRepository {
       });
 
       // Execute the query with the constructed parameters
-      const { rows } = await rootPgPool.query(query, queryParams);
+      const { rows } = await queryWithRetry(query, queryParams, {
+        operation: 'transactions.getAllTransactions',
+      });
       const rowsWithDetails = await this.mergeRowsWithDetails(rows);
 
       // Transform database rows into GraphQL-compatible edges with cursors
@@ -136,7 +141,10 @@ export default class TransactionDbRepository implements TransactionRepository {
     }
 
     const maxHeightQuery = `SELECT max(height) FROM "Blocks"`;
-    const maxHeightFromDb = (await rootPgPool.query(maxHeightQuery)).rows[0].max;
+    const maxRes = await queryWithRetry(maxHeightQuery, [], {
+      operation: 'transactions.maxHeight',
+    });
+    const maxHeightFromDb = maxRes.rows[0].max;
     // If no minimumDepth is specified, we can use the normal query approach
     if (!rest.minimumDepth) {
       // Build and execute the query using the query builder
@@ -150,7 +158,9 @@ export default class TransactionDbRepository implements TransactionRepository {
       });
 
       // Execute the query with the constructed parameters
-      const { rows } = await rootPgPool.query(query, queryParams);
+      const { rows } = await queryWithRetry(query, queryParams, {
+        operation: 'transactions.getTransactions',
+      });
       const rowsWithDetails = await this.mergeRowsWithDetails(rows);
 
       // Transform database rows into GraphQL-compatible edges with cursors
@@ -181,7 +191,9 @@ export default class TransactionDbRepository implements TransactionRepository {
         maxHeightFromDb,
       });
 
-      const { rows: transactionBatch } = await rootPgPool.query(query, queryParams);
+      const { rows: transactionBatch } = await queryWithRetry(query, queryParams, {
+        operation: 'transactions.getTransactions.batch',
+      });
 
       hasMoreTransactions = transactionBatch.length === batchSize;
 
@@ -255,7 +267,9 @@ export default class TransactionDbRepository implements TransactionRepository {
       LIMIT $1
     `;
 
-    const { rows } = await rootPgPool.query(query, [quantity]);
+    const { rows } = await queryWithRetry(query, [quantity], {
+      operation: 'transactions.getLastTransactions',
+    });
     const lastTransactions = rows.map(row => transactionValidator.validate(row));
     return lastTransactions;
   }
@@ -285,7 +299,10 @@ export default class TransactionDbRepository implements TransactionRepository {
       transactionCode: pactCode,
     });
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    // Use resilient DB query wrapper with retry/backoff
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'transactions.getTransactionsByPactCode',
+    });
 
     const edges = rows.slice(0, limit).map(tx => ({
       cursor: `${tx.creationTime.toString()}:${tx.id.toString()}`,
@@ -330,7 +347,9 @@ export default class TransactionDbRepository implements TransactionRepository {
       WHERE tr.id = $1
     `;
 
-    const { rows } = await rootPgPool.query(query, [transferId]);
+    const { rows } = await queryWithRetry(query, [transferId], {
+      operation: 'transactions.getTransactionByTransferId',
+    });
 
     if (!rows?.length) {
       throw new Error(`[ERROR][DB][DATA_MISSING] Transfer with id ${transferId} not found`);
@@ -363,7 +382,9 @@ export default class TransactionDbRepository implements TransactionRepository {
       WHERE t.id = $1
     `;
 
-    const { rows } = await rootPgPool.query(query, [transactionId]);
+    const { rows } = await queryWithRetry(query, [transactionId], {
+      operation: 'transactions.getTransactionMetaInfoById',
+    });
 
     const [row] = rows;
     const output = transactionMetaValidator.validate(row);
@@ -417,7 +438,9 @@ export default class TransactionDbRepository implements TransactionRepository {
       ${conditions}
     `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'transactions.getTransactionsByRequestKey',
+    });
 
     const canonicalTxs = rows.filter(r => r.canonical === true);
     const orphanedTxs = rows.filter(r => r.canonical === false);
@@ -507,7 +530,9 @@ export default class TransactionDbRepository implements TransactionRepository {
       LIMIT $1;
     `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'transactions.getByPublicKey',
+    });
 
     const edges = rows.map(row => ({
       cursor: `${row.creationTime.toString()}:${row.id.toString()}`,
@@ -535,7 +560,9 @@ export default class TransactionDbRepository implements TransactionRepository {
       ) subquery;
     `;
 
-    const { rows } = await rootPgPool.query(query, [publicKey]);
+    const { rows } = await queryWithRetry(query, [publicKey], {
+      operation: 'transactions.getByPublicKey.count',
+    });
     const totalCount = parseInt(rows?.[0]?.count ?? '0', 10);
     return totalCount;
   }
@@ -599,7 +626,9 @@ export default class TransactionDbRepository implements TransactionRepository {
         FROM "Counters"
       `;
 
-      const { rows } = await rootPgPool.query(query);
+      const { rows } = await queryWithRetry(query, [], {
+        operation: 'transactions.getTransactionsCount',
+      });
 
       const counters = rows
         .map(r => {
@@ -723,10 +752,11 @@ export default class TransactionDbRepository implements TransactionRepository {
       ${blocksConditions}
     `;
 
-    const { rows: countResult } = await rootPgPool.query(totalCountQuery, [
-      ...transactionsParams,
-      ...blockParams,
-    ]);
+    const { rows: countResult } = await queryWithRetry(
+      totalCountQuery,
+      [...transactionsParams, ...blockParams],
+      { operation: 'transactions.count' },
+    );
 
     const totalCount = parseInt(countResult[0].count, 10);
     const depthDecrement = (minimumDepthParam ?? 0) * (isNullOrUndefined(chainIdParam) ? 20 : 1);
@@ -742,7 +772,7 @@ export default class TransactionDbRepository implements TransactionRepository {
    * @returns Promise resolving to matching transactions
    */
   async getTransactionsByEventIds(eventIds: readonly string[]): Promise<TransactionOutput[]> {
-    const { rows } = await rootPgPool.query(
+    const { rows } = await queryWithRetry(
       `SELECT t.id as id,
       t.hash as "hashTransaction",
       td.nonce as "nonceTransaction",
@@ -770,6 +800,7 @@ export default class TransactionDbRepository implements TransactionRepository {
       LEFT JOIN "TransactionDetails" td on t.id = td."transactionId"
       WHERE e.id = ANY($1::int[])`,
       [eventIds],
+      { operation: 'transactions.getByEventIds' },
     );
 
     const transactionMap = rows.reduce(
@@ -823,7 +854,9 @@ export default class TransactionDbRepository implements TransactionRepository {
       query += `\nAND s."orderIndex" = $2`;
     }
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'transactions.getSigners',
+    });
 
     const output = rows.map(row => signerMetaValidator.validate(row));
 

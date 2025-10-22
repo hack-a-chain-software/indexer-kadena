@@ -1,5 +1,6 @@
 import { QueryTypes } from 'sequelize';
 import { sequelize } from '../../../../config/database';
+import { sequelizeQueryWithRetry } from '@/utils/db';
 import LiquidityBalance from '../../../../models/liquidity-balance';
 import PoolStats from '../../../../models/pool-stats';
 import { getPageInfo, getPaginationParams } from '../../pagination';
@@ -113,10 +114,10 @@ export default class LiquidityPositionDbRepository {
 
     // First order by the requested field, then by id for consistent pagination
 
-    const positions = await sequelize.query(query, {
-      type: QueryTypes.SELECT,
-      bind: queryParams,
-    });
+    const positions = (await sequelizeQueryWithRetry<any[]>(
+      'liquidity.getPositions',
+      () => sequelize.query(query, { type: QueryTypes.SELECT, bind: queryParams }) as any,
+    )) as any[];
 
     const edges = await Promise.all(
       (positions as any[]).map(async position => {

@@ -1,5 +1,6 @@
 import { QueryTypes } from 'sequelize';
 import { sequelize } from '../../../../config/database';
+import { sequelizeQueryWithRetry } from '@/utils/db';
 import {
   DexMetrics,
   DexMetricsRepository,
@@ -18,10 +19,14 @@ export default class DexMetricsDbRepository implements DexMetricsRepository {
 
     // Get total pools count
     const totalPoolsQuery = `SELECT COUNT(*) FROM "Pairs" WHERE address = $1`;
-    const totalPoolsResult = await sequelize.query(totalPoolsQuery, {
-      type: QueryTypes.SELECT,
-      bind: protocolAddress ? [protocolAddress] : [DEFAULT_PROTOCOL_ADDRESS],
-    });
+    const totalPoolsResult = (await sequelizeQueryWithRetry<any[]>(
+      'dexMetrics.totalPools',
+      () =>
+        sequelize.query(totalPoolsQuery, {
+          type: QueryTypes.SELECT,
+          bind: protocolAddress ? [protocolAddress] : [DEFAULT_PROTOCOL_ADDRESS],
+        }) as any,
+    )) as any[];
     const totalPools = parseInt((totalPoolsResult[0] as any).count, 10);
 
     // Get current TVL
@@ -37,10 +42,14 @@ export default class DexMetricsDbRepository implements DexMetricsRepository {
       FROM latest_stats ls
     `;
 
-    const [currentTvlResult] = await sequelize.query(currentTvlQuery, {
-      type: QueryTypes.SELECT,
-      bind: protocolAddress ? [protocolAddress] : [DEFAULT_PROTOCOL_ADDRESS],
-    });
+    const [currentTvlResult] = (await sequelizeQueryWithRetry<any>(
+      'dexMetrics.currentTvl',
+      () =>
+        sequelize.query(currentTvlQuery, {
+          type: QueryTypes.SELECT,
+          bind: protocolAddress ? [protocolAddress] : [DEFAULT_PROTOCOL_ADDRESS],
+        }) as any,
+    )) as any;
 
     // Get TVL history
     const tvlHistoryQuery = `
@@ -81,12 +90,16 @@ export default class DexMetricsDbRepository implements DexMetricsRepository {
       ORDER BY day ASC;
     `;
 
-    const tvlHistory = await sequelize.query(tvlHistoryQuery, {
-      type: QueryTypes.SELECT,
-      bind: protocolAddress
-        ? [queryStartDate, queryEndDate, protocolAddress]
-        : [queryStartDate, queryEndDate, DEFAULT_PROTOCOL_ADDRESS],
-    });
+    const tvlHistory = (await sequelizeQueryWithRetry<any[]>(
+      'dexMetrics.tvlHistory',
+      () =>
+        sequelize.query(tvlHistoryQuery, {
+          type: QueryTypes.SELECT,
+          bind: protocolAddress
+            ? [queryStartDate, queryEndDate, protocolAddress]
+            : [queryStartDate, queryEndDate, DEFAULT_PROTOCOL_ADDRESS],
+        }) as any,
+    )) as any[];
 
     // Get volume history
     const volumeHistoryQuery = `
@@ -101,12 +114,16 @@ export default class DexMetricsDbRepository implements DexMetricsRepository {
       ORDER BY timestamp ASC
     `;
 
-    const volumeHistory = await sequelize.query(volumeHistoryQuery, {
-      type: QueryTypes.SELECT,
-      bind: protocolAddress
-        ? [queryStartDate, queryEndDate, protocolAddress]
-        : [queryStartDate, queryEndDate, DEFAULT_PROTOCOL_ADDRESS],
-    });
+    const volumeHistory = (await sequelizeQueryWithRetry<any[]>(
+      'dexMetrics.volumeHistory',
+      () =>
+        sequelize.query(volumeHistoryQuery, {
+          type: QueryTypes.SELECT,
+          bind: protocolAddress
+            ? [queryStartDate, queryEndDate, protocolAddress]
+            : [queryStartDate, queryEndDate, DEFAULT_PROTOCOL_ADDRESS],
+        }) as any,
+    )) as any[];
 
     // Get total volume
     const totalVolumeQuery = `
@@ -117,12 +134,16 @@ export default class DexMetricsDbRepository implements DexMetricsRepository {
       AND p.address = $3
     `;
 
-    const [totalVolumeResult] = await sequelize.query(totalVolumeQuery, {
-      type: QueryTypes.SELECT,
-      bind: protocolAddress
-        ? [queryStartDate, queryEndDate, protocolAddress]
-        : [queryStartDate, queryEndDate, DEFAULT_PROTOCOL_ADDRESS],
-    });
+    const [totalVolumeResult] = (await sequelizeQueryWithRetry<any>(
+      'dexMetrics.totalVolume',
+      () =>
+        sequelize.query(totalVolumeQuery, {
+          type: QueryTypes.SELECT,
+          bind: protocolAddress
+            ? [queryStartDate, queryEndDate, protocolAddress]
+            : [queryStartDate, queryEndDate, DEFAULT_PROTOCOL_ADDRESS],
+        }) as any,
+    )) as any;
 
     const result = {
       totalPools,

@@ -79,3 +79,62 @@ function normalizeCircuitForHttp(url: string, config: AxiosRequestConfig & HttpO
   }
   return { enabled, key, options };
 }
+
+// Generic fetch with retry + circuit breaker support
+export async function fetchWithRetry<T = unknown>(
+  url: string,
+  init: (RequestInit & HttpOptions & { parseAs?: 'json' | 'text' | 'raw' }) | undefined,
+): Promise<T> {
+  const operation = init?.operation ?? 'http.fetch';
+  const attempts =
+    init?.attempts ??
+    (process.env.HTTP_RETRY_ATTEMPTS ? Number(process.env.HTTP_RETRY_ATTEMPTS) : 3);
+  const timeoutMs =
+    init?.timeoutMs ?? (process.env.HTTP_TIMEOUT_MS ? Number(process.env.HTTP_TIMEOUT_MS) : 30000);
+  const parseAs = init?.parseAs ?? 'json';
+
+  const call = () =>
+    withRetry<T>(
+      operation,
+      async () => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { ...init, signal: controller.signal } as RequestInit);
+          // Treat 429/5xx as retryable via thrown error with status
+          if (!res.ok) {
+            const err: any = new Error(`HTTP ${res.status}`);
+            err.status = res.status;
+            throw err;
+          }
+          if (parseAs === 'raw') return res as unknown as T;
+          if (parseAs === 'text') return (await res.text()) as unknown as T;
+          return (await res.json()) as unknown as T;
+        } finally {
+          clearTimeout(timer);
+        }
+      },
+      {
+        attempts,
+        classify: classifyHttpError,
+        signal: init?.signal,
+        onRetry: ({ attempt, error }) => {
+          console.warn('[WARN][HTTP][RETRY]', { operation, attempt, error });
+        },
+        circuit: init?.circuit
+          ? { ...init.circuit, key: init.circuit.key ?? deriveKey(url, operation) }
+          : { key: deriveKey(url, operation) },
+      },
+    );
+
+  return call();
+}
+
+function deriveKey(url: string, fallback: string) {
+  try {
+    const u = new URL(url);
+    return `${u.host}${u.pathname}`;
+  } catch {
+    return fallback || url;
+  }
+}

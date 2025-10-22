@@ -8,6 +8,7 @@
  */
 
 import { getRequiredEnvString } from '../../../../utils/helpers';
+import { fetchWithRetry } from '@/utils/http';
 import MempoolGateway from '../../gateway/mempool-gateway';
 import zod from 'zod';
 
@@ -153,17 +154,15 @@ export default class MempoolApiGateway implements MempoolGateway {
     const url = `${SYNC_BASE_URL}/${NETWORK_ID}/chain/${chainId}/mempool/lookup`;
 
     // Send the lookup request to the mempool API
-    const res = await fetch(url, {
+    const data = await fetchWithRetry(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      // Include the request key in the body
       body: JSON.stringify({ requestKey }),
+      operation: 'mempool.lookup',
+      parseAs: 'json',
     });
-
-    // Parse the JSON response
-    const data = await res.json();
 
     // Validate the response data against our schema
     const parsedData = ZodSchema.parse(data);

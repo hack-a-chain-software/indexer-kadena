@@ -1,4 +1,5 @@
 import { sequelize } from '../../../../config/database';
+import { sequelizeQueryWithRetry } from '@/utils/db';
 import Token from '../../../../models/token';
 import { PairService } from '../../../../services/pair-service';
 import {
@@ -50,11 +51,15 @@ export default class TokenPriceDbRepository implements TokenPriceRepository {
       WHERE p.address = $1
     `;
 
-    const tokens = await sequelize.query(tokensQuery, {
-      type: 'SELECT',
-      bind: [protocolAddress],
-      model: Token,
-    });
+    const tokens = (await sequelizeQueryWithRetry<any[]>(
+      'tokenPrice.getTokenPrices.tokens',
+      () =>
+        sequelize.query(tokensQuery, {
+          type: 'SELECT',
+          bind: [protocolAddress],
+          model: Token,
+        }) as any,
+    )) as any[];
 
     const prices: TokenPrice[] = [];
     for (const token of tokens) {

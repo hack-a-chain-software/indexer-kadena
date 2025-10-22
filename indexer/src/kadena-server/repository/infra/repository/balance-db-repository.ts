@@ -12,7 +12,7 @@
  * - Includes both indexed DB access and direct node queries
  * - Handles public key-based account lookups
  */
-import { rootPgPool } from '../../../../config/database';
+import { queryWithRetry } from '@/utils/db';
 import { formatBalance_NODE, formatGuard_NODE } from '../../../../utils/chainweb-node';
 import { handleSingleQuery } from '../../../../utils/raw-query';
 import BalanceRepository, {
@@ -56,7 +56,9 @@ export default class BalanceDbRepository implements BalanceRepository {
       ORDER BY b.id DESC
       `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'balance.getNonFungibleAccountInfo',
+    });
 
     if (rows.length === 0) return null;
 
@@ -94,7 +96,9 @@ export default class BalanceDbRepository implements BalanceRepository {
       ORDER BY b.id DESC
     `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'balance.getNonFungibleChainAccountsInfo',
+    });
 
     if (rows.length === 0) return [];
 
@@ -138,7 +142,9 @@ export default class BalanceDbRepository implements BalanceRepository {
       ORDER BY b.id DESC
     `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'balance.getNonFungibleChainAccountInfo',
+    });
 
     if (rows.length === 0) return null;
 
@@ -184,7 +190,9 @@ export default class BalanceDbRepository implements BalanceRepository {
       ORDER BY b.id DESC
     `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'balance.getNonFungibleTokenBalance',
+    });
 
     if (rows.length === 0) return null;
 
@@ -293,7 +301,9 @@ export default class BalanceDbRepository implements BalanceRepository {
       WHERE g."publicKey" = $1
     `;
 
-    const { rows: guardRows } = await rootPgPool.query(guardsQuery, [publicKey]);
+    const { rows: guardRows } = await queryWithRetry(guardsQuery, [publicKey], {
+      operation: 'balance.getAccountsByPublicKey_NODE.guards',
+    });
 
     if (!guardRows?.length) {
       // If no guard rows found, try with k: prefix for direct account lookup
@@ -304,7 +314,9 @@ export default class BalanceDbRepository implements BalanceRepository {
         WHERE b.account = $1
         AND b.module = $2
       `;
-      const { rows } = await rootPgPool.query(query, params);
+      const { rows } = await queryWithRetry(query, params, {
+        operation: 'balance.getAccountsByPublicKey_NODE.direct',
+      });
 
       if (!rows.length) return [];
       return this.processAccounts(rows, fungibleName);
@@ -318,7 +330,9 @@ export default class BalanceDbRepository implements BalanceRepository {
         WHERE g."publicKey" = $1
         AND b.module = $2
       `;
-      const { rows } = await rootPgPool.query(query, params);
+      const { rows } = await queryWithRetry(query, params, {
+        operation: 'balance.getAccountsByPublicKey_NODE.viaGuards',
+      });
       return this.processAccounts(rows, fungibleName);
     }
   }
@@ -345,7 +359,9 @@ export default class BalanceDbRepository implements BalanceRepository {
       WHERE g."publicKey" = $1
     `;
 
-    const { rows: guardRows } = await rootPgPool.query(guardsQuery, [publicKey]);
+    const { rows: guardRows } = await queryWithRetry(guardsQuery, [publicKey], {
+      operation: 'balance.getChainAccountsByPublicKey_NODE.guards',
+    });
 
     const params = [guardRows?.length ? publicKey : `k:${publicKey}`, fungibleName, chainId];
     let query = '';
@@ -370,7 +386,9 @@ export default class BalanceDbRepository implements BalanceRepository {
       `;
     }
 
-    const { rows } = await rootPgPool.query(query, params);
+    const { rows } = await queryWithRetry(query, params, {
+      operation: 'balance.getChainAccountsByPublicKey_NODE.rows',
+    });
 
     // Query node directly for each balance
     const balancesWithQuery = rows.map(async r => {
@@ -449,7 +467,7 @@ export default class BalanceDbRepository implements BalanceRepository {
       LIMIT $1
     `;
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, { operation: 'balance.getTokens' });
 
     // Format results as GraphQL connection edges
     const edges = rows.map(row => {
@@ -569,7 +587,9 @@ export default class BalanceDbRepository implements BalanceRepository {
       `;
     }
 
-    const { rows } = await rootPgPool.query(query, queryParams);
+    const { rows } = await queryWithRetry(query, queryParams, {
+      operation: 'balance.getAccountBalances',
+    });
 
     // Query node for balances in parallel
     const nodeQueries = rows.map(async row => {

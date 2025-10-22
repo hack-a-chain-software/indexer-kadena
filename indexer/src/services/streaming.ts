@@ -14,7 +14,7 @@
  */
 
 import { processPayloadKey } from './payload';
-import { getDecoded, getRequiredEnvString } from '@/utils/helpers';
+import { getDecoded, getRequiredEnvString, isDebugEnabled } from '@/utils/helpers';
 import EventSource from 'eventsource';
 import { uint64ToInt64 } from '@/utils/int-uint-64';
 import Block, { BlockAttributes } from '@/models/block';
@@ -31,6 +31,7 @@ import { startPairCreation } from '@/services/start-pair-creation';
 
 const SYNC_BASE_URL = getRequiredEnvString('SYNC_BASE_URL');
 const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
+const DEBUG = getRequiredEnvString('DEBUG');
 
 /**
  * Starts the blockchain streaming service.
@@ -52,7 +53,9 @@ const SYNC_NETWORK = getRequiredEnvString('SYNC_NETWORK');
 export async function startStreaming() {
   console.info('[INFO][WORKER][BIZ_FLOW] Starting blockchain streaming service ...');
 
-  await startMissingBlocksBeforeStreamingProcess();
+  if (!isDebugEnabled()) {
+    await startMissingBlocksBeforeStreamingProcess();
+  }
 
   const nextBlocksToProcess: any[] = [];
   const initialChainGapsAlreadyFilled = new Set<number>();
